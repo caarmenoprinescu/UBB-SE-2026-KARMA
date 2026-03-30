@@ -58,5 +58,23 @@ namespace KarmaBanking.App.Repositories
             int numberOfRowsAffectedByUpdate = await updateSavingsAccountBalanceCommand.ExecuteNonQueryAsync();
             return numberOfRowsAffectedByUpdate > 0;
         }
+
+        public async Task<bool> CloseSavingsAccountAsync(int savingsAccountId)
+        {
+            const string closeSavingsAccountQuery = @"
+                UPDATE SavingsAccount
+                SET balance = 0,
+                    accountStatus = 'Closed'
+                WHERE id = @SavingsAccountId";
+
+            using SqlConnection openDatabaseConnection = DatabaseConfig.GetDatabaseConnection();
+            await openDatabaseConnection.OpenAsync();
+
+            using SqlCommand closeSavingsAccountCommand = new SqlCommand(closeSavingsAccountQuery, openDatabaseConnection);
+            closeSavingsAccountCommand.Parameters.AddWithValue("@SavingsAccountId", savingsAccountId);
+
+            int numberOfRowsAffected = await closeSavingsAccountCommand.ExecuteNonQueryAsync();
+            return numberOfRowsAffected > 0;
+        }
     }
 }
