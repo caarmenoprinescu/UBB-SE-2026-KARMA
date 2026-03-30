@@ -1,0 +1,33 @@
+using System;
+using System.Threading.Tasks;
+using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories.Interfaces;
+using KarmaBanking.App.Services.Interfaces;
+
+namespace KarmaBanking.App.Services
+{
+    public class SavingsService : ISavingsService
+    {
+        private readonly ISavingsRepository savingsRepository;
+
+        public SavingsService(ISavingsRepository savingsRepository)
+        {
+            this.savingsRepository = savingsRepository;
+        }
+
+        public async Task<bool> CreateSavingsAccountAsync(SavingsAccount savingsAccount)
+        {
+            if (savingsAccount.Balance <= 0)
+                return false;
+
+            if (savingsAccount.FundingAccountId == null || savingsAccount.FundingAccountId <= 0)
+                return false;
+
+            savingsAccount.CreatedAt = DateTime.Now;
+            savingsAccount.AccountStatus = "Active";
+            savingsAccount.AccruedInterest = 0;
+
+            return await savingsRepository.AddSavingsAccountAsync(savingsAccount);
+        }
+    }
+}
