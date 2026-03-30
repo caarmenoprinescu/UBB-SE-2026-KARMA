@@ -1,3 +1,5 @@
+using System;
+
 public class Loan
 {
     public int id { get; set; }
@@ -9,4 +11,6 @@ public class Loan
     public decimal monthlyInstallment { get; set; }
     public int remainingMonths { get; set; }
     public string loanStatus { get; set; }
+    public int TermInMonths { get; set; }
+    public DateTime StartDate { get; set; }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+<<<<<<< HEAD
 using System.Data.SqlClient;
 
 public interface ILoanRepository
@@ -12,3 +13,14 @@ public interface ILoanRepository
     List<Loan> GetLoansByType(string loanType);
 
 }
+=======
+
+public interface ILoanRepository
+{
+    List<Loan> getAllLoans();
+    Loan getById(int id);
+    List<Loan> getByUser(int userID);
+    void SaveAmortization(List<AmortizationRow> rows);
+    List<AmortizationRow> GetAmortization(int loanId);
+}
+>>>>>>> main
