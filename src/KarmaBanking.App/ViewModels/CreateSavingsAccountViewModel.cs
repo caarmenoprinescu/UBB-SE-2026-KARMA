@@ -6,6 +6,7 @@ using System.Windows.Input;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Services.Interfaces;
 using KarmaBanking.App.Utils;
+using Microsoft.UI.Xaml;
 
 namespace KarmaBanking.App.ViewModels
 {
@@ -36,32 +37,48 @@ namespace KarmaBanking.App.ViewModels
         public string AccountNickname
         {
             get => accountNickname;
-            set { accountNickname = value; OnPropertyChanged(); }
+            set { accountNickname = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
         }
 
         public string InitialDepositAmountText
         {
             get => initialDepositAmountText;
-            set { initialDepositAmountText = value; OnPropertyChanged(); }
+            set { initialDepositAmountText = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
         }
 
         public int? SelectedFundingAccountId
         {
             get => selectedFundingAccountId;
-            set { selectedFundingAccountId = value; OnPropertyChanged(); }
+            set { selectedFundingAccountId = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
         }
 
         public string ErrorMessage
         {
             get => errorMessage;
-            set { errorMessage = value; OnPropertyChanged(); }
+            set
+            {
+                errorMessage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ErrorMessageVisibility));
+            }
         }
+
+        public Visibility ErrorMessageVisibility =>
+            string.IsNullOrEmpty(errorMessage) ? Visibility.Collapsed : Visibility.Visible;
 
         public bool IsAccountCreated
         {
             get => isAccountCreated;
-            set { isAccountCreated = value; OnPropertyChanged(); }
+            set
+            {
+                isAccountCreated = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SuccessMessageVisibility));
+            }
         }
+
+        public Visibility SuccessMessageVisibility =>
+            isAccountCreated ? Visibility.Visible : Visibility.Collapsed;
 
         public bool IsSubmitting
         {
@@ -69,7 +86,7 @@ namespace KarmaBanking.App.ViewModels
             set { isSubmitting = value; OnPropertyChanged(); }
         }
 
-        public ICommand CreateAccountCommand { get; }
+        public RelayCommand CreateAccountCommand { get; }
 
         private bool CanSubmitCreateAccountForm()
         {
@@ -79,11 +96,11 @@ namespace KarmaBanking.App.ViewModels
                 && selectedFundingAccountId != null;
         }
 
-        private async Task SubmitCreateAccountFormAsync()
+        public async Task SubmitCreateAccountFormAsync()
         {
             ErrorMessage = string.Empty;
 
-            if (!decimal.TryParse(initialDepositAmountText, out decimal initialDepositAmount) || initialDepositAmount <= 0)
+            if (!decimal.TryParse(initialDepositAmountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal initialDepositAmount) || initialDepositAmount <= 0)
             {
                 ErrorMessage = "Initial deposit must be a positive number.";
                 return;

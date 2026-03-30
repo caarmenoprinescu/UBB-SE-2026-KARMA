@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Page
         x:Class="KarmaBanking.App.Views.SavingsAccountListView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -16,84 +16,101 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Savings Accounts" FontSize="28" FontWeight="Bold"/>
-            <Button Content="+ Open New Savings Account" HorizontalAlignment="Right"/>
-        </Grid>
+        <TextBlock Grid.Row="0" Text="Savings Accounts" FontSize="28" FontWeight="Bold" Margin="0,0,0,16"/>
 
         <!-- Summary -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="32" Margin="0,0,0,16">
             <StackPanel>
                 <TextBlock Text="TOTAL SAVED" FontSize="12" Foreground="Gray"/>
-                <TextBlock x:Name="TotalSavedAmountText" Text="$0.00" FontSize="20" FontWeight="Bold"/>
-                <TextBlock x:Name="NumberOfAccountsText" Text="across 0 accounts" FontSize="12" Foreground="Gray"/>
+                <TextBlock Text="{Binding TotalSavedAmount}" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="{Binding NumberOfAccountsText}" FontSize="12" Foreground="Gray"/>
             </StackPanel>
             <StackPanel>
                 <TextBlock Text="BEST RATE" FontSize="12" Foreground="Gray"/>
-                <TextBlock x:Name="BestInterestRateText" Text="0.00%" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="{Binding BestInterestRate}" FontSize="20" FontWeight="Bold"/>
                 <TextBlock Text="Fixed Deposit" FontSize="12" Foreground="Gray"/>
             </StackPanel>
         </StackPanel>
 
         <!-- Tabs -->
-        <NavigationView Grid.Row="2" IsBackButtonVisible="Collapsed" PaneDisplayMode="Top" Margin="0,0,0,16">
+        <NavigationView Grid.Row="2" x:Name="MainNavigationView"
+                        IsBackButtonVisible="Collapsed" PaneDisplayMode="Top"
+                        Margin="0,0,0,16" SelectionChanged="OnTabSelectionChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="My Accounts"/>
-                <NavigationViewItem Content="Open New"/>
+                <NavigationViewItem x:Name="MyAccountsTab" Content="My Accounts"/>
+                <NavigationViewItem x:Name="OpenNewTab" Content="Open New"/>
                 <NavigationViewItem Content="Manage"/>
             </NavigationView.MenuItems>
         </NavigationView>
 
-        <!-- Accounts Table -->
-        <ListView Grid.Row="3" x:Name="SavingsAccountsListView">
-            <ListView.HeaderTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Account Name" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="1" Text="Type" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2" Text="Balance" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="3" Text="Interest" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="4" Text="Status" FontWeight="Bold"/>
-                    </Grid>
-                </DataTemplate>
-            </ListView.HeaderTemplate>
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding AccountName}"/>
-                        <TextBlock Grid.Column="1" Text="{Binding SavingsType}"/>
-                        <TextBlock Grid.Column="2" Text="{Binding FormattedBalance}"/>
-                        <TextBlock Grid.Column="3" Text="{Binding FormattedAccruedInterest}"/>
-                        <Border Grid.Column="4" CornerRadius="8" Padding="8,4"
-                                Background="LightGray">
-                            <TextBlock Text="{Binding Status}"/>
-                        </Border>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+        <!-- My Accounts Content -->
+        <Grid Grid.Row="3" x:Name="MyAccountsContent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <!-- Action Buttons -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8"
-                    VerticalAlignment="Bottom" Margin="0,0,0,16">
-            <Button Content="Details"/>
-            <Button Content="Deposit"/>
-            <Button Content="Withdraw"/>
-            <Button Content="Close Account"/>
-        </StackPanel>
+            <!-- Empty state -->
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding EmptyStateVisibility}">
+                <TextBlock Text="No savings accounts yet." FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
+                <TextBlock Text="Go to Open New to get started." FontSize="14" Foreground="Gray" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Accounts Table -->
+            <ListView Grid.Row="0" ItemsSource="{Binding SavingsAccounts}"
+                      Visibility="{Binding AccountsListVisibility}">
+                <ListView.HeaderTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Account Name" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="1" Text="Type" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="2" Text="Balance" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="3" Text="Interest" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="4" Text="Status" FontWeight="Bold"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.HeaderTemplate>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding AccountName}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SavingsType}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Balance}"/>
+                            <TextBlock Grid.Column="3" Text="{Binding AccruedInterest}"/>
+                            <Border Grid.Column="4" CornerRadius="8" Padding="8,4" Background="LightGray">
+                                <TextBlock Text="{Binding AccountStatus}"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Action Buttons (Manage only) -->
+            <StackPanel Grid.Row="1" x:Name="ManageActionButtons" Orientation="Horizontal"
+                        Spacing="8" Margin="0,8,0,0" Visibility="Collapsed">
+                <Button Content="Details"/>
+                <Button Content="Deposit"/>
+                <Button Content="Withdraw"/>
+                <Button Content="Close Account"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Open New Content (Frame) -->
+        <Frame Grid.Row="3" x:Name="OpenNewFrame" Visibility="Collapsed"/>
     </Grid>
 </Page>
