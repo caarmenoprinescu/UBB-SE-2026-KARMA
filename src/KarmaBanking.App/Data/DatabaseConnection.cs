@@ -8,7 +8,7 @@ namespace KarmaBanking.App.Data
 
         public DatabaseConnection()
         {
-            _connectionString = "Server=localhost;Database=KarmaBanking;Trusted_Connection=True;TrustServerCertificate=True;";
+            _connectionString = "Server=localhost;Database=KarmaBankingDb;Trusted_Connection=True;TrustServerCertificate=True;";
         }
 
         public SqlConnection GetDatabaseConnection()
