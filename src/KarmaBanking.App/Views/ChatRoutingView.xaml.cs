@@ -1,7 +1,9 @@
+using KarmaBanking.App.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+
 
 namespace KarmaBanking.App.Views
 {
@@ -44,21 +46,21 @@ namespace KarmaBanking.App.Views
 
             try
             {
-                ChatSessionRepository repo = new ChatSessionRepository();
+                ApiService api = new ApiService();
 
                 int sessionId = 1; // temporar
-
                 string feedback = FeedbackTextBox.Text;
 
-                repo.SaveSessionRatingAndFeedback(sessionId, selectedRating, feedback);
+                api.SubmitFeedback(sessionId, selectedRating, feedback);
 
                 StatusText.Text = $"Rating saved successfully: {selectedRating} ⭐";
                 StatusText.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Green);
+
                 FeedbackTextBox.Text = "";
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Error saving rating: {ex.Message}";
+                StatusText.Text = "Rating save failed (DB connection unavailable)";
                 StatusText.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Red);
             }
         }

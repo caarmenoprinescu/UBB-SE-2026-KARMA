@@ -10,8 +10,8 @@ namespace KarmaBanking.App.Services
 {
     public class ApiService
     {
-        private readonly string baseUrl = "https://localhost:5001"; 
-        private readonly string authToken = ""; 
+        private readonly string baseUrl = "https://localhost:5001";
+        private readonly string authToken = "";
 
         public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
         {
@@ -57,6 +57,12 @@ namespace KarmaBanking.App.Services
                 json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
             );
+        }
+
+        public void SubmitFeedback(int sessionId, int rating, string feedback)
+        {
+            ChatSessionRepository repo = new ChatSessionRepository();
+            repo.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
         }
 
         private string GetContentType(string filePath)
