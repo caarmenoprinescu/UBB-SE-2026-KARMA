@@ -54,4 +54,12 @@ public class LoansViewModel
             }
         }
     }
+
+    /// <summary>
+    /// Stub — real PDF generation will be implemented in BA-47.
+    /// </summary>
+    public void downloadSchedulePdf(int loanId)
+    {
+        // TODO: BA-47 will implement actual PDF generation logic.
+    }
 }
