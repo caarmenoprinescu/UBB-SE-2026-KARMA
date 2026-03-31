@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using KarmaBanking.App.Models;
@@ -43,6 +44,8 @@ namespace KarmaBanking.App.ViewModels
 
         public RelayCommand ContinueCommand { get; }
 
+        public event Action<string>? ContinueRequested;
+
         public ChatViewModel()
         {
             ContinueCommand = new RelayCommand(OnContinueAsync, () => CanContinue);
@@ -53,7 +56,11 @@ namespace KarmaBanking.App.ViewModels
             if (SelectedCategory == null)
                 return Task.CompletedTask;
 
-            StatusMessage = $"Selected category: {GetCategoryDisplayName(SelectedCategory.Value)}";
+            string categoryDisplayName = GetCategoryDisplayName(SelectedCategory.Value);
+            StatusMessage = $"Selected category: {categoryDisplayName}";
+
+            ContinueRequested?.Invoke(categoryDisplayName);
+
             return Task.CompletedTask;
         }
 
