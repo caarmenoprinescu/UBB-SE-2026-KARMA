@@ -1,13 +1,13 @@
 using KarmaBanking.App.Models;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Views
 {
@@ -76,6 +76,7 @@ namespace KarmaBanking.App.Views
                 if (properties.Size > 10 * 1024 * 1024)
                 {
                     ViewModel.StatusMessage = "File size must be 10 MB or less.";
+                    ViewModel.SetUploadFailed("File size must be 10 MB or less.");
                     return;
                 }
 
@@ -88,10 +89,16 @@ namespace KarmaBanking.App.Views
                 };
 
                 ViewModel.StatusMessage = "Attachment selected successfully.";
+                ViewModel.SetAttachmentSelected();
+
+                ViewModel.SetUploadStarted();
+                await Task.Delay(1000);
+                ViewModel.SetUploadSucceeded();
             }
             catch (Exception ex)
             {
                 ViewModel.StatusMessage = $"Attachment selection failed: {ex.Message}";
+                ViewModel.SetUploadFailed(ex.Message);
             }
         }
     }
