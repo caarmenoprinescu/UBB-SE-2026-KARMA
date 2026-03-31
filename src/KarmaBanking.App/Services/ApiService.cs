@@ -78,5 +78,11 @@ namespace KarmaBanking.App.Services
                 _ => "application/octet-stream"
             };
         }
+
+        public void EmailSessionTranscript(int sessionId, string recipientEmail)
+        {
+            EmailTranscriptService emailService = new EmailTranscriptService();
+            emailService.SendSessionTranscript(sessionId, recipientEmail);
+        }
     }
 }

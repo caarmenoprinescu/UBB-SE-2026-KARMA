@@ -150,6 +150,7 @@ namespace KarmaBanking.App.Views
                     string feedback = feedbackTextBox.Text;
 
                     api.SubmitFeedback(sessionId, selectedRating, feedback);
+                    api.EmailSessionTranscript(sessionId, "client@example.com"); //temporar
 
                     StatusText.Text = $"Thank you! Rating submitted: {selectedRating} ⭐";
                     StatusText.Foreground = new SolidColorBrush(Colors.Green);

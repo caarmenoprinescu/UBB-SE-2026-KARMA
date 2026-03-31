@@ -1,7 +1,6 @@
 ﻿using KarmaBanking.App.Models;
 using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -18,12 +17,13 @@ namespace KarmaBanking.App.Repositories
                 await conn.OpenAsync();
 
                 var cmd = new SqlCommand(
-                    "SELECT Id, SenderType, SenderId, SentAt, AttachmentType " +
-                    "FROM ChatMessages " +
-                    "WHERE ChatSessionId = @chatId " +
-                    "ORDER BY SentAt",
+                    "SELECT id, sessionId, senderType, content, sentAt " +
+                    "FROM ChatMessage " +
+                    "WHERE sessionId = @chatId " +
+                    "ORDER BY sentAt",
                     conn
                 );
+
                 cmd.Parameters.AddWithValue("@chatId", chatSessionId);
 
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -33,10 +33,10 @@ namespace KarmaBanking.App.Repositories
                         messages.Add(new ChatMessage
                         {
                             Id = reader.GetInt32(0),
-                            SenderType = reader.GetString(1),
-                            SenderId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
-                            SentAt = reader.GetDateTime(3),
-                            AttachmentType = reader.IsDBNull(4) ? null : reader.GetString(4)
+                            SessionId = reader.GetInt32(1),
+                            SenderType = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+                            Content = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                            SentAt = reader.GetDateTime(4)
                         });
                     }
                 }
