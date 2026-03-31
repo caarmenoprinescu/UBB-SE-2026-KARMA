@@ -13,8 +13,12 @@
 
     <ScrollViewer>
         <StackPanel Padding="24" Spacing="12">
-            <TextBlock Text="Customer Support" FontSize="28" FontWeight="Bold"/>
-            <TextBlock Text="How can we help you today?" FontSize="20"/>
+            <TextBlock Text="Customer Support"
+                       FontSize="28"
+                       FontWeight="Bold"/>
+
+            <TextBlock Text="How can we help you today?"
+                       FontSize="20"/>
 
             <ComboBox x:Name="CategoryComboBox"
                       Header="Issue Category"
@@ -30,7 +34,12 @@
 
             <Button Content="Attach File"
                     Click="AttachFileButton_Click"
-                    Width="140"/>
+                    Width="140"
+                    IsEnabled="{Binding CanAttachFile}"/>
+
+            <TextBlock Text="{Binding UploadStatusMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="DarkBlue"/>
 
             <Border Padding="12"
                     BorderBrush="Gray"
@@ -57,7 +66,8 @@
                     IsEnabled="{Binding CanContinue}"
                     Width="140"/>
 
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding StatusMessage}"
+                       TextWrapping="Wrap"/>
         </StackPanel>
     </ScrollViewer>
 </Page>
