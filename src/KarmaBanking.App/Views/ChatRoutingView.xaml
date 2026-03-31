@@ -1,0 +1,26 @@
+<Page
+    x:Class="KarmaBanking.App.Views.ChatRoutingView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <StackPanel Padding="24" Spacing="16">
+        <TextBlock Text="Chat Routing"
+                   FontSize="28"
+                   FontWeight="Bold"/>
+
+        <TextBlock x:Name="CategoryTextBlock"
+                   Text="Selected category:"
+                   FontSize="18"
+                   TextWrapping="Wrap"/>
+
+        <TextBlock Text="This is the next page in the support chat flow."
+                   TextWrapping="Wrap"/>
+
+        <Button Content="Back"
+                Click="BackButton_Click"
+                Width="120"/>
+    </StackPanel>
+</Page>

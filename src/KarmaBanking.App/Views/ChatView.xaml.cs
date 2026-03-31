@@ -12,6 +12,7 @@ namespace KarmaBanking.App.Views
         {
             InitializeComponent();
             ViewModel = new ChatViewModel();
+            ViewModel.ContinueRequested += OnContinueRequested;
             DataContext = ViewModel;
         }
 
@@ -30,6 +31,11 @@ namespace KarmaBanking.App.Views
                     _ => null
                 };
             }
+        }
+
+        private void OnContinueRequested(string selectedCategory)
+        {
+            Frame.Navigate(typeof(ChatRoutingView), selectedCategory);
         }
     }
 }
