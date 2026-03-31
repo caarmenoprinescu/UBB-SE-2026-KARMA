@@ -15,7 +15,7 @@ namespace KarmaBanking.App
         private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
         {
             Activated -= OnFirstActivated;
-            MainFrame.Navigate(typeof(AmortizationScheduleView));
+            MainFrame.Navigate(typeof(ChatView));
         }
     }
 }

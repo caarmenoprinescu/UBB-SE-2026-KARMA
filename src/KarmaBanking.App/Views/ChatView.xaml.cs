@@ -1,13 +1,14 @@
 using KarmaBanking.App.Models;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Views
 {
@@ -18,9 +19,16 @@ namespace KarmaBanking.App.Views
         public ChatView()
         {
             InitializeComponent();
-            ViewModel = new ChatViewModel();
+            ViewModel = ChatViewModel.Instance;
             ViewModel.ContinueRequested += OnContinueRequested;
             DataContext = ViewModel;
+        }
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+
+            await ViewModel.LoadChatHistoryAsync(1);
         }
 
         private void CategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
