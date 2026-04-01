@@ -44,6 +44,11 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="Views\LoansView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\ChatRoutingView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
