@@ -36,6 +36,10 @@ namespace KarmaBanking.App.Views
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
+<<<<<<< HEAD
+
+            _viewModel.PayLoan(loanId);
+=======
             var loan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
             if (loan == null)
             {
@@ -270,6 +274,7 @@ namespace KarmaBanking.App.Views
             };
 
             await successDialog.ShowAsync();
+>>>>>>> 2fd7136b472453e0b9b09f3bdeec78facba406a6
         }
 
         private void ApplyLoan_Click(object sender, RoutedEventArgs e)

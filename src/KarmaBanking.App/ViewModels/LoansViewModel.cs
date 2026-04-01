@@ -108,8 +108,32 @@ public class LoansViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
+<<<<<<< HEAD
+    private string _statusMessage;
+    public string statusMessage
+    {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+    public void PayLoan(int loanId)
+    {
+        try
+        {
+            _loanService.PayInstallment(loanId);
+            statusMessage = "Payment successful!";
+            loadLoans();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+}
+=======
 
     public List<LoanType> LoanTypes =>
     Enum.GetValues(typeof(LoanType)).Cast<LoanType>().ToList();
 }
 
+>>>>>>> 2fd7136b472453e0b9b09f3bdeec78facba406a6

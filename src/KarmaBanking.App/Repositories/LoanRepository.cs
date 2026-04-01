@@ -289,4 +289,25 @@ public class LoanRepository : ILoanRepository
     }
 }
 
+    public void MakePayment(int loanId, decimal amount)
+    {
+        using (var conn = DatabaseConfig.GetDatabaseConnection())
+        {
+            conn.Open();
+
+            string query = @"
+            UPDATE Loan
+            SET 
+                outstandingBalance = outstandingBalance - @amount,
+                remainingMonths = remainingMonths - 1
+            WHERE id = @id";
+
+            var cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@amount", amount);
+            cmd.Parameters.AddWithValue("@id", loanId);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
 }
