@@ -17,4 +17,6 @@ public interface ILoanService
 
     LoanEstimate GetLoanEstimate(LoanApplicationRequest request);
 
+    void PayInstallment(int loanId);
+
 }

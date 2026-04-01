@@ -32,6 +32,8 @@ namespace KarmaBanking.App.Views
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
+
+            _viewModel.PayLoan(loanId);
         }
 
         private void ApplyLoan_Click(object sender, RoutedEventArgs e)

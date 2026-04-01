@@ -95,4 +95,17 @@ public class LoanService : ILoanService
             request.preferredTermMonths
         );
     }
+
+    public void PayInstallment(int loanId)
+    {
+        var loan = _loanRepository.GetById(loanId);
+
+        if (loan == null)
+            throw new Exception("Loan not found");
+
+        if (loan.remainingMonths <= 0)
+            throw new Exception("Loan already paid");
+
+        _loanRepository.MakePayment(loanId, loan.monthlyInstallment);
+    }
 }

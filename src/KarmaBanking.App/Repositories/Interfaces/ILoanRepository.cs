@@ -17,4 +17,6 @@ public interface ILoanRepository
     List<AmortizationRow> GetAmortization(int loanId);
 
     void CreateLoanApplication(LoanApplication request);
+
+    void MakePayment(int loanId, decimal amount);
 }

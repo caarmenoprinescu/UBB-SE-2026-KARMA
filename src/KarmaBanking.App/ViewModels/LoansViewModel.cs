@@ -102,4 +102,25 @@ public class LoansViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
+
+    private string _statusMessage;
+    public string statusMessage
+    {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+    public void PayLoan(int loanId)
+    {
+        try
+        {
+            _loanService.PayInstallment(loanId);
+            statusMessage = "Payment successful!";
+            loadLoans();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
 }
