@@ -1,9 +1,5 @@
-using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Globalization;
-using System.Linq;
 
 namespace KarmaBanking.App.Views
 {
@@ -32,10 +28,14 @@ namespace KarmaBanking.App.Views
             _viewModel.LoadAmortization(loanId);
         }
 
-        private async void Pay_Click(object sender, RoutedEventArgs e)
+        private void Pay_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
+<<<<<<< HEAD
+
+            _viewModel.PayLoan(loanId);
+=======
             var loan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
             if (loan == null)
             {
@@ -305,6 +305,7 @@ namespace KarmaBanking.App.Views
             };
 
             await successDialog.ShowAsync();
+>>>>>>> 7110a52bf5c8a134755d55e09e95f19f310db9e8
         }
 
         private void ApplyLoan_Click(object sender, RoutedEventArgs e)
