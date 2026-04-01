@@ -15,4 +15,6 @@ public interface ILoanService
 
     void ApplyForLoan(LoanApplicationRequest request);
 
+    LoanEstimate GetLoanEstimate(LoanApplicationRequest request);
+
 }
