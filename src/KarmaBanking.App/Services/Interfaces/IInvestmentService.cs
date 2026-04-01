@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Services.Interfaces
 {
-    internal interface IInvestmentService
+    public interface IInvestmentService
     {
         /// <summary>
         /// Executes a crypto trade, calculates fees, and records it in the database.
