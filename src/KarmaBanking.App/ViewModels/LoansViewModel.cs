@@ -44,118 +44,6 @@ public class LoansViewModel : INotifyPropertyChanged
         isLoading = false;
     }
 
-    private LoanEstimate _currentEstimate;
-    public LoanEstimate currentEstimate
-    {
-        get => _currentEstimate;
-        set { _currentEstimate = value; OnPropertyChanged(); }
-    }
-    
-    private LoanType _selectedLoanType;
-    public LoanType selectedLoanType
-    {
-        get => _selectedLoanType;
-        set
-        {
-            _selectedLoanType = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(AvailableTerms));
-            UpdateEstimate();
-        }
-    }
-
-    private decimal _desiredAmount;
-    public decimal desiredAmount
-    {
-        get => _desiredAmount;
-        set
-        {
-            _desiredAmount = value;
-            OnPropertyChanged();
-            UpdateEstimate();
-        }
-    }
-
-    private int _preferredTermMonths;
-    public int preferredTermMonths
-    {
-        get => _preferredTermMonths;
-        set
-        {
-            _preferredTermMonths = value;
-            OnPropertyChanged();
-            UpdateEstimate();
-        }
-    }
-
-    private string _purpose;
-    public string purpose
-    {
-        get => _purpose;
-        set
-        {
-            _purpose = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private string _statusMessage;
-    public string statusMessage
-    {
-        get => _statusMessage;
-        set { _statusMessage = value; OnPropertyChanged(); }
-    }
-
-    public List<int> AvailableTerms =>
-    selectedLoanType switch
-    {
-        LoanType.Personal => new List<int> { 12, 24, 36, 48, 60 },
-        LoanType.Auto => new List<int> { 12, 24, 36, 48, 60, 72 },
-        LoanType.Mortgage => new List<int> { 120, 180, 240, 300, 360 },
-        LoanType.Student => new List<int> { 12, 24, 36, 48 },
-        _ => new List<int> { 12, 24 }
-    };
-    public void ApplyForLoan()
-    {
-        try
-        {
-            var request = new LoanApplicationRequest
-            {
-                loanType = selectedLoanType,
-                desiredAmount = desiredAmount,
-                preferredTermMonths = preferredTermMonths,
-                purpose = purpose
-            };
-
-            _loanService.ApplyForLoan(request);
-            statusMessage = "Application submitted successfully!";
-        }
-        catch (Exception ex)
-        {
-            statusMessage = ex.Message;
-        }
-    }
-
-    public void UpdateEstimate()
-    {
-        try
-        {
-            var request = new LoanApplicationRequest
-            {
-                loanType = selectedLoanType,
-                desiredAmount = desiredAmount,
-                preferredTermMonths = preferredTermMonths,
-                purpose = purpose
-            };
-
-            currentEstimate = _loanService.GetLoanEstimate(request);
-        }
-        catch
-        {
-            currentEstimate = null;
-        }
-    }
-
     public ObservableCollection<AmortizationRow> AmortizationRows { get; set; }
 
     public void LoadAmortization(int loanId)
@@ -208,12 +96,64 @@ public class LoansViewModel : INotifyPropertyChanged
         return _loanService.CalculateRepaymentProgress(loan);
     }
 
+    public void makePayment(int loanId, decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentException("Payment amount must be greater than zero.");
+        }
+
+        Loan loan = _loanRepository.GetById(loanId);
+
+        if (loan == null)
+        {
+            throw new InvalidOperationException("Loan not found.");
+        }
+
+        if (string.Equals(loan.loanStatus, LoanStatus.Passed.ToString(), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Closed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("This loan is already closed.");
+        }
+
+        if (amount > loan.outstandingBalance)
+        {
+            throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
+        }
+
+        _loanRepository.pay(loanId, amount);
+        loadLoans();
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged([CallerMemberName] string name = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
+
+    private string _statusMessage;
+    public string statusMessage
+    {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+    public void PayLoan(int loanId)
+    {
+        try
+        {
+            _loanService.PayInstallment(loanId);
+            statusMessage = "Payment successful!";
+            loadLoans();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
     public List<LoanType> LoanTypes =>
     Enum.GetValues(typeof(LoanType)).Cast<LoanType>().ToList();
 }

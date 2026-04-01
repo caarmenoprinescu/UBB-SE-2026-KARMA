@@ -1,12 +1,9 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace KarmaBanking.App.Views
 {
     public sealed partial class ApplyLoanView : Page
     {
-        private ApplyLoanViewModel _viewModel;
-
         public ApplyLoanView()
         {
             this.InitializeComponent();
@@ -14,13 +11,13 @@ namespace KarmaBanking.App.Views
             var repo = new LoanRepository();
             var service = new LoanService(repo);
 
-            _viewModel = new ApplyLoanViewModel(service);
-            this.DataContext = _viewModel;
+            this.DataContext = new ApplyLoanViewModel(service);
         }
 
-        private void Submit_Click(object sender, RoutedEventArgs e)
+        private void Submit_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            _viewModel.Submit();
+            var vm = (ApplyLoanViewModel)this.DataContext;
+            vm.Submit();
         }
     }
 }
