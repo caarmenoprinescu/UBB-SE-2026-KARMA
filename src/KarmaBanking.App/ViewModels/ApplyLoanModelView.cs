@@ -11,6 +11,17 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
     public ApplyLoanViewModel(ILoanService loanService)
     {
         _loanService = loanService;
+
+        _selectedLoanType = LoanType.Personal;
+        _preferredTermMonths = 12;
+        _desiredAmount = 1000;
+
+        OnPropertyChanged(nameof(selectedLoanType));
+        OnPropertyChanged(nameof(preferredTermMonths));
+        OnPropertyChanged(nameof(desiredAmount));
+        OnPropertyChanged(nameof(AvailableTerms));
+
+        UpdateEstimate();
     }
 
     public List<LoanType> LoanTypes =>
@@ -19,11 +30,11 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
     public List<int> AvailableTerms =>
         selectedLoanType switch
         {
-            LoanType.Personal => new List<int> { 12, 24, 36, 48, 60 },
-            LoanType.Auto => new List<int> { 12, 24, 36, 48, 60, 72 },
-            LoanType.Mortgage => new List<int> { 120, 180, 240, 300, 360 },
-            LoanType.Student => new List<int> { 12, 24, 36, 48 },
-            _ => new List<int> { 12, 24 }
+            LoanType.Personal => new List<int> { 6, 12, 24, 36, 48 },
+            LoanType.Auto => new List<int> { 12, 24, 36, 48, 60 },
+            LoanType.Mortgage => new List<int> { 120, 180, 240 },
+            LoanType.Student => new List<int> { 12, 24, 36 },
+            _ => new List<int> { 6, 12 }
         };
 
     private LoanType _selectedLoanType;
@@ -35,12 +46,15 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
             _selectedLoanType = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(AvailableTerms));
+
+            preferredTermMonths = AvailableTerms.First();
+
             UpdateEstimate();
         }
     }
 
-    private string _desiredAmount;
-    public string desiredAmount
+    private decimal _desiredAmount;
+    public decimal desiredAmount
     {
         get => _desiredAmount;
         set
@@ -100,7 +114,7 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
     {
         try
         {
-            if (!decimal.TryParse(desiredAmount, out decimal amount))
+            if (desiredAmount <= 0 || preferredTermMonths <= 0)
             {
                 currentEstimate = null;
                 OnPropertyChanged(nameof(currentEstimate));
@@ -110,16 +124,17 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
             var request = new LoanApplicationRequest
             {
                 loanType = selectedLoanType,
-                desiredAmount = amount,
+                desiredAmount = desiredAmount,
                 preferredTermMonths = preferredTermMonths,
                 purpose = purpose
             };
 
             currentEstimate = _loanService.GetLoanEstimate(request);
+            OnPropertyChanged(nameof(currentEstimate));
         }
-        catch
+        catch (Exception ex)
         {
-            currentEstimate = null;
+            statusMessage = ex.Message;
         }
     }
 
@@ -127,7 +142,7 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
     {
         try
         {
-            if (!decimal.TryParse(desiredAmount, out decimal amount))
+            if (desiredAmount <= 0)
             {
                 statusMessage = "Invalid amount";
                 return;
@@ -136,7 +151,7 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
             var request = new LoanApplicationRequest
             {
                 loanType = selectedLoanType,
-                desiredAmount = amount,
+                desiredAmount = desiredAmount,
                 preferredTermMonths = preferredTermMonths,
                 purpose = purpose
             };

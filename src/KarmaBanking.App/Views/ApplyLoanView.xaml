@@ -14,9 +14,9 @@
                       ItemsSource="{Binding LoanTypes}"
                       SelectedItem="{Binding selectedLoanType, Mode=TwoWay}"/>
 
-            <TextBox Header="Amount"
-                     Text="{Binding desiredAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
+            <NumberBox Header="Amount"
+                       Value="{Binding desiredAmount, Mode=TwoWay}"
+                       SpinButtonPlacementMode="Inline"/>
             <ComboBox Header="Term (months)"
                       ItemsSource="{Binding AvailableTerms}"
                       SelectedItem="{Binding preferredTermMonths, Mode=TwoWay}"/>
