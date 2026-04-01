@@ -15,7 +15,7 @@ namespace KarmaBanking.App
         private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
         {
             Activated -= OnFirstActivated;
-            MainFrame.Navigate(typeof(InvestmentsView));
+            MainFrame.Navigate(typeof(LoansView));
         }
     }
 }
