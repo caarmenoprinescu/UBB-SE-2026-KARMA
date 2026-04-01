@@ -119,5 +119,30 @@ namespace KarmaBanking.App.Repositories
             int numberOfRowsAffected = await closeSavingsAccountCommand.ExecuteNonQueryAsync();
             return numberOfRowsAffected > 0;
         }
+
+        public async Task<List<(int AccountId, decimal Amount)>> GetAllSchedulesAsync()
+        {
+            const string query = @"
+        SELECT savingsAccountId, amount
+        FROM AutoSaveSchedule";
+
+            var result = new List<(int, decimal)>();
+
+            using SqlConnection connection = DatabaseConfig.GetDatabaseConnection();
+            await connection.OpenAsync();
+
+            using SqlCommand command = new SqlCommand(query, connection);
+            using SqlDataReader reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                int accountId = reader.GetInt32(0);
+                decimal amount = reader.GetDecimal(1);
+
+                result.Add((accountId, amount));
+            }
+
+            return result;
+        }
     }
 }

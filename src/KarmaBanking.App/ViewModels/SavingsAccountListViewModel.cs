@@ -141,5 +141,18 @@ namespace KarmaBanking.App.ViewModels
                 LoadErrorMessage = ex.Message;
             }
         }
+
+        public async Task ProcessSchedulesAsync()
+        {
+            try
+            {
+                await savingsService.ProcessSchedulesAsync();
+                await LoadSavingsAccountsAsync(1);
+            }
+            catch (Exception ex)
+            {
+                LoadErrorMessage = ex.Message;
+            }
+        }
     }
 }

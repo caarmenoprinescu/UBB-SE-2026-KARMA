@@ -10,5 +10,6 @@ namespace KarmaBanking.App.Repositories.Interfaces
         Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(int userId);
         Task<bool> UpdateSavingsAccountBalanceAsync(int savingsAccountId, decimal amountToAdd);
         Task<bool> CloseSavingsAccountAsync(int savingsAccountId);
+        Task<List<(int AccountId, decimal Amount)>> GetAllSchedulesAsync();
     }
 }

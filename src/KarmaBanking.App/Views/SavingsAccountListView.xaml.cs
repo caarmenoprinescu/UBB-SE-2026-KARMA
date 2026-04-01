@@ -26,6 +26,7 @@ namespace KarmaBanking.App.Views
         protected override async void OnNavigatedTo(NavigationEventArgs args)
         {
             base.OnNavigatedTo(args);
+            await savingsAccountListViewModel.ProcessSchedulesAsync();
             await savingsAccountListViewModel.LoadSavingsAccountsAsync(userId: 1);
             if (!string.IsNullOrEmpty(savingsAccountListViewModel.LoadErrorMessage))
                 System.IO.File.AppendAllText(

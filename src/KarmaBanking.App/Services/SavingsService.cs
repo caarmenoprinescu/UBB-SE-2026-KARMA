@@ -50,5 +50,17 @@ namespace KarmaBanking.App.Services
         {
             return await savingsRepository.UpdateSavingsAccountBalanceAsync(accountId, amount);
         }
+
+        public async Task ProcessSchedulesAsync()
+        {
+            var schedules = await savingsRepository.GetAllSchedulesAsync();
+
+            foreach (var schedule in schedules)
+            {
+                await savingsRepository.UpdateSavingsAccountBalanceAsync(
+                    schedule.AccountId,
+                    schedule.Amount);
+            }
+        }
     }
 }
