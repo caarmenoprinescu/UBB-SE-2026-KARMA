@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="KarmaBanking.App.Views.InvestmentsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:utils="using:KarmaBanking.App.Utils"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <utils:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <utils:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
+        <utils:DecimalToGainLossBrushConverter x:Key="GainLossBrushConverter" />
+        <utils:DecimalToPercentConverter x:Key="DecimalToPercentConverter" />
+        <utils:DecimalToTrendSymbolConverter x:Key="TrendSymbolConverter" />
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                MaxWidth="1360"
+                Margin="48,32,48,40"
+                HorizontalAlignment="Center"
+                Spacing="28">
+
+                <TextBlock
+                    Text="Portfolio Overview"
+                    FontSize="30"
+                    FontWeight="SemiBold" />
+
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border
+                        Grid.Column="0"
+                        Padding="26"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="14">
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                Text="Total Portfolio Value"
+                                FontSize="14"
+                                Opacity="0.72" />
+                            <TextBlock
+                                Text="{Binding portfolio.TotalValue, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                FontSize="28"
+                                FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="1"
+                        Padding="26"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="14">
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                Text="Total Gain/Loss"
+                                FontSize="14"
+                                Opacity="0.72" />
+                            <TextBlock
+                                Text="{Binding portfolio.TotalGainLoss, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                FontSize="28"
+                                FontWeight="SemiBold"
+                                Foreground="{Binding portfolio.TotalGainLoss, Converter={StaticResource GainLossBrushConverter}}" />
+                            <TextBlock
+                                Text="{Binding portfolio.GainLossPercent, Converter={StaticResource DecimalToPercentConverter}}"
+                                FontSize="15"
+                                Foreground="{Binding portfolio.TotalGainLoss, Converter={StaticResource GainLossBrushConverter}}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border
+                    Padding="28"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="14">
+
+                    <StackPanel Spacing="22">
+                        <TextBlock
+                            Text="Asset Holdings"
+                            FontSize="22"
+                            FontWeight="SemiBold" />
+
+                        <ScrollViewer
+                            HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Disabled">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <ToggleButton
+                                    x:Name="AllFilterButton"
+                                    Content="All"
+                                    Tag="All"
+                                    IsChecked="True"
+                                    Click="OnFilterClicked" />
+                                <ToggleButton
+                                    x:Name="StocksFilterButton"
+                                    Content="Stocks"
+                                    Tag="Stocks"
+                                    Click="OnFilterClicked" />
+                                <ToggleButton
+                                    x:Name="EtfsFilterButton"
+                                    Content="ETFs"
+                                    Tag="ETFs"
+                                    Click="OnFilterClicked" />
+                                <ToggleButton
+                                    x:Name="BondsFilterButton"
+                                    Content="Bonds"
+                                    Tag="Bonds"
+                                    Click="OnFilterClicked" />
+                                <ToggleButton
+                                    x:Name="CryptoFilterButton"
+                                    Content="Crypto"
+                                    Tag="Crypto"
+                                    Click="OnFilterClicked" />
+                                <ToggleButton
+                                    x:Name="OtherFilterButton"
+                                    Content="Other"
+                                    Tag="Other"
+                                    Click="OnFilterClicked" />
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Grid
+                                Grid.Row="0"
+                                Margin="18,0,18,0"
+                                HorizontalAlignment="Left"
+                                ColumnSpacing="28">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="170" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="Asset" FontSize="13" FontWeight="SemiBold" Opacity="0.72" />
+                                <TextBlock Grid.Column="1" Text="Quantity" FontSize="13" FontWeight="SemiBold" Opacity="0.72" TextAlignment="Right" HorizontalAlignment="Stretch" />
+                                <TextBlock Grid.Column="2" Text="Avg. Price" FontSize="13" FontWeight="SemiBold" Opacity="0.72" TextAlignment="Right" HorizontalAlignment="Stretch" />
+                                <TextBlock Grid.Column="3" Text="Current Price" FontSize="13" FontWeight="SemiBold" Opacity="0.72" TextAlignment="Right" HorizontalAlignment="Stretch" />
+                                <TextBlock Grid.Column="4" Text="Unrealized P/L" FontSize="13" FontWeight="SemiBold" Opacity="0.72" TextAlignment="Right" HorizontalAlignment="Stretch" />
+                            </Grid>
+
+                            <ListView
+                                x:Name="HoldingsListView"
+                                Grid.Row="1"
+                                Margin="0,16,0,0"
+                                SelectionMode="None"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                IsItemClickEnabled="False"
+                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Auto">
+
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0,0,0,12" />
+                                        <Setter Property="MinHeight" Value="0" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Padding="18,20"
+                                            Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="10">
+                                            <Grid
+                                                HorizontalAlignment="Left"
+                                                ColumnSpacing="28">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="220" />
+                                                    <ColumnDefinition Width="120" />
+                                                    <ColumnDefinition Width="150" />
+                                                    <ColumnDefinition Width="150" />
+                                                    <ColumnDefinition Width="170" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Spacing="4">
+                                                    <TextBlock Text="{Binding Ticker}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding AssetType}" FontSize="12" Opacity="0.68" />
+                                                </StackPanel>
+
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Stretch"
+                                                    TextAlignment="Right"
+                                                    Text="{Binding Quantity}" />
+
+                                                <TextBlock
+                                                    Grid.Column="2"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Stretch"
+                                                    TextAlignment="Right"
+                                                    Text="{Binding AvgPurchasePrice, Converter={StaticResource DecimalToCurrencyConverter}}" />
+
+                                                <TextBlock
+                                                    Grid.Column="3"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Stretch"
+                                                    TextAlignment="Right"
+                                                    Text="{Binding CurrentPrice, Converter={StaticResource DecimalToCurrencyConverter}}" />
+
+                                                <StackPanel
+                                                    Grid.Column="4"
+                                                    Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Right">
+                                                    <TextBlock
+                                                        Text="{Binding UnrealizedGainLoss, Converter={StaticResource TrendSymbolConverter}}"
+                                                        Foreground="{Binding UnrealizedGainLoss, Converter={StaticResource GainLossBrushConverter}}" />
+                                                    <TextBlock
+                                                        Text="{Binding UnrealizedGainLoss, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                                        Foreground="{Binding UnrealizedGainLoss, Converter={StaticResource GainLossBrushConverter}}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+
+                        <TextBlock
+                            x:Name="EmptyStateTextBlock"
+                            Text="No holdings found"
+                            HorizontalAlignment="Center"
+                            FontSize="15"
+                            Opacity="0.72"
+                            Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ProgressRing
+            Width="48"
+            Height="48"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            IsActive="{Binding isLoading}"
+            Visibility="{Binding isLoading, Converter={StaticResource BoolToVisibility}}" />
+    </Grid>
+</Page>
