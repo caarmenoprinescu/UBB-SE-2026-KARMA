@@ -289,25 +289,51 @@ public class LoanRepository : ILoanRepository
     }
 }
 
+    public Loan pay(int id, decimal amount)
+    {
+        Loan loan = GetById(id);
+
+        if (loan == null)
+        {
+            throw new InvalidOperationException("Loan not found.");
+        }
+
+        loan.outstandingBalance -= amount;
+        loan.remainingMonths = Math.Max(0, loan.remainingMonths - 1);
+
+        if (loan.outstandingBalance <= 0)
+        {
+            loan.outstandingBalance = 0;
+            loan.loanStatus = LoanStatus.Passed.ToString();
+        }
+
+        using (SqlConnection connection = new SqlConnection(DatabaseConfig.ConnectionString))
+        {
+            connection.Open();
+
+            string query = @"UPDATE Loan
+                             SET outstandingBalance = @outstandingBalance,
+                                 remainingMonths = @remainingMonths,
+                                 loanStatus = @loanStatus
+                             WHERE id = @id";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.Add("@outstandingBalance", SqlDbType.Decimal).Value = loan.outstandingBalance;
+                command.Parameters.Add("@remainingMonths", SqlDbType.Int).Value = loan.remainingMonths;
+                command.Parameters.Add("@loanStatus", SqlDbType.NVarChar, 50).Value = loan.loanStatus;
+                command.Parameters.Add("@id", SqlDbType.Int).Value = id;
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        return loan;
+    }
+
     public void MakePayment(int loanId, decimal amount)
     {
-        using (var conn = DatabaseConfig.GetDatabaseConnection())
-        {
-            conn.Open();
-
-            string query = @"
-            UPDATE Loan
-            SET 
-                outstandingBalance = outstandingBalance - @amount,
-                remainingMonths = remainingMonths - 1
-            WHERE id = @id";
-
-            var cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@amount", amount);
-            cmd.Parameters.AddWithValue("@id", loanId);
-
-            cmd.ExecuteNonQuery();
-        }
+        pay(loanId, amount);
     }
 
 }

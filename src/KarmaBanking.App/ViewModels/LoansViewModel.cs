@@ -98,7 +98,32 @@ public class LoansViewModel : INotifyPropertyChanged
 
     public void makePayment(int loanId, decimal amount)
     {
-        Debug.WriteLine($"Stub payment for loan {loanId} with amount {amount}.");
+        if (amount <= 0)
+        {
+            throw new ArgumentException("Payment amount must be greater than zero.");
+        }
+
+        Loan loan = _loanRepository.GetById(loanId);
+
+        if (loan == null)
+        {
+            throw new InvalidOperationException("Loan not found.");
+        }
+
+        if (string.Equals(loan.loanStatus, LoanStatus.Passed.ToString(), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Closed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("This loan is already closed.");
+        }
+
+        if (amount > loan.outstandingBalance)
+        {
+            throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
+        }
+
+        _loanRepository.pay(loanId, amount);
+        loadLoans();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -108,7 +133,6 @@ public class LoansViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-<<<<<<< HEAD
     private string _statusMessage;
     public string statusMessage
     {
@@ -129,11 +153,7 @@ public class LoansViewModel : INotifyPropertyChanged
             statusMessage = ex.Message;
         }
     }
-}
-=======
 
     public List<LoanType> LoanTypes =>
     Enum.GetValues(typeof(LoanType)).Cast<LoanType>().ToList();
 }
-
->>>>>>> 2fd7136b472453e0b9b09f3bdeec78facba406a6

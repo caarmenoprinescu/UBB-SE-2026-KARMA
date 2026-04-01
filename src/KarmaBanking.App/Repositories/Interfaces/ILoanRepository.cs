@@ -18,5 +18,7 @@ public interface ILoanRepository
 
     void CreateLoanApplication(LoanApplication request);
 
+    Loan pay(int id, decimal amount);
+
     void MakePayment(int loanId, decimal amount);
 }

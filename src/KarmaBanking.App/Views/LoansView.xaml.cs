@@ -36,10 +36,6 @@ namespace KarmaBanking.App.Views
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
-<<<<<<< HEAD
-
-            _viewModel.PayLoan(loanId);
-=======
             var loan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
             if (loan == null)
             {
@@ -260,7 +256,42 @@ namespace KarmaBanking.App.Views
             }
 
             UpdatePreview();
-            _viewModel.makePayment(loanId, selectedAmount);
+            try
+            {
+                _viewModel.makePayment(loanId, selectedAmount);
+            }
+            catch (ArgumentException ex)
+            {
+                ContentDialog errorDialog = new ContentDialog
+                {
+                    Title = "Payment error",
+                    CloseButtonText = "OK",
+                    Content = new TextBlock
+                    {
+                        Text = ex.Message
+                    },
+                    XamlRoot = this.XamlRoot
+                };
+
+                await errorDialog.ShowAsync();
+                return;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ContentDialog errorDialog = new ContentDialog
+                {
+                    Title = "Payment error",
+                    CloseButtonText = "OK",
+                    Content = new TextBlock
+                    {
+                        Text = ex.Message
+                    },
+                    XamlRoot = this.XamlRoot
+                };
+
+                await errorDialog.ShowAsync();
+                return;
+            }
 
             ContentDialog successDialog = new ContentDialog
             {
@@ -274,7 +305,6 @@ namespace KarmaBanking.App.Views
             };
 
             await successDialog.ShowAsync();
->>>>>>> 2fd7136b472453e0b9b09f3bdeec78facba406a6
         }
 
         private void ApplyLoan_Click(object sender, RoutedEventArgs e)
