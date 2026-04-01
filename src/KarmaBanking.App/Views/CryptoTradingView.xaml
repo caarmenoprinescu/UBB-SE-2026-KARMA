@@ -7,6 +7,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
+    <Page.Resources>
+        <utils:DecimalToCurrencyConverter x:Key="CurrencyConverter" />
+    </Page.Resources>
+    
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24" Spacing="24" MaxWidth="600" HorizontalAlignment="Left">
 
@@ -46,6 +50,27 @@
             </StackPanel>
 
             <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="DarkBlue" />
+
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <TextBlock Text="Available Wallet Balance:" Foreground="Gray"/>
+                        <TextBlock Text="{Binding CurrentBalance, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                    </Grid>
+
+                    <Grid>
+                        <TextBlock Text="Estimated Fee (1.5%):" Foreground="Gray"/>
+                        <TextBlock Text="{Binding EstimatedFee, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                    </Grid>
+
+                    <Line X1="0" Y1="0" X2="400" Y2="0" Stroke="LightGray" StrokeThickness="1" HorizontalAlignment="Stretch"/>
+
+                    <Grid>
+                        <TextBlock Text="Total Estimated Cost/Revenue:" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding TotalAmount, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{ThemeResource SystemControlForegroundAccentBrush}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
 
             <Button Content="Execute Trade" 
                     Command="{Binding SubmitTradeCommand}" 
