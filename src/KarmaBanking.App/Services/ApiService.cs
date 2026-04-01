@@ -1,4 +1,5 @@
 ﻿using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -58,6 +59,12 @@ namespace KarmaBanking.App.Services
                 json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
             );
+        }
+
+        public async Task<int> CreateChatSessionAsync(int userId, string issueCategory)
+        {
+            ChatSessionRepository repo = new ChatSessionRepository();
+            return await repo.CreateChatSessionAsync(userId, issueCategory);
         }
 
         public void SubmitFeedback(int sessionId, int rating, string feedback)
