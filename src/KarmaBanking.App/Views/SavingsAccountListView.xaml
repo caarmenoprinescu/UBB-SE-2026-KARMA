@@ -107,7 +107,8 @@
             <StackPanel Grid.Row="1" x:Name="ManageActionButtons" Orientation="Horizontal"
                         Spacing="8" Margin="0,8,0,0" Visibility="Collapsed">
                 <Button Content="Details"/>
-                <Button Content="Deposit"/>
+                <Button Content="Deposit"
+                Click="Deposit_Click"/>
                 <Button Content="Withdraw"/>
                 <Button Content="Close Account"
                 Click="CloseAccount_Click"/>

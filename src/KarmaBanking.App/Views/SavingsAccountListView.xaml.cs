@@ -88,5 +88,58 @@ namespace KarmaBanking.App.Views
                 await viewModel.CloseSavingsAccountAsync(selectedAccount.Id);
             }
         }
+
+        private async void Deposit_Click(object sender, RoutedEventArgs e)
+        {
+            if (AccountsListView.SelectedItem is not SavingsAccount selectedAccount)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "No account selected",
+                    Content = "Please select an account first.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.Content.XamlRoot
+                };
+
+                await errorDialog.ShowAsync();
+                return;
+            }
+
+            var amountTextBox = new TextBox
+            {
+                PlaceholderText = "Enter deposit amount"
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = "Deposit Funds",
+                Content = amountTextBox,
+                PrimaryButtonText = "Deposit",
+                CloseButtonText = "Cancel",
+                XamlRoot = this.Content.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                if (!decimal.TryParse(amountTextBox.Text, out decimal amount) || amount <= 0)
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "Invalid amount",
+                        Content = "Please enter a valid positive number.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.Content.XamlRoot
+                    };
+
+                    await errorDialog.ShowAsync();
+                    return;
+                }
+
+                var viewModel = (SavingsAccountListViewModel)DataContext;
+                await viewModel.LoadSavingsAccountsAsync(1); // refresh only
+            }
+        }
     }
 }
