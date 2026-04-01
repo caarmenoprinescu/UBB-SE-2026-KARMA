@@ -103,6 +103,53 @@ public class LoansViewModel : INotifyPropertyChanged
         return _loanService.CalculateRepaymentProgress(loan);
     }
 
+<<<<<<< HEAD
+=======
+    public void makePayment(int loanId, decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentException("Payment amount must be greater than zero.");
+        }
+
+        Loan loan = _loanRepository.GetById(loanId);
+
+        if (loan == null)
+        {
+            throw new InvalidOperationException("Loan not found.");
+        }
+
+        if (string.Equals(loan.loanStatus, LoanStatus.Passed.ToString(), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Closed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.loanStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("This loan is already closed.");
+        }
+
+        if (amount > loan.outstandingBalance)
+        {
+            throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
+        }
+
+        _loanRepository.pay(loanId, amount);
+        loadLoans();
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    private string _statusMessage;
+    public string statusMessage
+    {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+>>>>>>> 7110a52bf5c8a134755d55e09e95f19f310db9e8
     public void PayLoan(int loanId)
     {
         try
@@ -117,6 +164,7 @@ public class LoansViewModel : INotifyPropertyChanged
         }
     }
 
+<<<<<<< HEAD
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged([CallerMemberName] string name = null)
@@ -124,3 +172,8 @@ public class LoansViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
+=======
+    public List<LoanType> LoanTypes =>
+    Enum.GetValues(typeof(LoanType)).Cast<LoanType>().ToList();
+}
+>>>>>>> 7110a52bf5c8a134755d55e09e95f19f310db9e8
