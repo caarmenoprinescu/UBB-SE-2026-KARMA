@@ -6,7 +6,13 @@ using Microsoft.Data.SqlClient;
 public class LoanRepository : ILoanRepository
 {
     public List<Loan> GetAllLoans()
+
+
     {
+
+        System.Diagnostics.Debug.WriteLine("User: " + System.Security.Principal.WindowsIdentity.GetCurrent().Name);
+        System.Diagnostics.Debug.WriteLine("ConnStr: " + DatabaseConfig.ConnectionString);
+
         List<Loan> loans = new List<Loan>();
 
         using (SqlConnection connection = new SqlConnection(DatabaseConfig.ConnectionString))

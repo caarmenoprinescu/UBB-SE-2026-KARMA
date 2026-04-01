@@ -1,5 +1,8 @@
 <<<<<<< HEAD
 using System;
+=======
+<<<<<<< HEAD
+using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -8,6 +11,7 @@ using KarmaBanking.App.Repositories.Interfaces;
 using KarmaBanking.App.Services;
 using Microsoft.UI.Dispatching;
 =======
+>>>>>>> dd13b5775c0b4c9716c5375638e7037a28c1a5d9
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using KarmaBanking.App.Models;

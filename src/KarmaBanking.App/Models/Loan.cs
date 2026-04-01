@@ -13,4 +13,8 @@ public class Loan
     public string loanStatus { get; set; }
     public int TermInMonths { get; set; }
     public DateTime StartDate { get; set; }
+
+    public double repaymentProgress =>
+       principal <= 0 ? 0 : (double)((principal - outstandingBalance) / principal * 100);
+
 }
