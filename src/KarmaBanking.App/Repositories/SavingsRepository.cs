@@ -144,5 +144,26 @@ namespace KarmaBanking.App.Repositories
 
             return result;
         }
+        public async Task<bool> CreateScheduleAsync(int savingsAccountId, decimal amount, string frequency)
+        {
+            const string query = @"
+            INSERT INTO AutoSaveSchedule 
+            (savingsAccountId, frequency, amount, isActive, nextRunDate)
+            VALUES 
+            (@SavingsAccountId, @Frequency, @Amount, 1, GETDATE())";
+
+            using SqlConnection connection = DatabaseConfig.GetDatabaseConnection();
+            await connection.OpenAsync();
+
+            using SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@SavingsAccountId", savingsAccountId);
+            command.Parameters.AddWithValue("@Amount", amount);
+            command.Parameters.AddWithValue("@Frequency", frequency);
+
+            int rows = await command.ExecuteNonQueryAsync();
+            return rows > 0;
+        }
+
+
     }
 }

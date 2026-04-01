@@ -142,7 +142,8 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <Button Content="Save Auto-Save Settings"/>
+                    <Button Content="Save Auto-Save Settings"
+                    Click="SaveAutoSave_Click"/>
                 </StackPanel>
 
             </StackPanel>

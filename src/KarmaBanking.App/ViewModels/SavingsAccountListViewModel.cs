@@ -99,20 +99,7 @@ namespace KarmaBanking.App.ViewModels
                     return;
                 }
 
-                // Remove or update account locally
-                var account = SavingsAccounts.FirstOrDefault(a => a.Id == accountId);
-                if (account != null)
-                {
-                    account.Balance = 0;
-                    account.AccountStatus = "Closed";
-                }
-
-                // Refresh UI values
-                TotalSavedAmount = $"${SavingsAccounts.Sum(a => a.Balance):F2}";
-                NumberOfAccountsText = $"across {SavingsAccounts.Count} account{(SavingsAccounts.Count == 1 ? "" : "s")}";
-
-                decimal highestApy = SavingsAccounts.Any() ? SavingsAccounts.Max(a => a.Apy) : 0;
-                BestInterestRate = $"{highestApy:F2}%";
+                await LoadSavingsAccountsAsync(userId: 1);
             }
             catch (Exception ex)
             {
@@ -148,6 +135,18 @@ namespace KarmaBanking.App.ViewModels
             {
                 await savingsService.ProcessSchedulesAsync();
                 await LoadSavingsAccountsAsync(1);
+            }
+            catch (Exception ex)
+            {
+                LoadErrorMessage = ex.Message;
+            }
+        }
+
+        public async Task CreateScheduleAsync(int accountId, decimal amount, string frequency)
+        {
+            try
+            {
+                await savingsService.CreateScheduleAsync(accountId, amount, frequency);
             }
             catch (Exception ex)
             {

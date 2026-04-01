@@ -144,5 +144,33 @@ namespace KarmaBanking.App.Views
                 await viewModel.DepositAsync(selectedAccount.Id, amount);
             }
         }
+
+        private async void SaveAutoSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (AccountsListView.SelectedItem is not SavingsAccount selectedAccount)
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = "No account selected",
+                    Content = "Please select an account first.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.Content.XamlRoot
+                };
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            if (!decimal.TryParse(AutoSaveAmountTextBox.Text, out decimal amount))
+            {
+                return;
+            }
+
+            string frequency = (FrequencyComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+
+            var viewModel = (SavingsAccountListViewModel)DataContext;
+
+            await viewModel.CreateScheduleAsync(selectedAccount.Id, amount, frequency);
+        }
     }
 }

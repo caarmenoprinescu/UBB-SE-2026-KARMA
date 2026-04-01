@@ -62,5 +62,11 @@ namespace KarmaBanking.App.Services
                     schedule.Amount);
             }
         }
+
+        public async Task<bool> CreateScheduleAsync(int savingsAccountId, decimal amount, string frequency)
+        {
+            return await savingsRepository.CreateScheduleAsync(savingsAccountId, amount, frequency);
+        }
+
     }
 }

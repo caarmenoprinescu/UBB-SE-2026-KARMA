@@ -122,5 +122,12 @@ namespace KarmaBanking.App.Services
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
             );
         }
+
+        public async Task<bool> SaveAutoDepositSettingsAsync(int savingsAccountId, decimal amount, string frequency)
+        {
+            SavingsRepository repo = new SavingsRepository();
+
+            return await repo.CreateScheduleAsync(savingsAccountId, amount, frequency);
+        }
     }
 }
