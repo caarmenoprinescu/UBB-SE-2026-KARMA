@@ -47,6 +47,8 @@ namespace KarmaBanking.App.Views
             if (isOpenNew)
                 OpenNewFrame.Navigate(typeof(CreateSavingsAccountView),
                     new Action(async () => await SwitchToMyAccountsTabAsync()));
+
+            AutoSavePanel.Visibility = isManage ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private async Task SwitchToMyAccountsTabAsync()

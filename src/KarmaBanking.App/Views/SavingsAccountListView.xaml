@@ -104,14 +104,47 @@
             </ListView>
 
             <!-- Action Buttons (Manage only) -->
-            <StackPanel Grid.Row="1" x:Name="ManageActionButtons" Orientation="Horizontal"
-                        Spacing="8" Margin="0,8,0,0" Visibility="Collapsed">
-                <Button Content="Details"/>
-                <Button Content="Deposit"
-                Click="Deposit_Click"/>
-                <Button Content="Withdraw"/>
-                <Button Content="Close Account"
-                Click="CloseAccount_Click"/>
+            <StackPanel Grid.Row="1" Spacing="12">
+
+                <!-- Buttons -->
+                <StackPanel x:Name="ManageActionButtons"
+                Orientation="Horizontal"
+                Spacing="8"
+                Visibility="Collapsed">
+                    <Button Content="Details"/>
+                    <Button Content="Deposit" Click="Deposit_Click"/>
+                    <Button Content="Withdraw"/>
+                    <Button Content="Close Account" Click="CloseAccount_Click"/>
+                </StackPanel>
+
+                <!-- Auto Save -->
+                <StackPanel x:Name="AutoSavePanel"
+                Orientation="Vertical"
+                Spacing="8"
+                Visibility="Collapsed">
+
+                    <TextBlock Text="Auto-Save Settings"
+                   FontSize="16"
+                   FontWeight="Bold"/>
+
+                    <StackPanel>
+                        <TextBlock Text="Amount"/>
+                        <TextBox x:Name="AutoSaveAmountTextBox"
+                     PlaceholderText="Enter amount"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Text="Frequency"/>
+                        <ComboBox x:Name="FrequencyComboBox" SelectedIndex="0">
+                            <ComboBoxItem Content="Daily"/>
+                            <ComboBoxItem Content="Weekly"/>
+                            <ComboBoxItem Content="Monthly"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <Button Content="Save Auto-Save Settings"/>
+                </StackPanel>
+
             </StackPanel>
         </Grid>
 
