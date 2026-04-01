@@ -58,8 +58,11 @@
             </StackPanel>
 
             <!-- Accounts Table -->
-            <ListView Grid.Row="0" ItemsSource="{Binding SavingsAccounts}"
-                      Visibility="{Binding AccountsListVisibility}">
+            <ListView x:Name="AccountsListView"
+              Grid.Row="0"
+              ItemsSource="{Binding SavingsAccounts}"
+              Visibility="{Binding AccountsListVisibility}"
+              SelectionMode="Single">
                 <ListView.HeaderTemplate>
                     <DataTemplate>
                         <Grid>
@@ -106,7 +109,8 @@
                 <Button Content="Details"/>
                 <Button Content="Deposit"/>
                 <Button Content="Withdraw"/>
-                <Button Content="Close Account"/>
+                <Button Content="Close Account"
+                Click="CloseAccount_Click"/>
             </StackPanel>
         </Grid>
 

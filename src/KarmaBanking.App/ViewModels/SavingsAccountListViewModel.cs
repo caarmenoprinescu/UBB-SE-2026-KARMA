@@ -87,6 +87,39 @@ namespace KarmaBanking.App.ViewModels
             BestInterestRate = $"{highestApy:F2}%";
         }
 
+        public async Task CloseSavingsAccountAsync(int accountId)
+        {
+            try
+            {
+                bool success = await savingsService.CloseSavingsAccountAsync(accountId);
+
+                if (!success)
+                {
+                    LoadErrorMessage = "Failed to close account.";
+                    return;
+                }
+
+                // Remove or update account locally
+                var account = SavingsAccounts.FirstOrDefault(a => a.Id == accountId);
+                if (account != null)
+                {
+                    account.Balance = 0;
+                    account.AccountStatus = "Closed";
+                }
+
+                // Refresh UI values
+                TotalSavedAmount = $"${SavingsAccounts.Sum(a => a.Balance):F2}";
+                NumberOfAccountsText = $"across {SavingsAccounts.Count} account{(SavingsAccounts.Count == 1 ? "" : "s")}";
+
+                decimal highestApy = SavingsAccounts.Any() ? SavingsAccounts.Max(a => a.Apy) : 0;
+                BestInterestRate = $"{highestApy:F2}%";
+            }
+            catch (Exception ex)
+            {
+                LoadErrorMessage = ex.Message;
+            }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
