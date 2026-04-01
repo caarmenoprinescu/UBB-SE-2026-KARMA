@@ -126,5 +126,20 @@ namespace KarmaBanking.App.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public async Task DepositAsync(int accountId, decimal amount)
+        {
+            try
+            {
+                await savingsService.UpdateSavingsAccountBalanceAsync(accountId, amount);
+
+                // Refresh accounts after deposit
+                await LoadSavingsAccountsAsync(userId: 1);
+            }
+            catch (Exception ex)
+            {
+                LoadErrorMessage = ex.Message;
+            }
+        }
     }
 }

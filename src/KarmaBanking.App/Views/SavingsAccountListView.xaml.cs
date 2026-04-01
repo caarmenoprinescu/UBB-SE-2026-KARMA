@@ -138,7 +138,7 @@ namespace KarmaBanking.App.Views
                 }
 
                 var viewModel = (SavingsAccountListViewModel)DataContext;
-                await viewModel.LoadSavingsAccountsAsync(1); // refresh only
+                await viewModel.DepositAsync(selectedAccount.Id, amount);
             }
         }
     }

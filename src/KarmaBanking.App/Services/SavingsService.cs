@@ -45,5 +45,10 @@ namespace KarmaBanking.App.Services
         {
             return await savingsRepository.CloseSavingsAccountAsync(accountId);
         }
+
+        public async Task<bool> UpdateSavingsAccountBalanceAsync(int accountId, decimal amount)
+        {
+            return await savingsRepository.UpdateSavingsAccountBalanceAsync(accountId, amount);
+        }
     }
 }
