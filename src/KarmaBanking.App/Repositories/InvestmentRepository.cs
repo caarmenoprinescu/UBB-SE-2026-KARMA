@@ -10,6 +10,7 @@ using Microsoft.UI.Windowing;
 
 namespace KarmaBanking.App.Repositories
 {
+    public class InvestmentRepository : IInvestmentRepository
     internal class InvestmentRepository : IInvestmentRepository
     {
         public async Task RecordCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit, decimal fees)
@@ -37,7 +38,7 @@ namespace KarmaBanking.App.Repositories
 
                     using SqlDataReader reader = await checkCmd.ExecuteReaderAsync();
                     if (await reader.ReadAsync())
-                    {
+            {
                         // Store the current holding details if found
                         holdingId = reader.GetInt32(0);
                         currentQuantity = reader.GetDecimal(1);
@@ -63,9 +64,9 @@ namespace KarmaBanking.App.Repositories
                         updateCmd.Parameters.AddWithValue("@HoldingId", holdingId.Value);
 
                         await updateCmd.ExecuteNonQueryAsync();
-                    }
-                    else
-                    {
+                }
+                else
+                {
                         // 2b. The user does not own this asset yet. Insert a new holding record.
                         string insertHoldingQuery = @"
                             INSERT INTO InvestmentHolding (portfolioId, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss)
@@ -88,7 +89,7 @@ namespace KarmaBanking.App.Repositories
                     if (!holdingId.HasValue || currentQuantity < quantity)
                     {
                         throw new InvalidOperationException("Insufficient wallet balance to execute this sell order.");
-                    }
+            }
 
                     // Deduct the sold quantity from the current holding
                     decimal newQuantity = currentQuantity - quantity;
@@ -101,7 +102,7 @@ namespace KarmaBanking.App.Repositories
                     await updateCmd.ExecuteNonQueryAsync();
                 }
                 else
-                {
+            {
                     // Reject unsupported action types to prevent data corruption
                     throw new ArgumentException("ActionType must be either 'BUY' or 'SELL'.");
                 }
@@ -122,7 +123,7 @@ namespace KarmaBanking.App.Repositories
                     txCmd.Parameters.AddWithValue("@ExecutedAt", DateTime.Now);
 
                     await txCmd.ExecuteNonQueryAsync();
-                }
+            }
 
                 // 4. Commit the transaction if all operations (holding update + transaction log) succeed
                 await transaction.CommitAsync();

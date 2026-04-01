@@ -1,7 +1,7 @@
 using System;
-using System.Data.SqlClient;
 using System.Collections.Generic;
 using System.Data;
+using Microsoft.Data.SqlClient;
 
 public class LoanRepository : ILoanRepository
 {

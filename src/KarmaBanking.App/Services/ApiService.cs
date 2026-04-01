@@ -1,5 +1,6 @@
 ﻿using KarmaBanking.App.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -83,6 +84,36 @@ namespace KarmaBanking.App.Services
         {
             EmailTranscriptService emailService = new EmailTranscriptService();
             emailService.SendSessionTranscript(sessionId, recipientEmail);
+        }
+
+        public virtual async Task<List<ChatMessage>?> GetChatHistoryAsync(int sessionId)
+        {
+            using var client = new HttpClient
+            {
+                BaseAddress = new Uri(baseUrl)
+            };
+
+            if (!string.IsNullOrWhiteSpace(authToken))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", authToken);
+            }
+
+            HttpResponseMessage response =
+                await client.GetAsync($"/chat/{sessionId}/history");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to load chat history: {response.StatusCode} - {error}");
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<List<ChatMessage>>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
         }
     }
 }

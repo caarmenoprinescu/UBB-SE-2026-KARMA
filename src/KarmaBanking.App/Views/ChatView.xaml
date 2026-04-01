@@ -20,6 +20,17 @@
             <TextBlock Text="How can we help you today?"
                        FontSize="20"/>
 
+            <ListView ItemsSource="{Binding Messages}" Height="200">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="4">
+                            <TextBlock Text="{Binding SenderType}" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding SentAt}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
             <ComboBox x:Name="CategoryComboBox"
                       Header="Issue Category"
                       SelectionChanged="CategoryComboBox_SelectionChanged"

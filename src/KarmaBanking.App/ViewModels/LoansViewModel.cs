@@ -1,14 +1,26 @@
-using System.Collections.ObjectModel;
-using System.Linq;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 public class LoansViewModel
 {
     private readonly ILoanService _loanService;
     private readonly ILoanRepository _loanRepository;
     private readonly AmortizationCalculator _amortizationCalculator;
+    private readonly PdfExporter _pdfExporter;
 
     public IEnumerable<Loan> loans { get; set; }
+
+    public void loadLoans()
+    {
+        isLoading = true;
+        loans = _loanService.GetAllLoans();
+        isLoading = false;
+    }
+
     public LoanEstimate currentEstimate { get; set; }
     public bool isLoading { get; set; }
 
@@ -19,18 +31,16 @@ public class LoansViewModel
         _loanService = loanService;
         _loanRepository = loanRepository;
         _amortizationCalculator = new AmortizationCalculator();
+        _pdfExporter = new PdfExporter();
         AmortizationRows = new ObservableCollection<AmortizationRow>();
     }
 
     public void LoadAmortization(int loanId)
     {
-        // 1. Load rows from repository (OK să rămână aici)
         var rows = _loanRepository.GetAmortization(loanId);
 
-        // 2. Dacă nu există → generăm și salvăm
         if (rows == null || rows.Count == 0)
         {
-            // folosim Service pentru Loan
             var loan = _loanService.GetLoanById(loanId);
 
             if (loan != null)
@@ -38,12 +48,10 @@ public class LoansViewModel
                 var generatedRows = _amortizationCalculator.generate(loan);
                 _loanRepository.SaveAmortization(generatedRows);
 
-                // reload din DB
                 rows = _loanRepository.GetAmortization(loanId);
             }
         }
 
-        // 3. Populate ObservableCollection
         AmortizationRows.Clear();
 
         if (rows != null)
@@ -55,11 +63,22 @@ public class LoansViewModel
         }
     }
 
-    /// <summary>
-    /// Stub — real PDF generation will be implemented in BA-47.
-    /// </summary>
     public void downloadSchedulePdf(int loanId)
     {
-        // TODO: BA-47 will implement actual PDF generation logic.
+        if (!AmortizationRows.Any())
+        {
+            LoadAmortization(loanId);
+        }
+
+        byte[] pdfBytes = _pdfExporter.exportAmortization(AmortizationRows.ToList());
+
+        string desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        string filePath = Path.Combine(desktopFolder, $"amortization_schedule_{loanId}.pdf");
+        File.WriteAllBytes(filePath, pdfBytes);
+
+        Process.Start(new ProcessStartInfo(filePath)
+        {
+            UseShellExecute = true
+        });
     }
 }
