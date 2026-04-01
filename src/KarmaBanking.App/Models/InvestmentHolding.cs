@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Models
 {
-    internal class InvestmentHolding
+    public class InvestmentHolding
     {
         public int Id { get; set; }
         public int PortfolioId { get; set; }
         public string Ticker { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-
+        public string AssetType { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
         public decimal AvgPurchasePrice { get; set; }
 
