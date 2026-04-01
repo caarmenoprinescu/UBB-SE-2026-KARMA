@@ -16,5 +16,8 @@ namespace KarmaBanking.App.Services.Interfaces
         
         // Add this to retrieve the balance for the UI sync
         Portfolio GetPortfolio(int userId);
+
+        // New method for BA-61
+        Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null);
     }
 }

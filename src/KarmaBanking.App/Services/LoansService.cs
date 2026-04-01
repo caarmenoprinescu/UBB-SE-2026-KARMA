@@ -6,11 +6,13 @@ public class LoanService : ILoanService
 {
     private readonly ILoanRepository _loanRepository;
     private readonly LoanApplicationValidator _validator;
+    private readonly AmortizationCalculator _calculator;
 
     public LoanService(ILoanRepository loanRepository)
     {
         _loanRepository = loanRepository;
         _validator = new LoanApplicationValidator();
+        _calculator = new AmortizationCalculator();
     }
 
     public List<Loan> GetAllLoans()
@@ -67,11 +69,30 @@ public class LoanService : ILoanService
             desiredAmount = request.desiredAmount,
             preferredTermMonths = request.preferredTermMonths,
             purpose = request.purpose,
-
             applicationStatus = LoanApplicationStatus.Pending,
             rejectionReason = null
         };
 
         _loanRepository.CreateLoanApplication(application);
+    }
+
+    public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
+    {
+        _validator.Validate(request);
+
+        decimal rate = request.loanType switch
+        {
+            LoanType.Personal => 10,
+            LoanType.Auto => 7,
+            LoanType.Mortgage => 5,
+            LoanType.Student => 3,
+            _ => 8
+        };
+
+        return _calculator.computeEstimate(
+            request.desiredAmount,
+            rate,
+            request.preferredTermMonths
+        );
     }
 }

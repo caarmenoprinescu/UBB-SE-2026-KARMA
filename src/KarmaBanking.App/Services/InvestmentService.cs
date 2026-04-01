@@ -78,5 +78,35 @@ namespace KarmaBanking.App.Services
             // Pass the call down to the repository
             return _investmentRepository.GetPortfolio(userId);
         }
+
+        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
+        {
+            // 1. Business Logic Validation
+            if (portfolioId <= 0)
+            {
+                throw new ArgumentException("Invalid portfolio ID.", nameof(portfolioId));
+            }
+
+            if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
+            {
+                throw new ArgumentException("Start date cannot be after the end date.");
+            }
+
+            if (ticker != null && string.IsNullOrWhiteSpace(ticker))
+            {
+                throw new ArgumentException("Ticker symbol cannot be empty if provided.", nameof(ticker));
+            }
+
+            // 2. Data Retrieval
+            try
+            {
+                return await _investmentRepository.GetInvestmentLogsAsync(portfolioId, startDate, endDate, ticker);
+            }
+            catch (Exception ex)
+            {
+                // Wrap and propagate the error so the ViewModel can display an appropriate message
+                throw new Exception($"Failed to retrieve investment logs: {ex.Message}", ex);
+            }
+        }
     }
 }
