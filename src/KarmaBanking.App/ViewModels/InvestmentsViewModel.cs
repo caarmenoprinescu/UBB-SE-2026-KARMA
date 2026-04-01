@@ -55,6 +55,7 @@ namespace KarmaBanking.App.ViewModels
             {
                 portfolio = _repo.GetPortfolio(1);
                 _marketData.startPolling(portfolio.Holdings.Select(holding => holding.Ticker).ToList());
+
             }
             catch (Exception ex)
             {
