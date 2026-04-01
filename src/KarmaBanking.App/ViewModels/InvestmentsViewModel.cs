@@ -30,21 +30,29 @@ namespace KarmaBanking.App.ViewModels
         public Portfolio portfolio
         {
             get => _portfolio;
+<<<<<<< HEAD
+            set { _portfolio = value; OnPropertyChanged(); }
+=======
             set
             {
                 _portfolio = value;
                 OnPropertyChanged();
             }
+>>>>>>> 20427a836e99723b112c4c487b5506df62d790a9
         }
 
         public bool isLoading
         {
             get => _isLoading;
+<<<<<<< HEAD
+            set { _isLoading = value; OnPropertyChanged(); }
+=======
             set
             {
                 _isLoading = value;
                 OnPropertyChanged();
             }
+>>>>>>> 20427a836e99723b112c4c487b5506df62d790a9
         }
 
         public void loadPortfolio()
@@ -54,7 +62,11 @@ namespace KarmaBanking.App.ViewModels
             try
             {
                 portfolio = _repo.GetPortfolio(1);
+<<<<<<< HEAD
+                _marketData.startPolling(portfolio.Holdings.Select(h => h.Ticker).ToList());
+=======
                 _marketData.startPolling(portfolio.Holdings.Select(holding => holding.Ticker).ToList());
+>>>>>>> 20427a836e99723b112c4c487b5506df62d790a9
             }
             catch (Exception ex)
             {

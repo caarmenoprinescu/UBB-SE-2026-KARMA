@@ -50,7 +50,7 @@ public class LoansViewModel : INotifyPropertyChanged
         get => _currentEstimate;
         set { _currentEstimate = value; OnPropertyChanged(); }
     }
-
+    
     private LoanType _selectedLoanType;
     public LoanType selectedLoanType
     {
@@ -59,6 +59,7 @@ public class LoansViewModel : INotifyPropertyChanged
         {
             _selectedLoanType = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(AvailableTerms));
             UpdateEstimate();
         }
     }
@@ -105,6 +106,15 @@ public class LoansViewModel : INotifyPropertyChanged
         set { _statusMessage = value; OnPropertyChanged(); }
     }
 
+    public List<int> AvailableTerms =>
+    selectedLoanType switch
+    {
+        LoanType.Personal => new List<int> { 12, 24, 36, 48, 60 },
+        LoanType.Auto => new List<int> { 12, 24, 36, 48, 60, 72 },
+        LoanType.Mortgage => new List<int> { 120, 180, 240, 300, 360 },
+        LoanType.Student => new List<int> { 12, 24, 36, 48 },
+        _ => new List<int> { 12, 24 }
+    };
     public void ApplyForLoan()
     {
         try
@@ -204,4 +214,6 @@ public class LoansViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
+    public List<LoanType> LoanTypes =>
+    Enum.GetValues(typeof(LoanType)).Cast<LoanType>().ToList();
 }
