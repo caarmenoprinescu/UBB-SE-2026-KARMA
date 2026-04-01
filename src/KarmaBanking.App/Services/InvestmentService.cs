@@ -1,4 +1,5 @@
-﻿using KarmaBanking.App.Repositories.Interfaces;
+﻿using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories.Interfaces;
 using KarmaBanking.App.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -69,6 +70,13 @@ namespace KarmaBanking.App.Services
                 // Capture unexpected database or execution errors
                 throw new Exception($"Trade execution failed: {ex.Message}", ex);
             }
+        }
+
+        // Inside InvestmentService.cs, implement the new interface method:
+        public Portfolio GetPortfolio(int userId)
+        {
+            // Pass the call down to the repository
+            return _investmentRepository.GetPortfolio(userId);
         }
     }
 }

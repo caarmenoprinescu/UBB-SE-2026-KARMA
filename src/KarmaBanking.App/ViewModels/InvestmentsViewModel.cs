@@ -14,9 +14,12 @@ namespace KarmaBanking.App.ViewModels
         private readonly IInvestmentRepository _repo;
         private readonly MarketDataService _marketData;
         private readonly DispatcherQueue? _dispatcherQueue;
+<<<<<<< HEAD
 
         private Portfolio _portfolio;
         private bool _isLoading;
+=======
+>>>>>>> main
 
         public InvestmentsViewModel(IInvestmentRepository repo)
         {
@@ -24,27 +27,39 @@ namespace KarmaBanking.App.ViewModels
             _marketData = new MarketDataService();
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _marketData.onPriceUpdate(refreshPrices);
+<<<<<<< HEAD
             _portfolio = new Portfolio();
+=======
+            portfolio = new Portfolio();
+>>>>>>> main
         }
 
         public Portfolio portfolio
         {
             get => _portfolio;
+<<<<<<< HEAD
             set
             {
                 _portfolio = value;
                 OnPropertyChanged();
             }
+=======
+            set { _portfolio = value; OnPropertyChanged(); }
+>>>>>>> main
         }
 
         public bool isLoading
         {
             get => _isLoading;
+<<<<<<< HEAD
             set
             {
                 _isLoading = value;
                 OnPropertyChanged();
             }
+=======
+            set { _isLoading = value; OnPropertyChanged(); }
+>>>>>>> main
         }
 
         public void loadPortfolio()
@@ -54,7 +69,11 @@ namespace KarmaBanking.App.ViewModels
             try
             {
                 portfolio = _repo.GetPortfolio(1);
+<<<<<<< HEAD
                 _marketData.startPolling(portfolio.Holdings.Select(holding => holding.Ticker).ToList());
+=======
+                _marketData.startPolling(portfolio.Holdings.Select(h => h.Ticker).ToList());
+>>>>>>> main
             }
             catch (Exception ex)
             {
@@ -75,28 +94,24 @@ namespace KarmaBanking.App.ViewModels
             }
 
             if (portfolio?.Holdings == null || portfolio.Holdings.Count == 0)
-            {
                 return;
-            }
 
-            foreach (InvestmentHolding holding in portfolio.Holdings)
+            foreach (var holding in portfolio.Holdings)
             {
                 decimal updatedPrice = _marketData.getPrice(holding.Ticker);
-                if (updatedPrice <= 0)
-                {
-                    continue;
-                }
+                if (updatedPrice <= 0) continue;
 
                 holding.CurrentPrice = updatedPrice;
-                holding.UnrealizedGainLoss = (holding.CurrentPrice - holding.AvgPurchasePrice) * holding.Quantity;
+                holding.UnrealizedGainLoss =
+                    (holding.CurrentPrice - holding.AvgPurchasePrice) * holding.Quantity;
             }
 
-            portfolio.TotalValue = portfolio.Holdings.Sum(holding => holding.CurrentPrice * holding.Quantity);
-            portfolio.TotalGainLoss = portfolio.Holdings.Sum(holding => holding.UnrealizedGainLoss);
+            portfolio.TotalValue = portfolio.Holdings.Sum(h => h.CurrentPrice * h.Quantity);
+            portfolio.TotalGainLoss = portfolio.Holdings.Sum(h => h.UnrealizedGainLoss);
 
-            decimal totalCostBasis = portfolio.Holdings.Sum(holding => holding.AvgPurchasePrice * holding.Quantity);
-            portfolio.GainLossPercent = totalCostBasis > 0
-                ? (portfolio.TotalGainLoss / totalCostBasis) * 100
+            decimal totalCost = portfolio.Holdings.Sum(h => h.AvgPurchasePrice * h.Quantity);
+            portfolio.GainLossPercent = totalCost > 0
+                ? (portfolio.TotalGainLoss / totalCost) * 100
                 : 0;
 
             OnPropertyChanged(nameof(portfolio));

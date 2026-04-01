@@ -15,4 +15,6 @@ public interface ILoanRepository
     void SaveAmortization(List<AmortizationRow> rows);
 
     List<AmortizationRow> GetAmortization(int loanId);
+
+    void CreateLoanApplication(LoanApplication request);
 }

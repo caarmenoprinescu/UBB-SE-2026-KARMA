@@ -81,4 +81,9 @@ public class LoansViewModel
             UseShellExecute = true
         });
     }
+
+    public double GetProgress(Loan loan)
+    {
+        return _loanService.CalculateRepaymentProgress(loan);
+    }
 }
