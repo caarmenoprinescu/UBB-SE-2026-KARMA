@@ -1,11 +1,14 @@
-﻿using System;
+﻿using KarmaBanking.App.Models;
+using KarmaBanking.App.Services.Interfaces;
+using KarmaBanking.App.Utils;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Services.Interfaces;
-using KarmaBanking.App.Utils;
+using Windows.Storage;
+using Windows.Storage.Pickers; // Added missing namespace
+using WinRT.Interop;
 
 namespace KarmaBanking.App.ViewModels
 {
@@ -21,10 +24,67 @@ namespace KarmaBanking.App.ViewModels
 
         public ObservableCollection<InvestmentTransaction> Logs { get; } = new();
 
+        public RelayCommand ApplyFiltersCommand { get; }
+        public RelayCommand ExportCsvCommand { get; } // New command
+
         public InvestmentLogsViewModel(IInvestmentService investmentService)
         {
             _investmentService = investmentService;
             ApplyFiltersCommand = new RelayCommand(LoadLogsAsync);
+            ExportCsvCommand = new RelayCommand(ExportToCsvAsync); // Initialize it
+        }
+
+        private async Task ExportToCsvAsync()
+        {
+            if (Logs.Count == 0)
+            {
+                StatusMessage = "No data to export.";
+                return;
+            }
+
+            try
+            {
+                // 1. Create the CSV string using the utility
+                string csvContent = CsvExportUtility.ExportTransactionsToCsv(Logs);
+
+                // 2. Setup the File Save Picker
+                var savePicker = new FileSavePicker();
+
+                // Get the Window Handle (HWND) for WinUI 3
+                IntPtr hwnd = WindowNative.GetWindowHandle(App.MainAppWindow);
+                InitializeWithWindow.Initialize(savePicker, hwnd);
+
+                savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                savePicker.FileTypeChoices.Add("CSV File", new System.Collections.Generic.List<string>() { ".csv" });
+                savePicker.SuggestedFileName = $"InvestmentLogs_{DateTime.Now:yyyyMMdd_HHmm}";
+
+                // 3. Prompt user to pick location
+                StorageFile file = await savePicker.PickSaveFileAsync();
+                if (file != null)
+                {
+                    // Prevent updates to the remote version of the file until we finish
+                    CachedFileManager.DeferUpdates(file);
+
+                    // Write the text to the file
+                    await FileIO.WriteTextAsync(file, csvContent);
+
+                    // Complete the save
+                    Windows.Storage.Provider.FileUpdateStatus status = await CachedFileManager.CompleteUpdatesAsync(file);
+
+                    if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+                    {
+                        StatusMessage = $"Export saved successfully to {file.Name}";
+                    }
+                    else
+                    {
+                        StatusMessage = "File could not be saved.";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Export failed: {ex.Message}";
+            }
         }
 
         public string? SelectedTicker
@@ -57,7 +117,7 @@ namespace KarmaBanking.App.ViewModels
             set { _isLoading = value; OnPropertyChanged(); }
         }
 
-        public RelayCommand ApplyFiltersCommand { get; }
+        // Removed the duplicate 'ApplyFiltersCommand' declaration that was here
 
         public async Task LoadLogsAsync()
         {
