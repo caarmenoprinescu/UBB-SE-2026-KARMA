@@ -11,5 +11,8 @@ namespace KarmaBanking.App.Repositories.Interfaces
     {
         Portfolio GetPortfolio(int userId);
         Task RecordCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit, decimal fees);
+
+        // New method for BA-60
+        Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null);
     }
 }
