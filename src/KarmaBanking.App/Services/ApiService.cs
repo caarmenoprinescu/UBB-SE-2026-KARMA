@@ -60,12 +60,6 @@ namespace KarmaBanking.App.Services
             );
         }
 
-        public async Task<int> CreateChatSessionAsync(int userId, string issueCategory)
-        {
-            ChatSessionRepository repo = new ChatSessionRepository();
-            return await repo.CreateChatSessionAsync(userId, issueCategory);
-        }
-
         public void SubmitFeedback(int sessionId, int rating, string feedback)
         {
             ChatSessionRepository repo = new ChatSessionRepository();
