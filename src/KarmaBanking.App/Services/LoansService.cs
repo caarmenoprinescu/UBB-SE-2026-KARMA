@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Windows.System;
 
@@ -40,4 +41,17 @@ public class LoanService : ILoanService
         return _loanRepository.GetLoansByType(typeString);
     }
 
+    public double CalculateRepaymentProgress(Loan loan)
+    {
+        if (loan == null || loan.principal == 0)
+            return 0;
+
+        double paid = (double)(loan.principal - loan.outstandingBalance);
+        double progress = (paid / (double)loan.principal) * 100;
+
+        if (progress < 0) return 0;
+        if (progress > 100) return 100;
+
+        return Math.Round(progress, 2);
+    }
 }
