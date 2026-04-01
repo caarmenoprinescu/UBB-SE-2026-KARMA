@@ -1,14 +1,30 @@
-﻿using System;
+﻿using KarmaBanking.App.Models;
+using KarmaBanking.App.Services;
+using KarmaBanking.App.Utils;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Utils;
 
 namespace KarmaBanking.App.ViewModels
 {
     public class ChatViewModel : INotifyPropertyChanged
     {
+        public static ChatViewModel Instance { get; } = new ChatViewModel();
+
+        private readonly ApiService _apiService = new ApiService();
+        private List<ChatMessage> messages = new List<ChatMessage>();
+
+        public List<ChatMessage> Messages
+        {
+            get => messages;
+            set
+            {
+                messages = value;
+                OnPropertyChanged();
+            }
+        }
         private IssueCategory? selectedCategory;
         private string statusMessage = "Please select a category to continue.";
         private SelectedAttachment? selectedAttachment;
@@ -102,7 +118,7 @@ namespace KarmaBanking.App.ViewModels
 
         public event Action<string>? ContinueRequested;
 
-        public ChatViewModel()
+        private ChatViewModel()
         {
             ContinueCommand = new RelayCommand(OnContinueAsync, () => CanContinue);
             RemoveAttachmentCommand = new RelayCommand(OnRemoveAttachmentAsync, () => CanRemoveAttachment);
@@ -175,6 +191,32 @@ namespace KarmaBanking.App.ViewModels
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public async Task LoadChatHistoryAsync(int sessionId)
+        {
+            try
+            {
+                if (Messages.Count > 0) return;
+
+                StatusMessage = "Loading chat history...";
+
+                var result = await _apiService.GetChatHistoryAsync(sessionId);
+
+                if (result != null)
+                {
+                    Messages = result;
+                    StatusMessage = $"Loaded {result.Count} messages.";
+                }
+                else
+                {
+                    StatusMessage = "No messages found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading chat: {ex.Message}";
+            }
         }
     }
 }
