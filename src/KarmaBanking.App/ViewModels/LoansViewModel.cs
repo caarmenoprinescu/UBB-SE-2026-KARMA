@@ -118,19 +118,19 @@ public class LoansViewModel : INotifyPropertyChanged
             throw new InvalidOperationException("Loan not found.");
         }
 
-        if (string.Equals(loan.loanStatus, LoanStatus.Passed.ToString(), StringComparison.OrdinalIgnoreCase)
-            || string.Equals(loan.loanStatus, "Closed", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(loan.loanStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(loan.LoanStatus, LoanStatus.Passed.ToString(), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.LoanStatus, "Closed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(loan.LoanStatus, "Completed", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("This loan is already closed.");
         }
 
-        if (amount > loan.outstandingBalance)
+        if (amount > loan.OutstandingBalance)
         {
             throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
         }
 
-        _loanRepository.pay(loanId, amount);
+        _loanRepository.Pay(loanId, amount);
         loadLoans();
     }
 

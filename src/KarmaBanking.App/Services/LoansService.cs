@@ -47,11 +47,11 @@ public class LoanService : ILoanService
 
     public double CalculateRepaymentProgress(Loan loan)
     {
-        if (loan == null || loan.principal == 0)
+        if (loan == null || loan.Principal == 0)
             return 0;
 
-        double paid = (double)(loan.principal - loan.outstandingBalance);
-        double progress = (paid / (double)loan.principal) * 100;
+        double paid = (double)(loan.Principal - loan.OutstandingBalance);
+        double progress = (paid / (double)loan.Principal) * 100;
 
         if (progress < 0) return 0;
         if (progress > 100) return 100;
@@ -65,12 +65,12 @@ public class LoanService : ILoanService
         _validator.Validate(request);
         var application = new LoanApplication
         {
-            loanType = request.loanType,
-            desiredAmount = request.desiredAmount,
-            preferredTermMonths = request.preferredTermMonths,
-            purpose = request.purpose,
-            applicationStatus = LoanApplicationStatus.Pending,
-            rejectionReason = null
+            LoanType = request.LoanType,
+            DesiredAmount = request.DesiredAmount,
+            PreferredTermMonths = request.PreferredTermMonths,
+            Purpose = request.Purpose,
+            ApplicationStatus = LoanApplicationStatus.Pending,
+            RejectionReason = null
         };
 
         _loanRepository.CreateLoanApplication(application);
@@ -80,7 +80,7 @@ public class LoanService : ILoanService
     {
         _validator.Validate(request);
 
-        decimal rate = request.loanType switch
+        decimal rate = request.LoanType switch
         {
             LoanType.Personal => 10,
             LoanType.Auto => 7,
@@ -90,9 +90,9 @@ public class LoanService : ILoanService
         };
 
         return _calculator.computeEstimate(
-            request.desiredAmount,
+            request.DesiredAmount,
             rate,
-            request.preferredTermMonths
+            request.PreferredTermMonths
         );
     }
 
@@ -103,9 +103,9 @@ public class LoanService : ILoanService
         if (loan == null)
             throw new Exception("Loan not found");
 
-        if (loan.remainingMonths <= 0)
+        if (loan.RemainingMonths <= 0)
             throw new Exception("Loan already paid");
 
-        _loanRepository.MakePayment(loanId, loan.monthlyInstallment);
+        _loanRepository.MakePayment(loanId, loan.MonthlyInstallment);
     }
 }

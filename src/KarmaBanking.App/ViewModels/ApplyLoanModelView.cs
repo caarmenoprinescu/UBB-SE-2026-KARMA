@@ -125,10 +125,10 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
 
             var request = new LoanApplicationRequest
             {
-                loanType = selectedLoanType,
-                desiredAmount = desiredAmount,
-                preferredTermMonths = preferredTermMonths,
-                purpose = purpose
+                LoanType = selectedLoanType,
+                DesiredAmount = desiredAmount,
+                PreferredTermMonths = preferredTermMonths,
+                Purpose = purpose
             };
 
             currentEstimate = _loanService.GetLoanEstimate(request);
@@ -152,11 +152,11 @@ public class ApplyLoanViewModel : INotifyPropertyChanged
 
             var request = new LoanApplicationRequest
             {
-                loanType = selectedLoanType,
-                desiredAmount = desiredAmount,
+                LoanType = selectedLoanType,
+                DesiredAmount = desiredAmount,
 
-                preferredTermMonths = preferredTermMonths,
-                purpose = purpose
+                PreferredTermMonths = preferredTermMonths,
+                Purpose = purpose
             };
 
             _loanService.ApplyForLoan(request);

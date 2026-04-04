@@ -34,8 +34,8 @@ public class AmortizationCalculator
     {
         var rows = new List<AmortizationRow>();
 
-        decimal principal = loan.principal;
-        decimal annualRate = loan.interestRate;
+        decimal principal = loan.Principal;
+        decimal annualRate = loan.InterestRate;
         int termInMonths = loan.TermInMonths;
         DateTime startDate = loan.StartDate;
 
@@ -79,7 +79,7 @@ public class AmortizationCalculator
 
             var row = new AmortizationRow
             {
-                LoanId = loan.id,
+                LoanId = loan.Id,
                 InstallmentNumber = i,
                 DueDate = dueDate,
                 PrincipalPortion = principalPortion,

@@ -28,7 +28,7 @@ namespace KarmaBanking.App.Views
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
-            var selectedLoan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
+            var selectedLoan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.Id == loanId);
 
             if (selectedLoan != null)
             {
@@ -41,13 +41,13 @@ namespace KarmaBanking.App.Views
             var button = sender as Button;
             int loanId = (int)button.Tag;
 
-            var loan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
+            var loan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.Id == loanId);
             if (loan == null)
             {
                 return;
             }
 
-            decimal selectedAmount = loan.monthlyInstallment;
+            decimal selectedAmount = loan.MonthlyInstallment;
 
             StackPanel dialogContent = new StackPanel
             {
@@ -74,7 +74,7 @@ namespace KarmaBanking.App.Views
             TextBlock outstandingBalanceLabel = new TextBlock { Text = "Outstanding balance" };
             TextBlock outstandingBalanceValue = new TextBlock
             {
-                Text = loan.outstandingBalance.ToString("C", CultureInfo.CurrentCulture)
+                Text = loan.OutstandingBalance.ToString("C", CultureInfo.CurrentCulture)
             };
             Grid.SetColumn(outstandingBalanceValue, 1);
 
@@ -118,7 +118,7 @@ namespace KarmaBanking.App.Views
 
             RadioButton minimumInstallmentRadio = new RadioButton
             {
-                Content = $"Minimum installment ({loan.monthlyInstallment.ToString("C", CultureInfo.CurrentCulture)})",
+                Content = $"Minimum installment ({loan.MonthlyInstallment.ToString("C", CultureInfo.CurrentCulture)})",
                 GroupName = "LoanPaymentAmountOption",
                 IsChecked = true
             };
@@ -131,7 +131,7 @@ namespace KarmaBanking.App.Views
 
             TextBox amountTextBox = new TextBox
             {
-                Text = loan.monthlyInstallment.ToString("0.00", CultureInfo.CurrentCulture),
+                Text = loan.MonthlyInstallment.ToString("0.00", CultureInfo.CurrentCulture),
                 PlaceholderText = "Enter amount",
                 IsEnabled = false
             };
@@ -172,15 +172,15 @@ namespace KarmaBanking.App.Views
             {
                 if (minimumInstallmentRadio.IsChecked == true)
                 {
-                    selectedAmount = loan.monthlyInstallment;
-                    amountTextBox.Text = loan.monthlyInstallment.ToString("0.00", CultureInfo.CurrentCulture);
+                    selectedAmount = loan.MonthlyInstallment;
+                    amountTextBox.Text = loan.MonthlyInstallment.ToString("0.00", CultureInfo.CurrentCulture);
                 }
                 else if (!decimal.TryParse(amountTextBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out selectedAmount))
                 {
                     selectedAmount = 0m;
                 }
 
-                decimal balanceAfterPayment = loan.outstandingBalance - selectedAmount;
+                decimal balanceAfterPayment = loan.OutstandingBalance - selectedAmount;
                 if (balanceAfterPayment < 0)
                 {
                     balanceAfterPayment = 0;
@@ -189,7 +189,7 @@ namespace KarmaBanking.App.Views
                 balanceAfterValue.Text = balanceAfterPayment.ToString("C", CultureInfo.CurrentCulture);
                 int remainingTermPreview = balanceAfterPayment == 0
                     ? 0
-                    : Math.Max(0, loan.remainingMonths - 1);
+                    : Math.Max(0, loan.RemainingMonths - 1);
                 termAfterValue.Text = $"{remainingTermPreview} mo";
             }
 
@@ -246,7 +246,7 @@ namespace KarmaBanking.App.Views
 
             ContentDialog paymentDialog = new ContentDialog
             {
-                Title = $"Pay installment - {loan.loanType}",
+                Title = $"Pay installment - {loan.LoanType}",
                 PrimaryButtonText = "Confirm",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Primary,

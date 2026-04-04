@@ -34,19 +34,19 @@ namespace KarmaBanking.App.Views
             {
                 _loan = loan;
                 PopulateStaticLabels(loan);
-                ViewModel.LoadAmortization(loan.id);
+                ViewModel.LoadAmortization(loan.Id);
             }
         }
 
         private void PopulateStaticLabels(Loan loan)
         {
             LoanSubHeaderText.Text =
-                $"{loan.loanType} · {loan.TermInMonths} months · {loan.interestRate:0.##}%";
+                $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
 
-            int paid = loan.TermInMonths - loan.remainingMonths;
+            int paid = loan.TermInMonths - loan.RemainingMonths;
             TotalInstallmentsText.Text = loan.TermInMonths.ToString();
             PaidInstallmentsText.Text = paid.ToString();
-            RemainingInstallmentsText.Text = loan.remainingMonths.ToString();
+            RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
         }
 
         private void OnRowContainerContentChanging(
@@ -73,7 +73,7 @@ namespace KarmaBanking.App.Views
         {
             if (_loan != null)
             {
-                ViewModel.downloadSchedulePdf(_loan.id);
+                ViewModel.downloadSchedulePdf(_loan.Id);
             }
         }
     }

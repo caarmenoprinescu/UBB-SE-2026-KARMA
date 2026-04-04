@@ -7,16 +7,16 @@ public class LoanApplicationValidator
         if (request == null)
             throw new Exception("Request cannot be null");
 
-        if (request.desiredAmount <= 0)
+        if (request.DesiredAmount <= 0)
             throw new Exception("Desired amount must be greater than 0");
 
-        if (!Enum.IsDefined(typeof(LoanType),request.loanType))
+        if (!Enum.IsDefined(typeof(LoanType),request.LoanType))
             throw new Exception("Invalid Loan Type");
 
-        if (request.preferredTermMonths <= 0)
+        if (request.PreferredTermMonths <= 0)
             throw new Exception("Term must be greater than 0");
 
-        if (string.IsNullOrWhiteSpace(request.purpose))
+        if (string.IsNullOrWhiteSpace(request.Purpose))
             throw new Exception("Purpose is required");
     }
 }
