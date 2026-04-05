@@ -16,7 +16,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+
+    <None Remove="Views\CloseAccountDialog.xaml" />
+    <None Remove="Views\Dialogs\LoanApplicationDialog.xaml" />
+    <None Remove="Views\Dialogs\PayInstallment.xaml" />
+
     <None Remove="Views\ApplyLoanView.xaml" />
+
   </ItemGroup>
 	
   <ItemGroup>
@@ -49,7 +55,16 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
   <ItemGroup>
+
+    <Page Update="Views\Dialogs\PayInstallment.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\CloseAccountDialog.xaml">
+
     <Page Update="Views\ApplyLoanView.xaml">
+
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -90,6 +105,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\SavingsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\Dialogs\LoanApplicationDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

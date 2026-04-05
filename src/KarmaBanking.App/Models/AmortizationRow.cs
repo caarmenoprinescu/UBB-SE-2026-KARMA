@@ -9,7 +9,5 @@ public class AmortizationRow
     public decimal PrincipalPortion { get; set; }
     public decimal InterestPortion { get; set; }
     public decimal RemainingBalance { get; set; }
-    
-    // Non-persisted UI property
     public bool IsCurrent { get; set; }
 }

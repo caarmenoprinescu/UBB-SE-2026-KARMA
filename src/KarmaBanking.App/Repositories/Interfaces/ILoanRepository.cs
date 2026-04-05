@@ -1,24 +1,27 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public interface ILoanRepository
 {
-    List<Loan> GetAllLoans();
+    Task<List<Loan>> GetAllLoansAsync();
 
-    Loan GetById(int id);
+    Task<Loan> GetLoanByIdAsync(int id);
 
-    List<Loan> GetLoansByUser(int userId);
+    Task<List<Loan>> GetLoansByUserAsync(int userId);
 
-    List<Loan> GetLoansByStatus(string loanStatus);
+    Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus);
 
-    List<Loan> GetLoansByType(string loanType);
+    Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType);
 
-    void SaveAmortization(List<AmortizationRow> rows);
+    Task SaveAmortizationAsync(List<AmortizationRow> rows);
 
-    List<AmortizationRow> GetAmortization(int loanId);
+    Task<List<AmortizationRow>> GetAmortizationAsync(int loanId);
 
-    void CreateLoanApplication(LoanApplication request);
+    Task<int> CreateLoanApplicationAsync(LoanApplicationRequest request);
 
-    Loan pay(int id, decimal amount);
+    Task UpdateLoanApplicationStatusAsync(int id, LoanApplicationStatus loanApplicationStatus, string? reason);
 
-    void MakePayment(int loanId, decimal amount);
+    Task<int> CreateLoanAsync(Loan loan);
+
+    Task UpdateLoanAfterPaymentAsync(int id, decimal newBalance, int newRemainingMonths, LoanStatus newStatus);
 }

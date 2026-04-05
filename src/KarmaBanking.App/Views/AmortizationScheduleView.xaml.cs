@@ -1,3 +1,4 @@
+using KarmaBanking.App.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,9 +17,7 @@ namespace KarmaBanking.App.Views
         {
             InitializeComponent();
 
-            ViewModel = new LoansViewModel(
-                new LoanService(new LoanRepository()),
-                new LoanRepository());
+            ViewModel = new LoansViewModel();
 
             DataContext = ViewModel;
 
@@ -26,7 +25,7 @@ namespace KarmaBanking.App.Views
             AmortizationListView.ContainerContentChanging += OnRowContainerContentChanging;
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
@@ -34,19 +33,21 @@ namespace KarmaBanking.App.Views
             {
                 _loan = loan;
                 PopulateStaticLabels(loan);
-                ViewModel.LoadAmortization(loan.id);
+
+                ViewModel.SelectedLoan = new LoanViewModel(loan);
+                await ViewModel.LoadAmortizationAsync();
             }
         }
 
         private void PopulateStaticLabels(Loan loan)
         {
             LoanSubHeaderText.Text =
-                $"{loan.loanType} · {loan.TermInMonths} months · {loan.interestRate:0.##}%";
+                $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
 
-            int paid = loan.TermInMonths - loan.remainingMonths;
+            int paid = loan.TermInMonths - loan.RemainingMonths;
             TotalInstallmentsText.Text = loan.TermInMonths.ToString();
             PaidInstallmentsText.Text = paid.ToString();
-            RemainingInstallmentsText.Text = loan.remainingMonths.ToString();
+            RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
         }
 
         private void OnRowContainerContentChanging(
@@ -69,11 +70,11 @@ namespace KarmaBanking.App.Views
             }
         }
 
-        private void OnDownloadPdfClicked(object sender, RoutedEventArgs e)
+        private async void OnDownloadPdfClicked(object sender, RoutedEventArgs e)
         {
             if (_loan != null)
             {
-                ViewModel.downloadSchedulePdf(_loan.id);
+               await ViewModel.DownloadSchedulePdfAsync();
             }
         }
     }

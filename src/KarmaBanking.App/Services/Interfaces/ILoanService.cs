@@ -1,22 +1,30 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 public interface ILoanService
 {
-    List<Loan> GetAllLoans();
+    Task<List<Loan>> GetAllLoansAsync();
 
-    Loan GetLoanById(int id);
+    Task<Loan> GetLoanByIdAsync(int id);
 
-    List<Loan> GetLoansByUser(int userId);
+    Task<List<Loan>> GetLoansByUserAsync(int userId);
 
-    List<Loan> GetLoansByStatus(LoanStatus loanStatus);
+    Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus);
 
-    List<Loan> GetLoansByType(LoanType loanType);
+    Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType);
 
-    double CalculateRepaymentProgress(Loan loan);
+    Task<(LoanApplicationStatus approved, string? reason)> ProcessApplicationStatusAsync(LoanApplication application);
 
-    void ApplyForLoan(LoanApplicationRequest request);
+    Task<LoanApplication> ApplyForLoanAsync(LoanApplicationRequest request);
 
     LoanEstimate GetLoanEstimate(LoanApplicationRequest request);
 
-    void PayInstallment(int loanId);
+    Task<int> AddLoanAsync(LoanApplication application);
 
+    Task PayInstallmentAsync(int loanId, decimal? amount = null);
+
+    Task<List<AmortizationRow>> GetAmortizationAsync(int loanId);
+
+    Task SaveAmortizationAsync(List<AmortizationRow> rows);
+
+    Task GenerateAmortizationAsync(int loanId);
 }

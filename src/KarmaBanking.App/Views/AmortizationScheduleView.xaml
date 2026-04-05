@@ -222,8 +222,8 @@
         <ProgressRing
             Width="48"
             Height="48"
-            IsActive="{Binding isLoading}"
-            Visibility="{Binding isLoading, Converter={StaticResource BoolToVisibility}}"
+            IsActive="{Binding IsLoading}"
+            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"
             HorizontalAlignment="Center"
             VerticalAlignment="Center" />
     </Grid>
