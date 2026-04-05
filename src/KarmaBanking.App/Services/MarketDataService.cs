@@ -14,6 +14,7 @@ namespace KarmaBanking.App.Services
             ["AAPL"] = 185m,
             ["MSFT"] = 420m,
             ["GOOGL"] = 155m,
+            ["TSLA"] = 650m,
             ["SPY"] = 520m
         };
 
