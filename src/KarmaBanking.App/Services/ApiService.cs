@@ -69,6 +69,34 @@ namespace KarmaBanking.App.Services
             return JsonSerializer.Deserialize<DepositResponseDto>(json, JsonOptions)!;
         }
 
+        // POST /api/savings/{id}/close
+        public async Task<ClosureResult> CloseAccountAsync(int accountId, int destinationAccountId)
+        {
+            using var client = BuildClient();
+
+            var dto = new
+            {
+                destinationAccountId = destinationAccountId,
+                confirmClosure = true
+            };
+
+            var body = new StringContent(
+                JsonSerializer.Serialize(dto, JsonOptions),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PostAsync($"/api/savings/{accountId}/close", body);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Close failed: {error}");
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<ClosureResult>(json, JsonOptions)!;
+        }
 
         public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
         {

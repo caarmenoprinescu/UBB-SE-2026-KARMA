@@ -86,8 +86,7 @@ namespace KarmaBanking.App.Views
 
             if (result == ContentDialogResult.Primary)
             {
-                var viewModel = (SavingsAccountListViewModel)DataContext;
-                Frame.Navigate(typeof(CloseAccountDialog), selectedAccount);
+                await savingsAccountListViewModel.CloseSavingsAccountAsync(selectedAccount.Id);
             }
         }
 

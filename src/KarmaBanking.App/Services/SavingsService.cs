@@ -61,13 +61,13 @@ namespace KarmaBanking.App.Services
             if (account.AccountStatus == "Closed")
                 throw new InvalidOperationException("Cannot deposit into a closed account.");
 
-            if (account.AccountStatus == "Locked")
-                throw new InvalidOperationException("Cannot deposit into a locked account.");
+            if (account.DisplayStatus == "Matured")
+                throw new InvalidOperationException("Cannot deposit into a matured account.");
 
             return await savingsRepository.DepositAsync(accountId, amount, source);
         }
 
-        public async Task<bool> CloseAccountAsync(int accountId, int destinationAccountId, int userId)
+        public async Task<ClosureResult> CloseAccountAsync(int accountId, int destinationAccountId, int userId)
         {
             var accounts = await savingsRepository.GetByUserIdAsync(userId, includesClosed: true);
 
@@ -79,6 +79,30 @@ namespace KarmaBanking.App.Services
 
             return await savingsRepository.CloseAsync(accountId, destinationAccountId);
         }
+
+        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, int userId)
+        {
+            if (amount <= 0)
+                throw new ArgumentException("Withdrawal amount must be positive.");
+
+            var accounts = await savingsRepository.GetByUserIdAsync(userId, includesClosed: true);
+            var account = accounts.Find(a => a.Id == accountId)
+                ?? throw new InvalidOperationException("Account not found or does not belong to you.");
+
+            if (account.AccountStatus == "Closed")
+                throw new InvalidOperationException("Cannot withdraw from a closed account.");
+
+            if (account.Balance < amount)
+                throw new InvalidOperationException("Insufficient balance.");
+
+            return await savingsRepository.WithdrawAsync(accountId, amount, destinationLabel);
+        }
+
+        public Task<AutoDeposit?> GetAutoDepositAsync(int accountId)
+            => savingsRepository.GetAutoDepositAsync(accountId);
+
+        public Task SaveAutoDepositAsync(AutoDeposit autoDeposit)
+            => savingsRepository.SaveAutoDepositAsync(autoDeposit);
 
         public Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId)
         {

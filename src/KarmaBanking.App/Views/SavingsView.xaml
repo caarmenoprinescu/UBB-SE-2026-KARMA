@@ -111,8 +111,8 @@
                                         <Border Grid.Row="0" Grid.Column="1"
                                                 CornerRadius="12" Padding="10,4"
                                                 VerticalAlignment="Top"
-                                                Background="{x:Bind AccountStatus, Converter={StaticResource StatusToBrush}}">
-                                            <TextBlock Text="{x:Bind AccountStatus}"
+                                                Background="{x:Bind DisplayStatus, Converter={StaticResource StatusToBrush}}">
+                                            <TextBlock Text="{x:Bind DisplayStatus}"
                                                        FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                                         </Border>
 
@@ -207,7 +207,7 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="Initial Deposit (RON)" Margin="0,0,0,4"/>
+                            <TextBlock Text="Initial Deposit ($)" Margin="0,0,0,4"/>
                             <TextBox x:Name="InitialDepositTextBox" PlaceholderText="1000" InputScope="Number"/>
                             <TextBlock x:Name="InitialDepositError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
@@ -220,6 +220,19 @@
                             <TextBlock x:Name="FundingSourceError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
                         </StackPanel>
+
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Deposit Frequency" Margin="0,0,0,4"/>
+                            <RadioButtons x:Name="FrequencyRadioButtons"
+                                          SelectionChanged="OnFrequencySelectionChanged">
+                                <RadioButton Content="One Time"  Tag="OneTime"/>
+                                <RadioButton Content="Daily"     Tag="Daily"/>
+                                <RadioButton Content="Weekly"    Tag="Weekly"/>
+                                <RadioButton Content="Monthly"   Tag="Monthly"/>
+                            </RadioButtons>
+                            <TextBlock x:Name="FrequencyError" Foreground="Red" FontSize="12"
+                                       Margin="0,4,0,0" Visibility="Collapsed"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Step 3: Goal Settings (conditional) -->
@@ -229,7 +242,7 @@
                                    Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
                                    Margin="0,0,0,8"/>
                         <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="Target Amount (RON)" Margin="0,0,0,4"/>
+                            <TextBlock Text="Target Amount ($)" Margin="0,0,0,4"/>
                             <TextBox x:Name="TargetAmountTextBox" PlaceholderText="e.g. 5000" InputScope="Number"/>
                             <TextBlock x:Name="TargetAmountError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
@@ -240,6 +253,19 @@
                                                 PlaceholderText="Pick a date" HorizontalAlignment="Stretch"/>
                             <TextBlock x:Name="TargetDateError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Step 3: Fixed Deposit Settings -->
+                    <StackPanel Grid.Row="3" x:Name="FixedDepositPanel"
+                                Margin="0,0,0,20" Visibility="Collapsed">
+                        <TextBlock Text="STEP 3 — FIXED DEPOSIT SETTINGS"
+                                   FontSize="11" FontWeight="Bold"
+                                   Margin="0,0,0,8"/>
+                        <StackPanel>
+                            <TextBlock Text="Maturity Date" Margin="0,0,0,4"/>
+                            <CalendarDatePicker x:Name="MaturityDatePicker"
+                                                PlaceholderText="Pick a maturity date"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -261,7 +287,8 @@
             </ScrollViewer>
 
             <!-- ══ MANAGE ══ -->
-            <Grid x:Name="ManagePanel" Margin="24,0,24,24" Visibility="Collapsed">
+            <ScrollViewer x:Name="ManagePanel" Margin="24,0,24,24" Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="16" VerticalAlignment="Top">
                     <TextBlock Text="Manage your accounts" FontSize="18" FontWeight="SemiBold"/>
 
@@ -275,39 +302,193 @@
                                   SelectionChanged="OnManageAccountSelected"/>
                     </StackPanel>
 
-                    <!-- Deposit section -->
-                    <StackPanel x:Name="DepositSection" Spacing="8" Visibility="Collapsed">
-                        <TextBlock Text="DEPOSIT" FontSize="11" FontWeight="Bold"
-                                   Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                    <!-- Action buttons -->
+                    <StackPanel x:Name="ManageButtonsPanel" Spacing="8" Visibility="Collapsed">
+                        <Button Content="Deposit"
+                                HorizontalAlignment="Stretch"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="OnDepositClicked"/>
+                        <Button Content="Withdraw"
+                                HorizontalAlignment="Stretch"
+                                Click="OnWithdrawClicked"/>
+                        <Button Content="Auto Deposit"
+                                HorizontalAlignment="Stretch"
+                                Click="OnAutoDepositClicked"/>
+                        <Button Content="Close Account"
+                                HorizontalAlignment="Stretch"
+                                Click="OnCloseAccountClicked"/>
+                    </StackPanel>
+
+                    <!-- ── DEPOSIT ACTION PANEL ── -->
+                    <StackPanel x:Name="DepositActionPanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock Text="Deposit Funds" FontSize="16" FontWeight="SemiBold"/>
+
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Amount (RON)" FontSize="13"/>
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="DepositAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"
-                                     TextChanged="OnDepositAmountChanged" MinWidth="300"/>
-                            <TextBlock x:Name="DepositPreviewText" FontSize="12" FontStyle="Italic"
+                                     TextChanged="OnDepositAmountChanged"/>
+                            <TextBlock x:Name="DepositLivePreview" FontSize="12"
                                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
                         </StackPanel>
+
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Source" FontSize="13"/>
-                            <TextBox x:Name="DepositSourceTextBox"
-                                     PlaceholderText="e.g. Checking ****1234"
-                                     Text="Checking Account" MinWidth="300"/>
+                            <TextBlock Text="Funding Source" FontSize="13"/>
+                            <ComboBox x:Name="DepositSourceComboBox"
+                                      HorizontalAlignment="Stretch" MinWidth="280"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectionChanged="OnDepositSourceChanged"/>
                         </StackPanel>
 
-                        <InfoBar x:Name="DepositErrorBar" IsOpen="False"
-                                 Severity="Error" IsClosable="False"/>
-                        <InfoBar x:Name="DepositSuccessBar" IsOpen="False"
-                                 Severity="Success" IsClosable="False"/>
+                        <InfoBar x:Name="DepositResultBar" IsOpen="False"
+                                 IsClosable="False" Margin="0,4,0,0"/>
 
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button Content="Confirm Deposit"
                                     Style="{StaticResource AccentButtonStyle}"
-                                    Click="OnDepositClicked"/>
-                            <Button Content="Close Account" Click="OnCloseAccountClicked"/>
+                                    Click="OnDepositConfirmed"/>
+                            <Button Content="Back" Click="OnDepositBack"/>
                         </StackPanel>
                     </StackPanel>
+
+                    <!-- ── WITHDRAW ACTION PANEL ── -->
+                    <StackPanel x:Name="WithdrawActionPanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock Text="Withdraw Funds" FontSize="16" FontWeight="SemiBold"/>
+
+                        <!-- Early withdrawal penalty warning -->
+                        <Border x:Name="WithdrawPenaltyWarning"
+                                Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                                CornerRadius="4" Padding="12,8" Visibility="Collapsed">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Early Withdrawal Warning" FontWeight="SemiBold" FontSize="13"/>
+                                <TextBlock x:Name="WithdrawPenaltySummaryText" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
+                            <TextBox x:Name="WithdrawAmountTextBox"
+                                     PlaceholderText="0.00" InputScope="Number"
+                                     TextChanged="OnWithdrawAmountChanged"/>
+                        </StackPanel>
+
+                        <!-- Penalty breakdown (shown only when applicable) -->
+                        <StackPanel x:Name="WithdrawPenaltyBreakdown" Spacing="2" Visibility="Collapsed">
+                            <TextBlock x:Name="WithdrawPenaltyAmountText" FontSize="12"
+                                       Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                            <TextBlock x:Name="WithdrawNetAmountText" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Destination Account" FontSize="13"/>
+                            <ComboBox x:Name="WithdrawDestComboBox"
+                                      HorizontalAlignment="Stretch" MinWidth="280"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectionChanged="OnWithdrawDestChanged"/>
+                        </StackPanel>
+
+                        <InfoBar x:Name="WithdrawResultBar" IsOpen="False"
+                                 IsClosable="False" Margin="0,4,0,0"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Confirm Withdrawal"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Click="OnWithdrawConfirmed"/>
+                            <Button Content="Back" Click="OnWithdrawBack"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ── AUTO DEPOSIT ACTION PANEL ── -->
+                    <StackPanel x:Name="AutoDepositActionPanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock x:Name="AutoDepositTitle" Text="Set Up Auto Deposit"
+                                   FontSize="16" FontWeight="SemiBold"/>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
+                            <TextBox x:Name="AutoDepositAmountTextBox"
+                                     PlaceholderText="0.00" InputScope="Number"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Frequency" FontSize="13"/>
+                            <RadioButtons x:Name="AutoDepositFrequencyRadios"
+                                          SelectionChanged="OnAutoDepositFrequencyChanged">
+                                <RadioButton Content="Daily"   Tag="Daily"/>
+                                <RadioButton Content="Weekly"  Tag="Weekly"/>
+                                <RadioButton Content="Monthly" Tag="Monthly"/>
+                            </RadioButtons>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Start Date" FontSize="13"/>
+                            <CalendarDatePicker x:Name="AutoDepositStartDatePicker"
+                                                PlaceholderText="Pick start date"
+                                                HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ToggleSwitch x:Name="AutoDepositActiveToggle"
+                                          Header="Active"
+                                          IsOn="True"/>
+                        </StackPanel>
+
+                        <InfoBar x:Name="AutoDepositResultBar" IsOpen="False"
+                                 IsClosable="False" Margin="0,4,0,0"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Save"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Click="OnAutoDepositSaved"/>
+                            <Button Content="Back" Click="OnAutoDepositBack"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ── CLOSE ACCOUNT ACTION PANEL ── -->
+                    <StackPanel x:Name="CloseAccountActionPanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock Text="Close Account" FontSize="16" FontWeight="SemiBold"/>
+
+                        <!-- Early closure penalty warning -->
+                        <Border x:Name="ClosePenaltyWarning"
+                                Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+                                CornerRadius="4" Padding="12,8" Visibility="Collapsed">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Early Closure Penalty" FontWeight="SemiBold" FontSize="13"/>
+                                <TextBlock Text="This is a Fixed Deposit account that has not yet reached maturity. An early closure penalty may apply."
+                                           FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Transfer balance to" FontSize="13"/>
+                            <ComboBox x:Name="CloseDestComboBox"
+                                      HorizontalAlignment="Stretch" MinWidth="280"
+                                      DisplayMemberPath="AccountName"
+                                      SelectionChanged="OnCloseDestChanged"/>
+                            <TextBlock Text="No other accounts available to transfer funds to."
+                                       x:Name="CloseNoDestText"
+                                       FontSize="12" Foreground="Red"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+
+                        <CheckBox x:Name="CloseConfirmCheckBox"
+                                  Content="I understand this action is permanent and cannot be undone."
+                                  Checked="OnCloseConfirmChecked"
+                                  Unchecked="OnCloseConfirmUnchecked"/>
+
+                        <InfoBar x:Name="CloseResultBar" IsOpen="False"
+                                 IsClosable="False" Margin="0,4,0,0"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="CloseConfirmButton"
+                                    Content="Close Account"
+                                    IsEnabled="False"
+                                    Click="OnCloseConfirmed"/>
+                            <Button Content="Back" Click="OnCloseBack"/>
+                        </StackPanel>
+                    </StackPanel>
+
                 </StackPanel>
-            </Grid>
+            </ScrollViewer>
 
         </Grid>
     </Grid>

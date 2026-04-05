@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
+using KarmaBanking.App.Models.Enums;
 using KarmaBanking.App.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,16 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private string totalSavedAmount = "$0.00";
         [ObservableProperty] private string numberOfAccountsText = "across 0 accounts";
         [ObservableProperty] private string bestInterestRate = "0.00%";
-        [ObservableProperty] private SavingsAccount? selectedAccount;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LivePreview))]
+        [NotifyPropertyChangedFor(nameof(WithdrawHasEarlyRisk))]
+        [NotifyPropertyChangedFor(nameof(WithdrawPenaltySummary))]
+        [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
+        [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
+        private SavingsAccount? selectedAccount;
 
         public bool IsEmpty => SavingsAccounts.Count == 0;
         public bool ShowAccountsList => SavingsAccounts.Count > 0;
@@ -47,6 +57,7 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private DateTimeOffset? targetDate;
         [ObservableProperty] private bool showCreateConfirmation;
         [ObservableProperty] private ObservableCollection<FundingSourceOption> fundingSources = new();
+        [ObservableProperty] private string selectedFrequency = string.Empty;
 
         public bool IsGoalSavings => SelectedSavingsType == "GoalSavings";
         public Dictionary<string, string> FieldErrors { get; } = new();
@@ -73,6 +84,134 @@ namespace KarmaBanking.App.ViewModels
                     return $"New balance will be: {(SelectedAccount.Balance + amount):C2}";
                 return string.Empty;
             }
+        }
+
+        // ── Withdraw Panel ───────────────────────────────────────────────────
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
+        [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        private string withdrawAmountText = string.Empty;
+
+        [ObservableProperty] private FundingSourceOption? withdrawDestination;
+        [ObservableProperty] private string withdrawResultMessage = string.Empty;
+        [ObservableProperty] private bool withdrawSuccess;
+
+        public bool WithdrawHasEarlyRisk =>
+            SelectedAccount?.SavingsType == "FixedDeposit" &&
+            SelectedAccount.MaturityDate.HasValue &&
+            SelectedAccount.MaturityDate.Value > DateTime.UtcNow;
+
+        public decimal WithdrawEstimatedPenalty
+        {
+            get
+            {
+                if (!WithdrawHasEarlyRisk) return 0;
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
+                return amt * 0.02m;
+            }
+        }
+        public decimal WithdrawNetAmount
+        {
+            get
+            {
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
+                return amt - WithdrawEstimatedPenalty;
+            }
+        }
+        public bool WithdrawHasPenalty => WithdrawEstimatedPenalty > 0;
+        public string WithdrawPenaltySummary =>
+            WithdrawHasEarlyRisk ? $"Early withdrawal penalty: 2% of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
+
+        public async Task<bool> ConfirmWithdrawAsync()
+        {
+            WithdrawResultMessage = string.Empty;
+            WithdrawSuccess = false;
+            if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+            { WithdrawResultMessage = "Please enter a valid amount."; return false; }
+            if (WithdrawDestination == null)
+            { WithdrawResultMessage = "Please select a destination account."; return false; }
+            IsLoading = true;
+            try
+            {
+                var result = await savingsService.WithdrawAsync(SelectedAccount!.Id, amount, WithdrawDestination.DisplayName, CurrentUserId);
+                WithdrawSuccess = result.Success;
+                WithdrawResultMessage = result.Success
+                    ? $"Withdrawn: {result.AmountWithdrawn:C2}" + (result.PenaltyApplied > 0 ? $" (penalty: {result.PenaltyApplied:C2})" : "") + $". New balance: {result.NewBalance:C2}"
+                    : result.Message;
+                if (result.Success)
+                {
+                    WithdrawAmountText = string.Empty;
+                    await LoadAccountsAsync();
+                }
+                return result.Success;
+            }
+            catch (Exception ex) { WithdrawResultMessage = ex.Message; return false; }
+            finally { IsLoading = false; }
+        }
+
+        // ── Auto Deposit ─────────────────────────────────────────────────────
+
+        private AutoDeposit? currentAutoDeposit;
+
+        [ObservableProperty] private string autoDepositAmountText = string.Empty;
+        [ObservableProperty] private string autoDepositFrequency = string.Empty;
+        [ObservableProperty] private DateTimeOffset? autoDepositStartDate = DateTimeOffset.Now.AddDays(1);
+        [ObservableProperty] private bool autoDepositIsActive = true;
+        [ObservableProperty] private bool hasExistingAutoDeposit;
+        public string ExistingLabel => HasExistingAutoDeposit ? "Modify" : "Set Up";
+        [ObservableProperty] private string autoDepositSaveMessage = string.Empty;
+
+        public async Task LoadAutoDepositAsync(int accountId)
+        {
+            AutoDepositSaveMessage = string.Empty;
+            currentAutoDeposit = await savingsService.GetAutoDepositAsync(accountId);
+            if (currentAutoDeposit != null)
+            {
+                HasExistingAutoDeposit = true;
+                AutoDepositAmountText = currentAutoDeposit.Amount.ToString(CultureInfo.InvariantCulture);
+                AutoDepositFrequency = currentAutoDeposit.Frequency.ToString();
+                AutoDepositStartDate = new DateTimeOffset(currentAutoDeposit.NextRunDate);
+                AutoDepositIsActive = currentAutoDeposit.IsActive;
+            }
+            else
+            {
+                HasExistingAutoDeposit = false;
+                AutoDepositAmountText = string.Empty;
+                AutoDepositFrequency = string.Empty;
+                AutoDepositStartDate = DateTimeOffset.Now.AddDays(1);
+                AutoDepositIsActive = true;
+            }
+        }
+
+        public async Task SaveAutoDepositAsync()
+        {
+            ErrorMessage = string.Empty;
+            AutoDepositSaveMessage = string.Empty;
+
+            if (!decimal.TryParse(AutoDepositAmountText, NumberStyles.Any,
+                    CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+            { ErrorMessage = "Auto deposit amount must be positive."; return; }
+
+            if (string.IsNullOrWhiteSpace(AutoDepositFrequency))
+            { ErrorMessage = "Please select a frequency."; return; }
+
+            if (!Enum.TryParse<DepositFrequency>(AutoDepositFrequency, out var freq))
+            { ErrorMessage = "Invalid frequency."; return; }
+
+            var autoDeposit = new AutoDeposit
+            {
+                Id = currentAutoDeposit?.Id ?? 0,
+                SavingsAccountId = SelectedAccount!.Id,
+                Amount = amount,
+                Frequency = freq,
+                NextRunDate = AutoDepositStartDate?.DateTime ?? DateTime.Now.AddDays(1),
+                IsActive = AutoDepositIsActive
+            };
+
+            await savingsService.SaveAutoDepositAsync(autoDeposit);
+            AutoDepositSaveMessage = "Auto deposit saved successfully.";
+            await LoadAutoDepositAsync(SelectedAccount.Id);
         }
 
         // ── Constructor ──────────────────────────────────────────────────────
@@ -114,11 +253,68 @@ namespace KarmaBanking.App.ViewModels
             ErrorMessage = string.Empty;
             try
             {
-                bool ok = await savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
+                var result = await savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
+                bool ok = result.Success;
                 if (!ok) { ErrorMessage = "Failed to close account."; return; }
                 await LoadAccountsAsync();
             }
             catch (Exception ex) { ErrorMessage = ex.Message; }
+            finally { IsLoading = false; }
+        }
+
+        // ── Close Account Panel ──────────────────────────────────────────────
+        [ObservableProperty] private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
+
+        private int selectedCloseDestinationId;
+        public int SelectedCloseDestinationId
+        {
+            get => selectedCloseDestinationId;
+            set { selectedCloseDestinationId = value; OnPropertyChanged(); }
+        }
+
+        private bool closeUserConfirmed;
+        public bool CloseUserConfirmed
+        {
+            get => closeUserConfirmed;
+            set { closeUserConfirmed = value; OnPropertyChanged(); }
+        }
+
+        [ObservableProperty] private string closeResultMessage = string.Empty;
+        [ObservableProperty] private bool closeSuccess;
+
+        public bool CloseHasPenalty =>
+            SelectedAccount?.SavingsType == "FixedDeposit" &&
+            SelectedAccount.MaturityDate.HasValue &&
+            SelectedAccount.MaturityDate.Value > DateTime.UtcNow;
+
+        public async Task LoadCloseDestinationAccountsAsync()
+        {
+            CloseUserConfirmed = false;
+            CloseResultMessage = string.Empty;
+            CloseSuccess = false;
+            var accounts = await savingsService.GetAccountsAsync(CurrentUserId);
+            CloseDestinationAccounts.Clear();
+            foreach (var acc in accounts.Where(a => a.Id != SelectedAccount?.Id && a.AccountStatus != "Closed"))
+                CloseDestinationAccounts.Add(acc);
+            if (CloseDestinationAccounts.Count > 0)
+                SelectedCloseDestinationId = CloseDestinationAccounts[0].Id;
+            OnPropertyChanged(nameof(CloseHasPenalty));
+        }
+
+        public async Task<bool> ConfirmCloseAsync()
+        {
+            if (!CloseUserConfirmed) { CloseResultMessage = "Please confirm account closure."; return false; }
+            if (SelectedCloseDestinationId == 0) { CloseResultMessage = "Please select a destination account."; return false; }
+            IsLoading = true;
+            try
+            {
+                var result = await savingsService.CloseAccountAsync(SelectedAccount!.Id, SelectedCloseDestinationId, CurrentUserId);
+                CloseSuccess = result.Success;
+                CloseResultMessage = result.Success ? "Account closed successfully." : result.Message;
+                if (result.Success) await LoadAccountsAsync();
+                return result.Success;
+            }
+            catch (Exception ex) { CloseResultMessage = ex.Message; return false; }
             finally { IsLoading = false; }
         }
 
@@ -152,6 +348,8 @@ namespace KarmaBanking.App.ViewModels
                 FieldErrors["InitialDeposit"] = "Initial deposit must be a positive number.";
             if (SelectedFundingSource == null)
                 FieldErrors["FundingSource"] = "Please select a funding source.";
+            if (string.IsNullOrWhiteSpace(SelectedFrequency))
+                FieldErrors["Frequency"] = "Please select a deposit frequency.";
             if (IsGoalSavings)
             {
                 if (!TargetAmount.HasValue || TargetAmount.Value <= 0)
@@ -176,7 +374,9 @@ namespace KarmaBanking.App.ViewModels
                     InitialDeposit = deposit,
                     FundingAccountId = SelectedFundingSource!.Id,
                     TargetAmount = IsGoalSavings ? TargetAmount : null,
-                    TargetDate = IsGoalSavings ? TargetDate?.DateTime : null
+                    TargetDate = IsGoalSavings ? TargetDate?.DateTime : null,
+                    MaturityDate = MaturityDate?.DateTime,
+                    DepositFrequency = Enum.TryParse<DepositFrequency>(SelectedFrequency, out var freq) ? freq : null
                 };
                 await savingsService.CreateAccountAsync(dto);
                 ShowCreateConfirmation = true;
@@ -290,5 +490,7 @@ namespace KarmaBanking.App.ViewModels
             currentPage = 1;
             await LoadTransactionsAsync(accountId);
         }
+
+        public DateTimeOffset? MaturityDate { get; set; }
     }
 }

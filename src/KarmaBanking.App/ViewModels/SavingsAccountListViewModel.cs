@@ -91,7 +91,8 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                bool success = await savingsService.CloseAccountAsync(accountId, 1, 1);
+                var result = await savingsService.CloseAccountAsync(accountId, 1, 1);
+                bool success = result.Success;
 
                 if (!success)
                 {
