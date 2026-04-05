@@ -13,6 +13,7 @@ namespace KarmaBanking.App.Views
 {
     public sealed partial class InvestmentsView : Page
     {
+        private const string RefreshPricesEvent = "refreshPrices";
         private readonly ObservableCollection<InvestmentHolding> _displayedHoldings;
         private readonly List<ToggleButton> _filterButtons;
         private InvestmentsViewModel ViewModel { get; }
@@ -67,6 +68,10 @@ namespace KarmaBanking.App.Views
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(InvestmentsViewModel.portfolio))
+            {
+                RefreshDisplayedHoldings();
+            }
+            else if (e.PropertyName == RefreshPricesEvent)
             {
                 RefreshDisplayedHoldings();
             }

@@ -11,6 +11,7 @@ namespace KarmaBanking.App.ViewModels
 {
     public class InvestmentsViewModel : INotifyPropertyChanged
     {
+        private const string RefreshPricesEvent = "refreshPrices";
         private readonly IInvestmentRepository _repo;
         private readonly MarketDataService _marketData;
         private readonly DispatcherQueue? _dispatcherQueue;
@@ -97,6 +98,7 @@ namespace KarmaBanking.App.ViewModels
                 : 0;
 
             OnPropertyChanged(nameof(portfolio));
+            OnPropertyChanged(RefreshPricesEvent);
         }
 
         public void stopPolling()
