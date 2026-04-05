@@ -83,11 +83,13 @@ public class LoanService : ILoanService
         return application;
     }
 
-    public async Task ProcessApplicationStatusAsync(LoanApplication application)
+    public async Task<(LoanApplicationStatus approved, string? reason)> ProcessApplicationStatusAsync(LoanApplication application)
     {
         var (status, reason) = await EvaluateApplicationAsync(application);
 
         await _loanRepository.UpdateLoanApplicationStatusAsync(application.Id, status, reason);
+
+        return (status, reason);
 
     }
 
@@ -186,5 +188,10 @@ public class LoanService : ILoanService
             }
         }
         return rows;
+    }
+
+    public async Task SaveAmortizationAsync(List<AmortizationRow> rows)
+    {
+       await _loanRepository.SaveAmortizationAsync(rows);
     }
 }

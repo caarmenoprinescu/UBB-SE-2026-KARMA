@@ -12,7 +12,7 @@ public interface ILoanService
 
     Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType);
 
-    Task ProcessApplicationStatusAsync(LoanApplication application);
+    Task<(LoanApplicationStatus approved, string? reason)> ProcessApplicationStatusAsync(LoanApplication application);
 
     Task<LoanApplication> ApplyForLoanAsync(LoanApplicationRequest request);
 
@@ -23,4 +23,6 @@ public interface ILoanService
     Task PayInstallmentAsync(int loanId, decimal? amount = null);
 
     Task<List<AmortizationRow>> GetAmortizationAsync(int loanId);
+
+    Task SaveAmortizationAsync(List<AmortizationRow> rows);
 }
