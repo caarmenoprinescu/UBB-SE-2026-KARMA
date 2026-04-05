@@ -27,7 +27,7 @@ namespace KarmaBanking.App.Models
                 ? (double)(Balance / TargetAmount.Value * 100m)
                 : 0;
 
-        public string FormattedBalance => $"{Balance:C2}";
+        public string FormattedBalance => $"${Balance:N2}";
 
         public bool IsGoalSavings => SavingsType == "GoalSavings";
 

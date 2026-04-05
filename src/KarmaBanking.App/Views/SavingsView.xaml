@@ -207,7 +207,7 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="Initial Deposit (RON)" Margin="0,0,0,4"/>
+                            <TextBlock Text="Initial Deposit ($)" Margin="0,0,0,4"/>
                             <TextBox x:Name="InitialDepositTextBox" PlaceholderText="1000" InputScope="Number"/>
                             <TextBlock x:Name="InitialDepositError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
@@ -242,7 +242,7 @@
                                    Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
                                    Margin="0,0,0,8"/>
                         <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="Target Amount (RON)" Margin="0,0,0,4"/>
+                            <TextBlock Text="Target Amount ($)" Margin="0,0,0,4"/>
                             <TextBox x:Name="TargetAmountTextBox" PlaceholderText="e.g. 5000" InputScope="Number"/>
                             <TextBlock x:Name="TargetAmountError" Foreground="Red" FontSize="12"
                                        Margin="0,4,0,0" Visibility="Collapsed"/>
@@ -324,7 +324,7 @@
                         <TextBlock Text="Deposit Funds" FontSize="16" FontWeight="SemiBold"/>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Amount (RON)" FontSize="13"/>
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="DepositAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"
                                      TextChanged="OnDepositAmountChanged"/>
@@ -366,7 +366,7 @@
                         </Border>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Amount (RON)" FontSize="13"/>
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="WithdrawAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"
                                      TextChanged="OnWithdrawAmountChanged"/>
@@ -404,7 +404,7 @@
                                    FontSize="16" FontWeight="SemiBold"/>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Amount (RON)" FontSize="13"/>
+                            <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="AutoDepositAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"/>
                         </StackPanel>
