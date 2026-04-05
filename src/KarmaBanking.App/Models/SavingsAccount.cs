@@ -30,5 +30,12 @@ namespace KarmaBanking.App.Models
         public string FormattedBalance => $"{Balance:C2}";
 
         public bool IsGoalSavings => SavingsType == "GoalSavings";
+
+        public string DisplayStatus =>
+            SavingsType == "FixedDeposit" &&
+            MaturityDate.HasValue &&
+            MaturityDate.Value <= DateTime.UtcNow
+                ? "Matured"
+                : AccountStatus;
     }
 }

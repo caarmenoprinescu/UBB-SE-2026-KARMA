@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using KarmaBanking.App.Models.Enums;
 using System.Threading.Tasks;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
@@ -11,6 +12,9 @@ namespace KarmaBanking.App.Services.Interfaces
         Task<List<SavingsAccount>> GetAccountsAsync(int userId, bool includesClosed = false);
         Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source, int userId);
         Task<ClosureResult> CloseAccountAsync(int accountId, int destinationAccountId, int userId);
+        Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, int userId);
+        Task<AutoDeposit?> GetAutoDepositAsync(int accountId);
+        Task SaveAutoDepositAsync(AutoDeposit autoDeposit);
         Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId);
         Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsAsync(int accountId, string filter, int page, int pageSize);
     }

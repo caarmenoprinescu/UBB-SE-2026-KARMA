@@ -1,4 +1,5 @@
 using System;
+using KarmaBanking.App.Models.Enums;
 
 namespace KarmaBanking.App.Models.DTOs
 {
@@ -12,5 +13,6 @@ namespace KarmaBanking.App.Models.DTOs
         public decimal? TargetAmount { get; set; }
         public DateTime? TargetDate { get; set; }
         public DateTime? MaturityDate { get; set; }
+        public DepositFrequency? DepositFrequency { get; set; }
     }
 }

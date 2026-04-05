@@ -4,6 +4,6 @@ namespace KarmaBanking.App.Models.Enums
     {
         Active,
         Closed,
-        Locked
+        Matured
     }
 }

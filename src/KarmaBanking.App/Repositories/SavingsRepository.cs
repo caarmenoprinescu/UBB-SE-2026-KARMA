@@ -1,6 +1,7 @@
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Models.Enums;
+using System.Linq;
 using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
@@ -277,6 +278,158 @@ namespace KarmaBanking.App.Repositories
                     Message = ex.Message,
                     ClosedAt = DateTime.UtcNow
                 };
+            }
+        }
+
+        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel)
+        {
+            using var conn = DatabaseConfig.GetDatabaseConnection();
+            await conn.OpenAsync();
+            using var transaction = conn.BeginTransaction();
+
+            try
+            {
+                string savingsType;
+                DateTime? maturityDate;
+                decimal balance;
+
+                using (var cmd = new SqlCommand(@"
+                    SELECT balance, savingsType, maturityDate
+                    FROM SavingsAccount WITH (UPDLOCK, ROWLOCK)
+                    WHERE id = @Id", conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@Id", accountId);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (!await reader.ReadAsync())
+                        throw new InvalidOperationException("Account not found.");
+                    balance = (decimal)reader["balance"];
+                    savingsType = reader["savingsType"].ToString();
+                    maturityDate = reader["maturityDate"] as DateTime?;
+                }
+
+                decimal penalty = 0;
+                if (savingsType == "FixedDeposit" &&
+                    maturityDate.HasValue &&
+                    maturityDate.Value > DateTime.UtcNow)
+                {
+                    penalty = amount * 0.02m;
+                }
+
+                decimal totalDeducted = amount + penalty;
+                if (totalDeducted > balance)
+                    throw new InvalidOperationException("Insufficient balance after penalty.");
+
+                decimal newBalance = balance - totalDeducted;
+
+                using (var cmd = new SqlCommand(@"
+                    UPDATE SavingsAccount SET balance = @Balance WHERE id = @Id",
+                    conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@Balance", newBalance);
+                    cmd.Parameters.AddWithValue("@Id", accountId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                using (var cmd = new SqlCommand(@"
+                    INSERT INTO SavingsTransaction
+                    (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
+                    VALUES (@AccountId, 'Withdrawal', @Amount, @BalanceAfter, 'Manual',
+                            @Description, GETUTCDATE())", conn, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@AccountId", accountId);
+                    cmd.Parameters.AddWithValue("@Amount", amount);
+                    cmd.Parameters.AddWithValue("@BalanceAfter", newBalance);
+                    string desc = penalty > 0
+                        ? $"To: {destinationLabel} | Early withdrawal penalty: {penalty:C2}"
+                        : $"To: {destinationLabel}";
+                    cmd.Parameters.AddWithValue("@Description", desc);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+
+                return new WithdrawResponseDto
+                {
+                    Success = true,
+                    AmountWithdrawn = amount,
+                    PenaltyApplied = penalty,
+                    NewBalance = newBalance,
+                    Message = penalty > 0
+                        ? $"Withdrawal successful. Early penalty of {penalty:C2} applied."
+                        : "Withdrawal successful.",
+                    ProcessedAt = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new WithdrawResponseDto
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    ProcessedAt = DateTime.UtcNow
+                };
+            }
+        }
+
+        public async Task<AutoDeposit?> GetAutoDepositAsync(int accountId)
+        {
+            const string query = @"
+                SELECT id, savingsAccountId, amount, frequency, nextRunDate, isActive
+                FROM AutoDeposit
+                WHERE savingsAccountId = @AccountId";
+
+            using var conn = DatabaseConfig.GetDatabaseConnection();
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@AccountId", accountId);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync()) return null;
+
+            return new AutoDeposit
+            {
+                Id = (int)reader["id"],
+                SavingsAccountId = (int)reader["savingsAccountId"],
+                Amount = (decimal)reader["amount"],
+                Frequency = Enum.Parse<DepositFrequency>(reader["frequency"].ToString()!),
+                NextRunDate = (DateTime)reader["nextRunDate"],
+                IsActive = (bool)reader["isActive"]
+            };
+        }
+
+        public async Task SaveAutoDepositAsync(AutoDeposit autoDeposit)
+        {
+            using var conn = DatabaseConfig.GetDatabaseConnection();
+            await conn.OpenAsync();
+
+            if (autoDeposit.Id == 0)
+            {
+                const string insert = @"
+                    INSERT INTO AutoDeposit (savingsAccountId, amount, frequency, nextRunDate, isActive)
+                    VALUES (@AccountId, @Amount, @Frequency, @NextRunDate, @IsActive)";
+                using var cmd = new SqlCommand(insert, conn);
+                cmd.Parameters.AddWithValue("@AccountId", autoDeposit.SavingsAccountId);
+                cmd.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
+                cmd.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
+                cmd.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
+                cmd.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            else
+            {
+                const string update = @"
+                    UPDATE AutoDeposit
+                    SET amount = @Amount, frequency = @Frequency,
+                        nextRunDate = @NextRunDate, isActive = @IsActive
+                    WHERE id = @Id";
+                using var cmd = new SqlCommand(update, conn);
+                cmd.Parameters.AddWithValue("@Id", autoDeposit.Id);
+                cmd.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
+                cmd.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
+                cmd.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
+                cmd.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
+                await cmd.ExecuteNonQueryAsync();
             }
         }
 
