@@ -1,30 +1,77 @@
 using KarmaBanking.App.Services;
+using KarmaBanking.App.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using System.IO;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.FileProperties;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace KarmaBanking.App.Views
 {
     public sealed partial class ChatRoutingView : Page
     {
+        private readonly ChatViewModel viewModel = ChatViewModel.Instance;
         private int selectedRating = 0;
 
         public ChatRoutingView()
         {
             InitializeComponent();
+            DataContext = viewModel;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is string category)
+            SessionTitleTextBlock.Text = viewModel.CurrentSession == null
+                ? "No active chat selected."
+                : $"{viewModel.CurrentSession.Title} ({viewModel.CurrentSession.SessionModeLabel})";
+
+            TranscriptTextBox.Text = viewModel.BuildCurrentTranscript();
+
+            AttachmentInfoTextBlock.Text = viewModel.SelectedAttachment == null
+                ? "No file attached."
+                : $"Attached file: {viewModel.SelectedAttachment.FileName} ({viewModel.SelectedAttachment.FileSizeDisplay})";
+
+            if (viewModel.CurrentSession != null && !string.IsNullOrWhiteSpace(viewModel.CurrentSession.TeamContactMessage))
             {
-                CategoryTextBlock.Text = $"Category: {category}";
+                TeamMessageTextBox.Text = viewModel.CurrentSession.TeamContactMessage;
             }
+        }
+
+        private async void SendToTeam_Click(object sender, RoutedEventArgs e)
+        {
+            bool wasSent = await viewModel.SendCurrentConversationToTeamAsync(TeamMessageTextBox.Text);
+
+            if (!wasSent)
+            {
+                StatusText.Text = "The support request could not be sent.";
+                StatusText.Foreground = new SolidColorBrush(Colors.Red);
+                return;
+            }
+
+            TranscriptTextBox.Text = viewModel.BuildCurrentTranscript();
+            SessionTitleTextBlock.Text = viewModel.CurrentSession == null
+                ? "No active chat selected."
+                : $"{viewModel.CurrentSession.Title} ({viewModel.CurrentSession.SessionModeLabel})";
+
+            StatusText.Text = "The full chat transcript, your note, and the selected attachment details were prepared for the support team.";
+            StatusText.Foreground = new SolidColorBrush(Colors.Green);
+        }
+
+        private async void AttachFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            await PickAttachmentAsync();
+            AttachmentInfoTextBlock.Text = viewModel.SelectedAttachment == null
+                ? "No file attached."
+                : $"Attached file: {viewModel.SelectedAttachment.FileName} ({viewModel.SelectedAttachment.FileSizeDisplay})";
         }
 
         private async void OpenRatingDialog_Click(object sender, RoutedEventArgs e)
@@ -146,11 +193,10 @@ namespace KarmaBanking.App.Views
                 {
                     ApiService api = new ApiService();
 
-                    int sessionId = 1; // temporar
+                    int sessionId = viewModel.CurrentSession?.id ?? 1;
                     string feedback = feedbackTextBox.Text;
 
                     api.SubmitFeedback(sessionId, selectedRating, feedback);
-                    api.EmailSessionTranscript(sessionId, "client@example.com"); //temporar
 
                     StatusText.Text = $"Thank you! Rating submitted: {selectedRating} ⭐";
                     StatusText.Foreground = new SolidColorBrush(Colors.Green);
@@ -168,6 +214,60 @@ namespace KarmaBanking.App.Views
             if (Frame.CanGoBack)
             {
                 Frame.GoBack();
+            }
+        }
+
+        private async Task PickAttachmentAsync()
+        {
+            try
+            {
+                FileOpenPicker picker = new FileOpenPicker();
+
+                IntPtr hwnd = WindowNative.GetWindowHandle(App.MainAppWindow);
+                InitializeWithWindow.Initialize(picker, hwnd);
+
+                picker.ViewMode = PickerViewMode.List;
+                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                picker.FileTypeFilter.Add(".pdf");
+                picker.FileTypeFilter.Add(".png");
+                picker.FileTypeFilter.Add(".jpg");
+                picker.FileTypeFilter.Add(".jpeg");
+
+                StorageFile? file = await picker.PickSingleFileAsync();
+
+                if (file == null)
+                {
+                    return;
+                }
+
+                BasicProperties properties = await file.GetBasicPropertiesAsync();
+
+                if (properties.Size > 10 * 1024 * 1024)
+                {
+                    viewModel.StatusMessage = "File size must be 10 MB or less.";
+                    viewModel.SetUploadFailed("File size must be 10 MB or less.");
+                    return;
+                }
+
+                viewModel.SelectedAttachment = new Models.SelectedAttachment
+                {
+                    FileName = file.Name,
+                    FilePath = file.Path,
+                    FileType = Path.GetExtension(file.Name).ToLowerInvariant(),
+                    FileSizeBytes = (long)properties.Size
+                };
+
+                viewModel.StatusMessage = "Attachment selected successfully.";
+                viewModel.SetAttachmentSelected();
+
+                viewModel.SetUploadStarted();
+                await Task.Delay(1000);
+                viewModel.SetUploadSucceeded();
+            }
+            catch (Exception ex)
+            {
+                viewModel.StatusMessage = $"Attachment selection failed: {ex.Message}";
+                viewModel.SetUploadFailed(ex.Message);
             }
         }
     }

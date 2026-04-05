@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:KarmaBanking.App.Models"
     xmlns:utils="using:KarmaBanking.App.Utils"
     mc:Ignorable="d">
 
@@ -11,74 +12,122 @@
         <utils:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
 
-    <ScrollViewer>
-        <StackPanel Padding="24" Spacing="12">
-            <TextBlock Text="Customer Support"
-                       FontSize="28"
-                       FontWeight="Bold"/>
+    <Grid Padding="24" ColumnSpacing="24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-            <TextBlock Text="How can we help you today?"
-                       FontSize="20"/>
+        <Border Grid.Column="0"
+                Padding="16"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                CornerRadius="12">
+            <StackPanel Spacing="12">
+                <TextBlock Text="Previous Sessions"
+                           FontSize="22"
+                           FontWeight="Bold"/>
 
-            <ListView ItemsSource="{Binding Messages}" Height="200">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="4">
-                            <TextBlock Text="{Binding SenderType}" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding SentAt}"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                <TextBlock Text="Open an older chat or start a fresh one."
+                           TextWrapping="Wrap"/>
 
-            <ComboBox x:Name="CategoryComboBox"
-                      Header="Issue Category"
-                      SelectionChanged="CategoryComboBox_SelectionChanged"
-                      PlaceholderText="Choose a category">
-                <x:String>Account</x:String>
-                <x:String>Cards</x:String>
-                <x:String>Transfers</x:String>
-                <x:String>Loans</x:String>
-                <x:String>Technical Issue</x:String>
-                <x:String>Other</x:String>
-            </ComboBox>
+                <Button Content="New Session"
+                        Command="{Binding StartNewSessionCommand}"/>
 
-            <Button Content="Attach File"
-                    Click="AttachFileButton_Click"
-                    Width="140"
-                    IsEnabled="{Binding CanAttachFile}"/>
+                <ListView x:Name="SessionsListView"
+                          ItemsSource="{Binding Sessions}"
+                          SelectionChanged="SessionsListView_SelectionChanged">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChatSession">
+                            <StackPanel Spacing="4" Margin="0,4">
+                                <TextBlock Text="{Binding Title}"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding LastPreview}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="Gray"/>
+                                <TextBlock Text="{Binding LastUpdatedDisplay}"
+                                           FontSize="11"
+                                           Foreground="DarkGray"/>
+                                <TextBlock Text="{Binding SessionModeLabel}"
+                                           FontSize="11"
+                                           Foreground="DarkBlue"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </Border>
 
-            <TextBlock Text="{Binding UploadStatusMessage}"
-                       TextWrapping="Wrap"
-                       Foreground="DarkBlue"/>
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{Binding CurrentSessionTitle}"
+                           FontSize="28"
+                           FontWeight="Bold"/>
 
-            <Border Padding="12"
-                    BorderBrush="Gray"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Visibility="{Binding HasAttachmentPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Attachment Preview"
-                               FontSize="18"
-                               FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding CurrentSessionModeLabel}"
+                           FontSize="14"
+                           Foreground="DarkBlue"/>
 
-                    <TextBlock Text="{Binding SelectedAttachment.FileName}" />
-                    <TextBlock Text="{Binding SelectedAttachment.FileType}" />
-                    <TextBlock Text="{Binding SelectedAttachment.FileSizeDisplay}" />
+                <TextBlock Text="Choose a preset question"
+                           FontSize="18"
+                           FontWeight="SemiBold"/>
 
-                    <Button Content="Remove"
-                            Command="{Binding RemoveAttachmentCommand}"
-                            Width="100"/>
-                </StackPanel>
-            </Border>
+                <ItemsControl ItemsSource="{Binding PresetQuestions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Button Content="{Binding}"
+                                    Click="PresetQuestionButton_Click"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,0,0,8"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-            <Button Content="Continue"
-                    Command="{Binding ContinueCommand}"
-                    IsEnabled="{Binding CanContinue}"
-                    Width="140"/>
+                <TextBlock Text="Conversation"
+                           FontSize="18"
+                           FontWeight="SemiBold"/>
 
-            <TextBlock Text="{Binding StatusMessage}"
-                       TextWrapping="Wrap"/>
-        </StackPanel>
-    </ScrollViewer>
+                <Border BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="8">
+                    <ListView ItemsSource="{Binding Messages}"
+                              Height="280">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ChatMessage">
+                                <Border Padding="10"
+                                        Margin="0,0,0,8"
+                                        Background="#FFE2E8F0"
+                                        BorderBrush="#FF94A3B8"
+                                        BorderThickness="1"
+                                        CornerRadius="10">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="{Binding SenderType}"
+                                                   FontWeight="Bold"
+                                                   Foreground="#FF0F172A"/>
+                                        <TextBlock Text="{Binding DisplaySentAt}"
+                                                   FontSize="11"
+                                                   Foreground="#FF334155"/>
+                                        <TextBlock Text="{Binding Content}"
+                                                   Foreground="#FF0F172A"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
+
+                <Button Content="Contact Actual Team"
+                        Click="ContactTeamButton_Click"
+                        Width="180"
+                        IsEnabled="{Binding CanContactTeam}"/>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Page>

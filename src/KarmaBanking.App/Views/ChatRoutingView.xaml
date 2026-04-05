@@ -4,29 +4,98 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:utils="using:KarmaBanking.App.Utils"
     mc:Ignorable="d">
 
-    <StackPanel Padding="24" Spacing="16">
-        <TextBlock Text="Chat Completed"
-                   FontSize="28"
-                   FontWeight="Bold"/>
+    <Page.Resources>
+        <utils:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Page.Resources>
 
-        <TextBlock x:Name="CategoryTextBlock"
-                   FontSize="18"
-                   TextWrapping="Wrap"/>
+    <ScrollViewer>
+        <StackPanel Padding="24" Spacing="16">
+            <TextBlock Text="Contact The Team"
+                       FontSize="28"
+                       FontWeight="Bold"/>
 
-        <TextBlock Text="Your support chat has ended."
-                   TextWrapping="Wrap"/>
+            <TextBlock x:Name="SessionTitleTextBlock"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"/>
 
-        <Button Content="Rate Chat"
-                Click="OpenRatingDialog_Click"
-                Width="140"/>
+            <TextBlock Text="The full chat transcript below will be sent together with your note and any file attached in the chat."
+                       TextWrapping="Wrap"/>
 
-        <TextBlock x:Name="StatusText"
-                   TextWrapping="Wrap"/>
+            <TextBlock x:Name="AttachmentInfoTextBlock"
+                       TextWrapping="Wrap"/>
 
-        <Button Content="Back"
-                Click="BackButton_Click"
-                Width="120"/>
-    </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="Attach File"
+                        Click="AttachFileButton_Click"
+                        Width="140"
+                        IsEnabled="{Binding CanAttachFile}"/>
+
+                <TextBlock Text="{Binding UploadStatusMessage}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Foreground="DarkBlue"/>
+            </StackPanel>
+
+            <Border Padding="12"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Visibility="{Binding HasAttachmentPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Attachment Preview"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Text="{Binding SelectedAttachment.FileName}" />
+                    <TextBlock Text="{Binding SelectedAttachment.FileType}" />
+                    <TextBlock Text="{Binding SelectedAttachment.FileSizeDisplay}" />
+
+                    <Button Content="Remove"
+                            Command="{Binding RemoveAttachmentCommand}"
+                            Width="100"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Message for the support team"
+                       FontSize="16"
+                       FontWeight="SemiBold"/>
+
+            <TextBox x:Name="TeamMessageTextBox"
+                     PlaceholderText="Add any details you want the team to see..."
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Height="110"/>
+
+            <TextBlock Text="Chat transcript"
+                       FontSize="16"
+                       FontWeight="SemiBold"/>
+
+            <TextBox x:Name="TranscriptTextBox"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Height="240"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="Send To Team"
+                        Click="SendToTeam_Click"
+                        Width="150"/>
+
+                <Button Content="Rate Assistance"
+                        Click="OpenRatingDialog_Click"
+                        Width="150"/>
+
+                <Button Content="Back To Chat"
+                        Click="BackButton_Click"
+                        Width="140"/>
+            </StackPanel>
+
+            <TextBlock x:Name="StatusText"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

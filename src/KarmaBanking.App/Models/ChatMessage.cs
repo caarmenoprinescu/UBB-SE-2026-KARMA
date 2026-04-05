@@ -6,8 +6,9 @@ namespace KarmaBanking.App.Models
     {
         public int Id { get; set; }
         public int SessionId { get; set; }
-        public string SenderType { get; set; }
-        public string Content { get; set; }
+        public string SenderType { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
         public DateTime SentAt { get; set; }
+        public string DisplaySentAt => SentAt.ToString("g");
     }
 }

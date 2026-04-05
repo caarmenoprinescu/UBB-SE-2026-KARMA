@@ -7,6 +7,7 @@ using KarmaBanking.App.Models;
 using KarmaBanking.App.Services.Interfaces;
 using KarmaBanking.App.Utils;
 using Microsoft.UI.Xaml;
+using KarmaBanking.App.Models.DTOs;
 
 namespace KarmaBanking.App.ViewModels
 {
@@ -108,21 +109,20 @@ namespace KarmaBanking.App.ViewModels
 
             IsSubmitting = true;
 
-            SavingsAccount newSavingsAccount = new SavingsAccount
+            var dto = new CreateSavingsAccountDto
             {
                 UserId = 1,
                 SavingsType = selectedSavingsType,
                 AccountName = accountNickname,
-                Balance = initialDepositAmount,
-                FundingAccountId = selectedFundingAccountId,
-                Apy = 0
+                InitialDeposit = initialDepositAmount,
+                FundingAccountId = selectedFundingAccountId.Value
             };
 
-            bool wasCreated = await savingsService.CreateSavingsAccountAsync(newSavingsAccount);
+            var createdAccount = await savingsService.CreateAccountAsync(dto);
 
             IsSubmitting = false;
 
-            if (wasCreated)
+            if (createdAccount != null)
                 IsAccountCreated = true;
             else
                 ErrorMessage = "Failed to create account. Please check your details and try again.";
