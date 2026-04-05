@@ -28,8 +28,12 @@ namespace KarmaBanking.App.Views
         {
             var button = sender as Button;
             int loanId = (int)button.Tag;
+            var selectedLoan = _viewModel.loans?.FirstOrDefault(currentLoan => currentLoan.id == loanId);
 
-            _viewModel.LoadAmortization(loanId);
+            if (selectedLoan != null)
+            {
+                Frame.Navigate(typeof(AmortizationScheduleView), selectedLoan);
+            }
         }
 
         private async void Pay_Click(object sender, RoutedEventArgs e)

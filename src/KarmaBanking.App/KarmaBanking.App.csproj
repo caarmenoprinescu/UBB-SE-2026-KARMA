@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -10,13 +10,14 @@
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <WinUISDKReferences>false</WinUISDKReferences>
-    <EnableMsixTooling>true</EnableMsixTooling>
+    <EnableMsixTooling>false</EnableMsixTooling>
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 	<WindowsPackageType>None</WindowsPackageType>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Views\ApplyLoanView.xaml" />
+    <None Remove="Views\CloseAccountDialog.xaml" />
   </ItemGroup>
 	
   <ItemGroup>
@@ -42,10 +43,16 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\CloseAccountDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\ApplyLoanView.xaml">
@@ -86,6 +93,11 @@
 	<Page Update="Views\InvestmentLogsView.xaml">
 	  <Generator>MSBuild:Compile</Generator>
 	</Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\SavingsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
 	<!--

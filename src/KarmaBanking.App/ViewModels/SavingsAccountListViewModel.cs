@@ -66,7 +66,7 @@ namespace KarmaBanking.App.ViewModels
             List<SavingsAccount> accounts;
             try
             {
-                accounts = await savingsService.GetSavingsAccountsByUserIdAsync(userId);
+                accounts = await savingsService.GetAccountsAsync(userId, includesClosed: false);
             }
             catch (Exception ex)
             {
@@ -91,7 +91,7 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                bool success = await savingsService.CloseSavingsAccountAsync(accountId);
+                bool success = await savingsService.CloseAccountAsync(accountId, 1, 1);
 
                 if (!success)
                 {
@@ -118,7 +118,7 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                await savingsService.UpdateSavingsAccountBalanceAsync(accountId, amount);
+                await savingsService.DepositAsync(accountId, amount, "Manual", 1);
 
                 // Refresh accounts after deposit
                 await LoadSavingsAccountsAsync(userId: 1);
@@ -133,7 +133,6 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                await savingsService.ProcessSchedulesAsync();
                 await LoadSavingsAccountsAsync(1);
             }
             catch (Exception ex)
@@ -142,16 +141,5 @@ namespace KarmaBanking.App.ViewModels
             }
         }
 
-        public async Task CreateScheduleAsync(int accountId, decimal amount, string frequency)
-        {
-            try
-            {
-                await savingsService.CreateScheduleAsync(accountId, amount, frequency);
-            }
-            catch (Exception ex)
-            {
-                LoadErrorMessage = ex.Message;
-            }
-        }
     }
 }

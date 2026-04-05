@@ -250,20 +250,22 @@ public class LoanRepository : ILoanRepository
     }
 
     private Loan ReaderToLoan(SqlDataReader reader)
+{
+    return new Loan
     {
-        return new Loan
-        {
-            id = (int)reader["id"],
-            userId = (int)reader["userId"],
-            loanType = reader["loanType"].ToString(),
-            principal = (decimal)reader["principal"],
-            outstandingBalance = (decimal)reader["outstandingBalance"],
-            interestRate = (decimal)reader["interestRate"],
-            monthlyInstallment = (decimal)reader["monthlyInstallment"],
-            remainingMonths = (int)reader["remainingMonths"],
-            loanStatus = reader["loanStatus"].ToString()
-        };
-    }
+        id = (int)reader["id"],
+        userId = (int)reader["userId"],
+        loanType = reader["loanType"].ToString(),
+        principal = (decimal)reader["principal"],
+        outstandingBalance = (decimal)reader["outstandingBalance"],
+        interestRate = (decimal)reader["interestRate"],
+        monthlyInstallment = (decimal)reader["monthlyInstallment"],
+        remainingMonths = (int)reader["remainingMonths"],
+        loanStatus = reader["loanStatus"].ToString(),
+        TermInMonths = reader["TermInMonths"] != DBNull.Value ? (int)reader["TermInMonths"] : 0,
+        StartDate = reader["StartDate"] != DBNull.Value ? (DateTime)reader["StartDate"] : default(DateTime)
+    };
+}
     public void CreateLoanApplication(LoanApplication app)
 {
     using (SqlConnection connection = new SqlConnection(DatabaseConfig.ConnectionString))

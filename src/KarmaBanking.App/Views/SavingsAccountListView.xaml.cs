@@ -49,7 +49,6 @@ namespace KarmaBanking.App.Views
                 OpenNewFrame.Navigate(typeof(CreateSavingsAccountView),
                     new Action(async () => await SwitchToMyAccountsTabAsync()));
 
-            AutoSavePanel.Visibility = isManage ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private async Task SwitchToMyAccountsTabAsync()
@@ -88,7 +87,7 @@ namespace KarmaBanking.App.Views
             if (result == ContentDialogResult.Primary)
             {
                 var viewModel = (SavingsAccountListViewModel)DataContext;
-                await viewModel.CloseSavingsAccountAsync(selectedAccount.Id);
+                Frame.Navigate(typeof(CloseAccountDialog), selectedAccount);
             }
         }
 
@@ -145,32 +144,5 @@ namespace KarmaBanking.App.Views
             }
         }
 
-        private async void SaveAutoSave_Click(object sender, RoutedEventArgs e)
-        {
-            if (AccountsListView.SelectedItem is not SavingsAccount selectedAccount)
-            {
-                var dialog = new ContentDialog
-                {
-                    Title = "No account selected",
-                    Content = "Please select an account first.",
-                    CloseButtonText = "OK",
-                    XamlRoot = this.Content.XamlRoot
-                };
-
-                await dialog.ShowAsync();
-                return;
-            }
-
-            if (!decimal.TryParse(AutoSaveAmountTextBox.Text, out decimal amount))
-            {
-                return;
-            }
-
-            string frequency = (FrequencyComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-
-            var viewModel = (SavingsAccountListViewModel)DataContext;
-
-            await viewModel.CreateScheduleAsync(selectedAccount.Id, amount, frequency);
-        }
     }
 }
