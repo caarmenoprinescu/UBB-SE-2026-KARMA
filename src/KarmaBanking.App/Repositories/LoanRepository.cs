@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 public class LoanRepository : ILoanRepository
 {
+    private const int CommandTimeoutSeconds = 120;
 
     public async Task<List<Loan>> GetAllLoansAsync()
     {
@@ -57,6 +58,7 @@ public class LoanRepository : ILoanRepository
         string query = "SELECT * FROM Loan WHERE id = @id";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
 
         command.Parameters.Add("@id", SqlDbType.Int).Value = id;
 
@@ -81,6 +83,7 @@ public class LoanRepository : ILoanRepository
         string query = "SELECT * FROM Loan WHERE userId = @userId";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
         command.Parameters.Add("@userId", SqlDbType.Int).Value = userId;
 
         using SqlDataReader reader = await command.ExecuteReaderAsync();
@@ -104,6 +107,7 @@ public class LoanRepository : ILoanRepository
         string query = "SELECT * FROM Loan WHERE loanType = @loanType";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
         command.Parameters.Add("@loanType", SqlDbType.NVarChar, 50).Value = loanType.ToString();
 
         using SqlDataReader reader = await command.ExecuteReaderAsync();
@@ -127,6 +131,7 @@ public class LoanRepository : ILoanRepository
         string query = "SELECT * FROM Loan WHERE loanStatus = @loanStatus";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
 
         command.Parameters.Add("@loanStatus", SqlDbType.NVarChar, 50).Value = loanStatus.ToString();
 
@@ -214,6 +219,7 @@ public class LoanRepository : ILoanRepository
 
         using (SqlCommand command = new SqlCommand(query, connection))
         {
+            command.CommandTimeout = CommandTimeoutSeconds;
             command.Parameters.AddWithValue("@LoanId", loanId);
 
             using (SqlDataReader reader = await command.ExecuteReaderAsync())
@@ -253,6 +259,7 @@ public class LoanRepository : ILoanRepository
             (@loanType, @amount, @term, @purpose, @status, @reason, @userId)";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
 
         command.Parameters.AddWithValue("@loanType", application.LoanType.ToString());
         command.Parameters.AddWithValue("@amount", application.DesiredAmount);
@@ -283,6 +290,7 @@ public class LoanRepository : ILoanRepository
                              WHERE id = @id";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
         command.Parameters.Add("@id", SqlDbType.Int).Value = id;
         command.Parameters.Add("@loanApplicationStatus", SqlDbType.NVarChar, 50).Value = loanApplicationStatus.ToString();
         command.Parameters.Add("@rejectionReason", SqlDbType.NVarChar, 255).Value = reason != null ? reason.ToString() : DBNull.Value;
@@ -304,6 +312,7 @@ public class LoanRepository : ILoanRepository
             (@userId, @loanType, @principal, @outstandingBalance, @interestRate, @monthlyInstallment, @remainingMonths, @loanStatus, @termInMonths , @startDate)";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
 
         command.Parameters.Add("@userId", SqlDbType.Int).Value = loan.UserId;
         command.Parameters.AddWithValue("@loanType", loan.LoanType.ToString());
@@ -335,6 +344,7 @@ public class LoanRepository : ILoanRepository
                              WHERE id = @id";
 
         using SqlCommand command = new SqlCommand(query, connection);
+        command.CommandTimeout = CommandTimeoutSeconds;
 
 
         command.Parameters.Add("@outstandingBalance", SqlDbType.Decimal).Value = newBalance;

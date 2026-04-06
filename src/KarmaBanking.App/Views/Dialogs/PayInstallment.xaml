@@ -48,6 +48,10 @@
                            LargeChange="1000"
                            PlaceholderText="0.00"
                            SpinButtonPlacementMode="Compact"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#FF6B6B"
+                           FontSize="12"
+                           TextWrapping="Wrap"/>
                 <TextBlock Text="Must be at least the minimum installment" 
                            FontSize="11" Foreground="Gray"/>
             </StackPanel>
