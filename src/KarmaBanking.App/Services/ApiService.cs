@@ -16,6 +16,14 @@ namespace KarmaBanking.App.Services
     {
         private readonly string baseUrl = "https://localhost:5001";
         private readonly string authToken = "";
+        private readonly ILoanService _loanService;
+
+        public ApiService() { }
+        public ApiService(ILoanService loanService)
+        {
+            _loanService = loanService;
+        }
+
         protected static readonly Dictionary<string, string> DefaultChatbotResponses = new Dictionary<string, string>
         {
             ["How do I reset my password?"] =
@@ -30,7 +38,7 @@ namespace KarmaBanking.App.Services
                 "Please contact the team from this chat and include a short description of what happened. Screenshots or PDFs can help the team investigate faster."
         };
 
-      
+
         public async Task<List<SavingsAccount>> GetSavingsAccountsAsync(int userId, bool includesClosed = false)
         {
             using var client = BuildClient();
@@ -42,7 +50,7 @@ namespace KarmaBanking.App.Services
                    ?? new List<SavingsAccount>();
         }
 
-      
+
         public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
         {
             using var client = BuildClient();
@@ -216,12 +224,81 @@ namespace KarmaBanking.App.Services
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             return ext switch
             {
-                ".pdf"  => "application/pdf",
-                ".png"  => "image/png",
-                ".jpg"  => "image/jpeg",
+                ".pdf" => "application/pdf",
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
                 ".jpeg" => "image/jpeg",
-                _       => "application/octet-stream"
+                _ => "application/octet-stream"
             };
         }
+
+
+        public async Task<List<Loan>> GetAllLoansAsync()
+        {
+            return await _loanService.GetAllLoansAsync();
+        }
+
+        public async Task<Loan> GetLoanByIdAsync(int id)
+        {
+            return await _loanService.GetLoanByIdAsync(id);
+        }
+
+        public async Task<List<Loan>> GetLoansByUserAsync(int userId)
+        {
+            return await _loanService.GetLoansByUserAsync(userId);
+        }
+
+        public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
+        {
+            return await _loanService.GetLoansByStatusAsync(loanStatus);
+        }
+
+
+        public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
+        {
+            return await _loanService.GetLoansByTypeAsync(loanType);
+        }
+
+
+        public async Task<string?> ApplyForLoanAsync(LoanApplicationRequest request)
+        {
+
+            var newApplication = await _loanService.ApplyForLoanAsync(request);
+
+            var (status, rejectionReason) = await _loanService.ProcessApplicationStatusAsync(newApplication);
+
+            if (status == LoanApplicationStatus.Approved)
+            {
+               int loanId = await _loanService.AddLoanAsync(newApplication);
+                await _loanService.GenerateAmortizationAsync(loanId);
+            }
+
+            return rejectionReason;
+
+
+        }
+
+        public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
+        {
+            return _loanService.GetLoanEstimate(request);
+        }
+
+
+
+        public async Task PayInstallmentAsync(int loanId, decimal? amount = null)
+        {
+            await _loanService.PayInstallmentAsync(loanId, amount);
+        }
+
+
+
+        public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
+        {
+            return await _loanService.GetAmortizationAsync(loanId);
+
+        }
+
+
+
     }
 }

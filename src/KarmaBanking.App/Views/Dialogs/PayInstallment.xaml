@@ -1,0 +1,57 @@
+<ContentDialog
+    x:Class="KarmaBanking.App.Views.Dialogs.PayInstallmentDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Pay Installment"
+    PrimaryButtonText="Confirm Payment"
+    CloseButtonText="Cancel"
+    PrimaryButtonClick="OnConfirmClicked">
+
+    <ScrollViewer>
+        <StackPanel Spacing="16" Width="400">
+
+            <!-- Info loan -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="OUTSTANDING BALANCE" FontSize="11" Foreground="Gray"/>
+                <TextBlock Text="{Binding SelectedLoan.Loan.OutstandingBalance}" 
+                           FontSize="20" FontWeight="Bold"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="MINIMUM INSTALLMENT" FontSize="11" Foreground="Gray"/>
+                <TextBlock Text="{Binding SelectedLoan.Loan.MonthlyInstallment}" 
+                           FontWeight="Bold"/>
+            </StackPanel>
+
+            <Border BorderThickness="0,1,0,0" BorderBrush="Gray" Margin="0,4,0,4"/>
+
+            <!-- Optiuni -->
+            <TextBlock Text="Payment Type" FontWeight="SemiBold"/>
+
+            <RadioButton x:Name="StandardRadio"
+                         Content="Standard — pay minimum installment"
+                         IsChecked="True"
+                         Checked="OnStandardChecked"/>
+
+            <RadioButton x:Name="CustomRadio"
+                         Content="Custom — pay a different amount"
+                         Checked="OnCustomChecked"/>
+
+            <StackPanel x:Name="CustomAmountPanel" 
+                        Visibility="Collapsed"
+                        Spacing="4">
+                <TextBlock Text="Custom Amount ($)" FontSize="11" Foreground="Gray"/>
+                <NumberBox Value="{Binding CustomAmount, Mode=TwoWay}"
+                           Minimum="0"
+                           Maximum="1000000"
+                           SmallChange="100"
+                           LargeChange="1000"
+                           PlaceholderText="0.00"
+                           SpinButtonPlacementMode="Compact"/>
+                <TextBlock Text="Must be at least the minimum installment" 
+                           FontSize="11" Foreground="Gray"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>
