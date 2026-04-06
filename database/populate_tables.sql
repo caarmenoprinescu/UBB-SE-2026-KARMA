@@ -1,4 +1,3 @@
-
 DELETE FROM ChatAttachment;
 DELETE FROM ChatMessage;
 DELETE FROM ChatSession;
@@ -7,6 +6,8 @@ DELETE FROM InvestmentHolding;
 DELETE FROM Portfolio;
 DELETE FROM AutoDeposit;
 DELETE FROM SavingsAccount;
+DELETE FROM InterestLog;
+DELETE FROM SavingsTransaction;
 DELETE FROM AmortizationRow;
 DELETE FROM Loan;
 DELETE FROM LoanApplication;
@@ -30,11 +31,13 @@ VALUES
 (1, 4, '2024-05-01', 165, 85, 9370);
 
 INSERT INTO SavingsAccount
-(userId, savingsType, balance, accruedInterest, apy, maturityDate, accountStatus, createdAt, accountName, fundingAccountId, targetAmount, targetDate)
+(userId, savingsType, balance, accruedInterest, apy, maturityDate, accountStatus, createdAt, updatedAt, accountName, fundingAccountId, targetAmount, targetDate)
 VALUES
-(1, 'Standard', 5000, 120, 2.5, '2026-01-01', 'Active', GETDATE(), 'Emergency Fund', NULL, 10000, '2026-12-01'),
-(2, 'HighYield', 15000, 500, 3.2, '2027-01-01', 'Active', GETDATE(), 'Vacation Fund', NULL, 20000, '2027-06-01'),
-(3, 'Standard', 2000, 50, 2.0, '2025-06-01', 'Closed', GETDATE(), 'Old Savings', NULL, NULL, NULL);
+(1, 'Standard',     5000,  120, 0.025, NULL,         'Active', GETUTCDATE(), NULL, 'Emergency Fund', NULL, 10000, '2026-12-01'),
+(1, 'GoalSavings',  3000,   75, 0.030, NULL,         'Active', GETUTCDATE(), NULL, 'Vacation Fund',  NULL, 5000,  '2026-08-01'),
+(1, 'FixedDeposit', 8000,  320, 0.040, '2024-01-01', 'Active', GETUTCDATE(), NULL, 'Fixed Matured',  NULL, NULL,  NULL),
+(2, 'HighYield',   15000,  500, 0.032, NULL,         'Active', GETUTCDATE(), NULL, 'High Yield',     NULL, 20000, '2027-06-01'),
+(3, 'Standard',     2000,   50, 0.020, NULL,         'Closed', GETUTCDATE(), NULL, 'Old Savings',    NULL, NULL,  NULL);
 
 INSERT INTO Portfolio
 (totalValue, totalGainLoss, gainLossPercent, userId)
@@ -79,8 +82,24 @@ VALUES
 ('Auto', 15000, 60, 'Buy car', 'Rejected', 'Low credit score');
 
 INSERT INTO AutoDeposit
-(savingsAccountId, frequency, amount, isActive, nextRunDate)
+(savingsAccountId, frequency, amount, isActive, nextRunDate, sourceAccountId, dayOfMonth, dayOfWeek, updatedAt)
 VALUES
-(1, 'Monthly', 200, 1, '2026-05-01'),
-(2, 'Weekly', 100, 1, '2026-04-10');
+(1, 'Monthly', 200, 1, '2026-05-01', NULL, 1,    NULL, NULL),
+(2, 'Weekly',  100, 1, '2026-04-10', NULL, NULL, 2,    NULL);
+
+INSERT INTO SavingsTransaction
+(accountId, transactionType, amount, balanceAfter, source, description, createdAt)
+VALUES
+(1, 'Deposit',    500,  5000, 'Manual',    'Initial deposit',   GETUTCDATE()),
+(1, 'Deposit',    200,  5200, 'Recurring', 'Auto deposit',      GETUTCDATE()),
+(2, 'Deposit',   1000,  3000, 'Manual',    'Goal contribution', GETUTCDATE()),
+(3, 'Withdrawal', 300,  7700, 'Manual',    'Early withdrawal',  GETUTCDATE()),
+(5, 'Closure',   2000,     0, 'Closure',   'Account closed',    GETUTCDATE());
+
+INSERT INTO InterestLog
+(accountId, interestAmount, balanceBefore, balanceAfter, rateApplied, periodMonth, creditedAt)
+VALUES
+(1, 10.42, 5000, 5010.42, 0.025, '2026-03', GETUTCDATE()),
+(2,  7.50, 3000, 3007.50, 0.030, '2026-03', GETUTCDATE()),
+(3, 40.00, 8000, 8040.00, 0.040, '2026-03', GETUTCDATE());
 
