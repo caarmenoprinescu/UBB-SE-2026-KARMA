@@ -28,14 +28,10 @@ namespace KarmaBanking.App.Views.Dialogs
             try
             {
                 await _viewModel.PayInstallmentAsync();
-
-
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-
                 args.Cancel = true;
-                System.Diagnostics.Debug.WriteLine(ex.Message);
             }
             finally
             {
@@ -48,7 +44,7 @@ namespace KarmaBanking.App.Views.Dialogs
             if (CustomAmountPanel != null)
             {
                 CustomAmountPanel.Visibility = Visibility.Collapsed;
-                _viewModel.CustomAmount = 0;
+                _viewModel.CustomAmount = null;
             }
         }
 
@@ -56,8 +52,13 @@ namespace KarmaBanking.App.Views.Dialogs
         {
             CustomAmountPanel.Visibility = Visibility.Visible;
             if (_viewModel.SelectedLoan != null)
+            {
+                if (!_viewModel.CustomAmount.HasValue)
+                    _viewModel.CustomAmount = (double)_viewModel.SelectedLoan.Loan.MonthlyInstallment;
+
                 if (_viewModel.CustomAmount > (double)_viewModel.SelectedLoan.Loan.OutstandingBalance)
                     _viewModel.CustomAmount = (double)_viewModel.SelectedLoan.Loan.OutstandingBalance;
+            }
         }
     }
 }

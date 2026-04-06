@@ -153,8 +153,8 @@ public partial class LoansViewModel : ObservableObject
         ErrorMessage = string.Empty;
         try
         {
-            decimal? amount = CustomAmount.HasValue && CustomAmount.Value > 0
-                ? (decimal?)CustomAmount
+            decimal? amount = CustomAmount.HasValue
+                ? (decimal?)CustomAmount.Value
                 : null;
             await _apiService.PayInstallmentAsync(SelectedLoan.Loan.Id, amount);
             await LoadLoansAsync();
@@ -164,6 +164,7 @@ public partial class LoansViewModel : ObservableObject
         catch (Exception e)
         {
             ErrorMessage = e.Message;
+            throw;
         }
         finally
         {

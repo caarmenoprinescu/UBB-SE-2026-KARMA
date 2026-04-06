@@ -146,23 +146,28 @@ public class LoanService : ILoanService
         var loan = await _loanRepository.GetLoanByIdAsync(loanId);
 
         if (loan == null)
-            throw new Exception("Loan not found");
+            throw new InvalidOperationException("Loan not found.");
 
         if (loan.RemainingMonths <= 0)
-            throw new Exception("Loan already paid");
+            throw new InvalidOperationException("This loan is already closed.");
 
         if (loan.LoanStatus == LoanStatus.Passed)
-            throw new Exception("Loan closed");
+            throw new InvalidOperationException("This loan is already closed.");
 
         decimal payment = customAmount ?? loan.MonthlyInstallment;
-        decimal newBalance;
+
+        if (payment <= 0)
+            throw new ArgumentException("Payment amount must be greater than zero.");
+
+        if (customAmount.HasValue && payment < loan.MonthlyInstallment)
+            throw new InvalidOperationException("Payment amount must be at least the minimum installment.");
 
         if (payment > loan.OutstandingBalance)
-        {
-            newBalance = 0;
-        }
+            throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
 
-        else newBalance = loan.OutstandingBalance - payment;
+        decimal newBalance;
+
+        newBalance = loan.OutstandingBalance - payment;
 
         int monthsPaid = customAmount.HasValue
              ? (int)Math.Floor(customAmount.Value / loan.MonthlyInstallment) : 1;
