@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -54,42 +54,61 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
-
-  <!-- Consolidated Page updates into a single ItemGroup to avoid mismatched tags -->
   <ItemGroup>
+
     <Page Update="Views\Dialogs\PayInstallment.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Views\CloseAccountDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\CloseAccountDialog.xaml"></Page>
+
     <Page Update="Views\ApplyLoanView.xaml">
+
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\CryptoTradingView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\LoansView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\ChatRoutingView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\ChatView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\AmortizationScheduleView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\CreateSavingsAccountView.xaml">
-      <Generator>MSBuild:Compile</Generator>
+	  <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Views\InvestmentLogsView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+  </ItemGroup>
+  <ItemGroup>
+	<Page Update="Views\InvestmentLogsView.xaml">
+	  <Generator>MSBuild:Compile</Generator>
+	</Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\SavingsView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\Dialogs\LoanApplicationDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
