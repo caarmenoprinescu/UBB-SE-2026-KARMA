@@ -1,8 +1,10 @@
 {
   "profiles": {
-    "KarmaBanking.App": {
-      "commandName": "Project",
-      "nativeDebugging": false
+    "KarmaBanking.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "KarmaBanking.App (Unpackaged)": {
+      "commandName": "Project"
     }
   }
 }
