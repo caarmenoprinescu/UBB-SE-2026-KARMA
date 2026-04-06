@@ -61,7 +61,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\CloseAccountDialog.xaml">
+    <Page Update="Views\CloseAccountDialog.xaml"></Page>
 
     <Page Update="Views\ApplyLoanView.xaml">
 
