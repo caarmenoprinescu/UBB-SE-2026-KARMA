@@ -81,7 +81,7 @@ namespace KarmaBanking.App.ViewModels
                 if (decimal.TryParse(DepositAmountText, NumberStyles.Any,
                         CultureInfo.InvariantCulture, out decimal amount)
                     && amount > 0 && SelectedAccount != null)
-                    return $"New balance will be: {(SelectedAccount.Balance + amount):C2}";
+                    return $"New balance will be: ${(SelectedAccount.Balance + amount):N2}";
                 return string.Empty;
             }
         }
@@ -137,7 +137,7 @@ namespace KarmaBanking.App.ViewModels
                 var result = await savingsService.WithdrawAsync(SelectedAccount!.Id, amount, WithdrawDestination.DisplayName, CurrentUserId);
                 WithdrawSuccess = result.Success;
                 WithdrawResultMessage = result.Success
-                    ? $"Withdrawn: {result.AmountWithdrawn:C2}" + (result.PenaltyApplied > 0 ? $" (penalty: {result.PenaltyApplied:C2})" : "") + $". New balance: {result.NewBalance:C2}"
+                    ? $"Withdrawn: ${result.AmountWithdrawn:N2}" + (result.PenaltyApplied > 0 ? $" (penalty: ${result.PenaltyApplied:N2})" : "") + $". New balance: ${result.NewBalance:N2}"
                     : result.Message;
                 if (result.Success)
                 {
@@ -423,7 +423,7 @@ namespace KarmaBanking.App.ViewModels
                 var response = await savingsService.DepositAsync(
                     SelectedAccount.Id, amount, DepositSource, CurrentUserId);
 
-                DepositSuccessMessage = $"Deposit successful! New balance: {response.NewBalance:C2}";
+                DepositSuccessMessage = $"Deposit successful! New balance: ${response.NewBalance:N2}";
                 ShowDepositSuccess = true;
                 DepositAmountText = string.Empty;
                 await LoadAccountsAsync();
