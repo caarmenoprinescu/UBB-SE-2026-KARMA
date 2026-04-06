@@ -329,8 +329,8 @@ namespace KarmaBanking.App.Views
             WithdrawPenaltyBreakdown.Visibility = hasPenalty ? Visibility.Visible : Visibility.Collapsed;
             if (hasPenalty)
             {
-                WithdrawPenaltyAmountText.Text = $"Penalty (2%): -{viewModel.WithdrawEstimatedPenalty:C2}";
-                WithdrawNetAmountText.Text = $"Net amount received: {viewModel.WithdrawNetAmount:C2}";
+                WithdrawPenaltyAmountText.Text = $"Penalty (2%): -${viewModel.WithdrawEstimatedPenalty:N2}";
+                WithdrawNetAmountText.Text = $"Net amount received: ${viewModel.WithdrawNetAmount:N2}";
             }
         }
 
