@@ -13,7 +13,7 @@ namespace KarmaBanking.App.Repositories
     public class SavingsRepository : ISavingsRepository
     {
         public SavingsRepository() { }
-        public async Task<List<SavingsAccount>> GetByUserIdAsync(int userId, bool includesClosed = false)
+        public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(int userId, bool includesClosed = false)
         {
             string query = @"
                 SELECT id, userId, savingsType, balance, accruedInterest, apy,
@@ -39,7 +39,7 @@ namespace KarmaBanking.App.Repositories
             return accounts;
         }
 
-        public async Task<SavingsAccount> CreateAsync(CreateSavingsAccountDto dto)
+        public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
         {
             decimal apy = dto.SavingsType switch
             {
@@ -157,7 +157,7 @@ namespace KarmaBanking.App.Repositories
             }
         }
 
-        public async Task<ClosureResult> CloseAsync(int accountId, int destinationAccountId)
+        public async Task<ClosureResult> CloseSavingsAccountAsync(int accountId, int destinationAccountId)
         {
             using var conn = DatabaseConfig.GetDatabaseConnection();
             await conn.OpenAsync();
