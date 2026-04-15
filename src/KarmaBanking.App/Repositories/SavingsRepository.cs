@@ -12,14 +12,6 @@ namespace KarmaBanking.App.Repositories
 {
     public class SavingsRepository : ISavingsRepository
     {
-        private const decimal FIXED_DEPOSIT_APY = 0.04m;
-        private const decimal GOAL_SAVINGS_APY = 0.03m;
-        private const decimal HIGH_YIELD_APY = 0.03m;
-        private const decimal DEFAULT_APY = 0.02m;
-
-        private const decimal DECIMAL_EARLY_CLOSURE_PENALTY = 0.02m;
-        private const decimal DECIMAL_EARLY_WITHDRAWAL_PENALTY = 0.02m;
-
         public SavingsRepository() { }
         
         public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(int userId, bool includesClosedAccounts = false)
@@ -49,16 +41,8 @@ namespace KarmaBanking.App.Repositories
         }
 
 
-        public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
+        public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto, decimal apy)
         {
-            decimal apy = dto.SavingsType switch
-            {
-                "FixedDeposit" => FIXED_DEPOSIT_APY,
-                "GoalSavings"  => GOAL_SAVINGS_APY,
-                "HighYield"    => HIGH_YIELD_APY,
-                _              => DEFAULT_APY
-            };
-
             const string insertAccountQuery = @"
                 INSERT INTO SavingsAccount
                     (userId, savingsType, balance, accruedInterest, apy, maturityDate,
@@ -118,7 +102,6 @@ namespace KarmaBanking.App.Repositories
                     SET balance = balance + @Amount
                     WHERE id = @AccountId";
 
-
                 using SqlCommand sqlUpdateAccountBalanceCommand = new SqlCommand(updateAccountBalanceQuery, dbConnection, sqlTransaction);
                 sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@Amount", amount);
                 sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountId);
@@ -150,7 +133,6 @@ namespace KarmaBanking.App.Repositories
 
                 int newTransactionId = (int)await sqlInsertTransactionCommand.ExecuteScalarAsync();
 
-
                 await sqlTransaction.CommitAsync();
 
                 return new DepositResponseDto
@@ -168,7 +150,7 @@ namespace KarmaBanking.App.Repositories
         }
 
 
-        public async Task<ClosureResultDto> CloseSavingsAccountAsync(int accountId, int destinationAccountId)
+        public async Task<ClosureResultDto> CloseSavingsAccountAsync(int accountId, int destinationAccountId, decimal transferAmount, decimal earlyClosurePenalty)
         {
             using var dbConnection = DatabaseConfig.GetDatabaseConnection();
             await dbConnection.OpenAsync();
@@ -191,44 +173,12 @@ namespace KarmaBanking.App.Repositories
 
                     using var reader = await selectSourceAccountDataCommand.ExecuteReaderAsync();
 
-                    if (!await reader.ReadAsync())
-                        throw new InvalidOperationException("Account not found.");
-
-                    if (reader["accountStatus"].ToString() == "Closed")
-                        throw new InvalidOperationException("Account already closed.");
-
                     oldAccountBalance = (decimal)reader["balance"];
                     oldAccountType = reader["savingsType"].ToString();
                     oldAccountMaturityDate = reader["maturityDate"] as DateTime?;
                 }
 
-                // 2. VALIDATE DESTINATION ACCOUNT
-                using (var checkDestinationAccountExistsCommand = new SqlCommand(@"
-                SELECT COUNT(1)
-                FROM SavingsAccount
-                WHERE id = @DestId", dbConnection, dbTransaction))
-                {
-                    checkDestinationAccountExistsCommand.Parameters.AddWithValue("@DestId", destinationAccountId);
-
-                    int destinationAccountExists = (int)await checkDestinationAccountExistsCommand.ExecuteScalarAsync();
-
-                    if (destinationAccountExists == 0)
-                        throw new InvalidOperationException("Destination account not found.");
-                }
-
-                // 3. CALCULATE PENALTY
-                decimal earlyClosurePenalty = 0;
-
-                if (oldAccountType == "FixedDeposit" &&
-                    oldAccountMaturityDate.HasValue &&
-                    oldAccountMaturityDate > DateTime.UtcNow)
-                {
-                    earlyClosurePenalty = oldAccountBalance * DECIMAL_EARLY_CLOSURE_PENALTY;
-                }
-
-                decimal transferAmount = oldAccountBalance - earlyClosurePenalty;
-
-                // 4. TRANSFER TO DESTINATION
+                // 2. TRANSFER TO DESTINATION
                 using (var transferAmountToDestinationCommand = new SqlCommand(@"
                 UPDATE SavingsAccount 
                 SET balance = balance + @Amount
@@ -240,7 +190,7 @@ namespace KarmaBanking.App.Repositories
                     await transferAmountToDestinationCommand.ExecuteNonQueryAsync();
                 }
 
-                // 5. CLOSE ACCOUNT
+                // 3. CLOSE ACCOUNT
                 using (var closeAccountCommand = new SqlCommand(@"
                 UPDATE SavingsAccount
                 SET balance = 0,
@@ -252,7 +202,7 @@ namespace KarmaBanking.App.Repositories
                     await closeAccountCommand.ExecuteNonQueryAsync();
                 }
 
-                // 6. INSERT CLOSURE TRANSACTION
+                // 4. INSERT CLOSURE TRANSACTION
                 using (var insertClosureTransactionCommand = new SqlCommand(@"
                 INSERT INTO SavingsTransaction
                 (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
@@ -293,7 +243,7 @@ namespace KarmaBanking.App.Repositories
         }
 
 
-        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel)
+        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, decimal earlyWithdrawalPenalty)
         {
             using var dbConnection = DatabaseConfig.GetDatabaseConnection();
             await dbConnection.OpenAsync();
@@ -312,28 +262,13 @@ namespace KarmaBanking.App.Repositories
                 {
                     selectAccountDataCommand.Parameters.AddWithValue("@Id", accountId);
                     using var reader = await selectAccountDataCommand.ExecuteReaderAsync();
-
-                    if (!await reader.ReadAsync())
-                        throw new InvalidOperationException("Account not found.");
                     
                     oldBalance = (decimal)reader["balance"];
                     savingsAccountType = reader["savingsType"].ToString();
                     maturityDate = reader["maturityDate"] as DateTime?;
                 }
 
-                decimal earlyWithdrawalPenalty = 0;
-                if (savingsAccountType == "FixedDeposit" &&
-                    maturityDate.HasValue &&
-                    maturityDate.Value > DateTime.UtcNow)
-                {
-                    earlyWithdrawalPenalty = amount * DECIMAL_EARLY_WITHDRAWAL_PENALTY;
-                }
-
-                decimal totalSumToWithdraw = amount + earlyWithdrawalPenalty;
-                if (totalSumToWithdraw > oldBalance)
-                    throw new InvalidOperationException("Insufficient balance after penalty.");
-
-                decimal newBalance = oldBalance - totalSumToWithdraw;
+                decimal newBalance = oldBalance - amount;
 
                 using (var updateAccountBalanceCommand = new SqlCommand(@"
                 UPDATE SavingsAccount SET balance = @Balance WHERE id = @Id",
