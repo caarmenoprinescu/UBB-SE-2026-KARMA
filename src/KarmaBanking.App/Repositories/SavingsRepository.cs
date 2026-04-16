@@ -13,43 +13,37 @@ namespace KarmaBanking.App.Repositories
     public class SavingsRepository : ISavingsRepository
     {
         public SavingsRepository() { }
-        public async Task<List<SavingsAccount>> GetByUserIdAsync(int userId, bool includesClosed = false)
+        
+        public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(int userId, bool includesClosedAccounts = false)
         {
-            string query = @"
+            string selectAccountsQuery = @"
                 SELECT id, userId, savingsType, balance, accruedInterest, apy,
                        maturityDate, accountStatus, createdAt,
                        accountName, fundingAccountId, targetAmount, targetDate
                 FROM SavingsAccount
                 WHERE userId = @UserId"
-                + (includesClosed ? "" : " AND accountStatus != 'Closed'") +
+                + (includesClosedAccounts ? "" : " AND accountStatus != 'Closed'") +
                 " ORDER BY balance DESC";
 
-            var accounts = new List<SavingsAccount>();
+            var accountsList = new List<SavingsAccount>();
+                
+            using SqlConnection dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
 
-            using SqlConnection conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
+            using SqlCommand sqlCommand = new SqlCommand(selectAccountsQuery, dbConnection);
+            sqlCommand.Parameters.AddWithValue("@UserId", userId);
 
-            using SqlCommand cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-
-            using SqlDataReader reader = await cmd.ExecuteReaderAsync();
+            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
-                accounts.Add(MapReaderToAccount(reader));
+                accountsList.Add(MapReaderToAccount(reader));
 
-            return accounts;
+            return accountsList;
         }
 
-        public async Task<SavingsAccount> CreateAsync(CreateSavingsAccountDto dto)
-        {
-            decimal apy = dto.SavingsType switch
-            {
-                "FixedDeposit" => 0.04m,
-                "GoalSavings"  => 0.03m,
-                "HighYield"    => 0.03m,
-                _              => 0.02m
-            };
 
-            const string query = @"
+        public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto, decimal apy)
+        {
+            const string insertAccountQuery = @"
                 INSERT INTO SavingsAccount
                     (userId, savingsType, balance, accruedInterest, apy, maturityDate,
                      accountStatus, createdAt, accountName,
@@ -60,27 +54,26 @@ namespace KarmaBanking.App.Repositories
                      'Active', @CreatedAt, @AccountName,
                      @FundingAccountId, @TargetAmount, @TargetDate)";
 
-            using SqlConnection conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
+            using SqlConnection dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
 
-            using SqlCommand cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@UserId", dto.UserId);
-            cmd.Parameters.AddWithValue("@SavingsType", dto.SavingsType);
-            cmd.Parameters.AddWithValue("@Balance", dto.InitialDeposit);
-            cmd.Parameters.AddWithValue("@Apy", apy);
-            cmd.Parameters.AddWithValue("@MaturityDate", (object?)dto.MaturityDate ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-            cmd.Parameters.AddWithValue("@AccountName", (object?)dto.AccountName ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@FundingAccountId", dto.FundingAccountId == 0 ? (object)DBNull.Value : dto.FundingAccountId);
-            cmd.Parameters.AddWithValue("@TargetAmount", (object?)dto.TargetAmount ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@TargetDate", (object?)dto.TargetDate ?? DBNull.Value);
+            using SqlCommand sqlCommand = new SqlCommand(insertAccountQuery, dbConnection);
+            sqlCommand.Parameters.AddWithValue("@UserId", dto.UserId);
+            sqlCommand.Parameters.AddWithValue("@SavingsType", dto.SavingsType);
+            sqlCommand.Parameters.AddWithValue("@Balance", dto.InitialDeposit);
+            sqlCommand.Parameters.AddWithValue("@Apy", apy);
+            sqlCommand.Parameters.AddWithValue("@MaturityDate", (object?)dto.MaturityDate ?? DBNull.Value);
+            sqlCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+            sqlCommand.Parameters.AddWithValue("@AccountName", (object?)dto.AccountName ?? DBNull.Value);
+            sqlCommand.Parameters.AddWithValue("@FundingAccountId", dto.FundingAccountId == 0 ? (object)DBNull.Value : dto.FundingAccountId);
+            sqlCommand.Parameters.AddWithValue("@TargetAmount", (object?)dto.TargetAmount ?? DBNull.Value);
+            sqlCommand.Parameters.AddWithValue("@TargetDate", (object?)dto.TargetDate ?? DBNull.Value);
             
-
-            int newId = (int)await cmd.ExecuteScalarAsync();
+            int newSavingsAccountId = (int)await sqlCommand.ExecuteScalarAsync();
 
             return new SavingsAccount
             {
-                Id = newId,
+                Id = newSavingsAccountId,
                 UserId = dto.UserId,
                 SavingsType = dto.SavingsType,
                 AccountName = dto.AccountName,
@@ -95,295 +88,255 @@ namespace KarmaBanking.App.Repositories
             };
         }
 
+
         public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
         {
-            using SqlConnection conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-            using SqlTransaction transaction = conn.BeginTransaction();
+            using SqlConnection dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
+            using SqlTransaction sqlTransaction = dbConnection.BeginTransaction();
 
             try
             {
-                const string updateQuery = @"
+                const string updateAccountBalanceQuery = @"
                     UPDATE SavingsAccount
                     SET balance = balance + @Amount
                     WHERE id = @AccountId";
 
+                using SqlCommand sqlUpdateAccountBalanceCommand = new SqlCommand(updateAccountBalanceQuery, dbConnection, sqlTransaction);
+                sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@Amount", amount);
+                sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountId);
+                await sqlUpdateAccountBalanceCommand.ExecuteNonQueryAsync();
 
-                using SqlCommand updateCmd = new SqlCommand(updateQuery, conn, transaction);
-                updateCmd.Parameters.AddWithValue("@Amount", amount);
-                updateCmd.Parameters.AddWithValue("@AccountId", accountId);
-                await updateCmd.ExecuteNonQueryAsync();
+                decimal newAccountBalance;
 
-                decimal newBalance;
-
-                const string balanceQuery = "SELECT balance FROM SavingsAccount WHERE id = @AccountId";
-                using (SqlCommand balCmd = new SqlCommand(balanceQuery, conn, transaction))
+                const string selectAccountBalanceQuery = "SELECT balance FROM SavingsAccount WHERE id = @AccountId";
+                using (SqlCommand sqlSelectAccountBalanceCommand = new SqlCommand(selectAccountBalanceQuery, dbConnection, sqlTransaction))
                 {
-                    balCmd.Parameters.AddWithValue("@AccountId", accountId);
-                    newBalance = (decimal)await balCmd.ExecuteScalarAsync();
+                    sqlSelectAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountId);
+                    newAccountBalance = (decimal)await sqlSelectAccountBalanceCommand.ExecuteScalarAsync();
                 }
 
-                const string insertTxQuery = @"
+                const string insertTransactionQuery = @"
                 INSERT INTO SavingsTransaction
                 (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
                 OUTPUT INSERTED.id
                 VALUES (@AccountId, @TransactionType, @Amount, @BalanceAfter, @Source, @Description, GETUTCDATE())";
 
-                using SqlCommand insertCmd = new SqlCommand(insertTxQuery, conn, transaction);
+                using SqlCommand sqlInsertTransactionCommand = new SqlCommand(insertTransactionQuery, dbConnection, sqlTransaction);
 
-                insertCmd.Parameters.AddWithValue("@AccountId", accountId);
-                insertCmd.Parameters.AddWithValue("@TransactionType", "Deposit");
-                insertCmd.Parameters.AddWithValue("@Amount", amount);
-                insertCmd.Parameters.AddWithValue("@BalanceAfter", newBalance);
-                insertCmd.Parameters.AddWithValue("@Source", source ?? "Manual");
-                insertCmd.Parameters.AddWithValue("@Description", DBNull.Value);
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@AccountId", accountId);
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@TransactionType", "Deposit");
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@Amount", amount);
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@BalanceAfter", newAccountBalance);
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@Source", source ?? "Manual");
+                sqlInsertTransactionCommand.Parameters.AddWithValue("@Description", DBNull.Value);
 
-                int txId = (int)await insertCmd.ExecuteScalarAsync();
+                int newTransactionId = (int)await sqlInsertTransactionCommand.ExecuteScalarAsync();
 
-
-                await transaction.CommitAsync();
+                await sqlTransaction.CommitAsync();
 
                 return new DepositResponseDto
                 {
-                    NewBalance = newBalance,
-                    TransactionId = txId,
+                    NewBalance = newAccountBalance,
+                    TransactionId = newTransactionId,
                     Timestamp = DateTime.Now
                 };
             }
             catch
             {
-                await transaction.RollbackAsync();
+                await sqlTransaction.RollbackAsync();
                 throw;
             }
         }
 
-        public async Task<ClosureResult> CloseAsync(int accountId, int destinationAccountId)
-        {
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
 
-            using var transaction = conn.BeginTransaction();
+        public async Task<ClosureResultDto> CloseSavingsAccountAsync(int accountId, int destinationAccountId, decimal transferAmount, decimal earlyClosurePenalty)
+        {
+            using var dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
+
+            using var dbTransaction = dbConnection.BeginTransaction();
 
             try
             {
-                decimal balance;
-                string accountType;
-                DateTime? maturityDate;
+                decimal oldAccountBalance;
+                string oldAccountType;
+                DateTime? oldAccountMaturityDate;
 
                 // 1. LOCK + FETCH ACCOUNT
-                using (var cmd = new SqlCommand(@"
-            SELECT balance, savingsType, maturityDate, accountStatus
-            FROM SavingsAccount WITH (UPDLOCK, ROWLOCK)
-            WHERE id = @Id", conn, transaction))
+                using (var selectSourceAccountDataCommand = new SqlCommand(@"
+                SELECT balance, savingsType, maturityDate, accountStatus
+                FROM SavingsAccount WITH (UPDLOCK, ROWLOCK)
+                WHERE id = @Id", dbConnection, dbTransaction))
                 {
-                    cmd.Parameters.AddWithValue("@Id", accountId);
+                    selectSourceAccountDataCommand.Parameters.AddWithValue("@Id", accountId);
 
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    using var reader = await selectSourceAccountDataCommand.ExecuteReaderAsync();
 
-                    if (!await reader.ReadAsync())
-                        throw new InvalidOperationException("Account not found.");
-
-                    if (reader["accountStatus"].ToString() == "Closed")
-                        throw new InvalidOperationException("Account already closed.");
-
-                    balance = (decimal)reader["balance"];
-                    accountType = reader["savingsType"].ToString();
-                    maturityDate = reader["maturityDate"] as DateTime?;
+                    oldAccountBalance = (decimal)reader["balance"];
+                    oldAccountType = reader["savingsType"].ToString();
+                    oldAccountMaturityDate = reader["maturityDate"] as DateTime?;
                 }
 
-                // 2. VALIDATE DESTINATION ACCOUNT
-                using (var cmd = new SqlCommand(@"
-            SELECT COUNT(1)
-            FROM SavingsAccount
-            WHERE id = @DestId", conn, transaction))
+                // 2. TRANSFER TO DESTINATION
+                using (var transferAmountToDestinationCommand = new SqlCommand(@"
+                UPDATE SavingsAccount 
+                SET balance = balance + @Amount
+                WHERE id = @DestId", dbConnection, dbTransaction))
                 {
-                    cmd.Parameters.AddWithValue("@DestId", destinationAccountId);
+                    transferAmountToDestinationCommand.Parameters.AddWithValue("@Amount", transferAmount);
+                    transferAmountToDestinationCommand.Parameters.AddWithValue("@DestId", destinationAccountId);
 
-                    int exists = (int)await cmd.ExecuteScalarAsync();
-
-                    if (exists == 0)
-                        throw new InvalidOperationException("Destination account not found.");
+                    await transferAmountToDestinationCommand.ExecuteNonQueryAsync();
                 }
 
-                // 3. CALCULATE PENALTY
-                decimal penalty = 0;
-
-                if (accountType == "FixedDeposit" &&
-                    maturityDate.HasValue &&
-                    maturityDate > DateTime.UtcNow)
+                // 3. CLOSE ACCOUNT
+                using (var closeAccountCommand = new SqlCommand(@"
+                UPDATE SavingsAccount
+                SET balance = 0,
+                    accountStatus = 'Closed',
+                    updatedAt = GETUTCDATE()
+                WHERE id = @Id", dbConnection, dbTransaction))
                 {
-                    penalty = balance * 0.02m;
+                    closeAccountCommand.Parameters.AddWithValue("@Id", accountId);
+                    await closeAccountCommand.ExecuteNonQueryAsync();
                 }
 
-                decimal transferAmount = balance - penalty;
-
-                // 4. TRANSFER TO DESTINATION
-                using (var cmd = new SqlCommand(@"
-            UPDATE SavingsAccount
-            SET balance = balance + @Amount
-            WHERE id = @DestId", conn, transaction))
+                // 4. INSERT CLOSURE TRANSACTION
+                using (var insertClosureTransactionCommand = new SqlCommand(@"
+                INSERT INTO SavingsTransaction
+                (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
+                VALUES
+                (@AccountId, 'Closure', @Amount, 0, 'Closure', 'Account closed', GETUTCDATE())",
+                    dbConnection, dbTransaction))
                 {
-                    cmd.Parameters.AddWithValue("@Amount", transferAmount);
-                    cmd.Parameters.AddWithValue("@DestId", destinationAccountId);
+                    insertClosureTransactionCommand.Parameters.AddWithValue("@AccountId", accountId);
+                    insertClosureTransactionCommand.Parameters.AddWithValue("@Amount", transferAmount);
 
-                    await cmd.ExecuteNonQueryAsync();
+                    await insertClosureTransactionCommand.ExecuteNonQueryAsync();
                 }
 
-                // 5. CLOSE ACCOUNT
-                using (var cmd = new SqlCommand(@"
-            UPDATE SavingsAccount
-            SET balance = 0,
-                accountStatus = 'Closed',
-                updatedAt = GETUTCDATE()
-            WHERE id = @Id", conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@Id", accountId);
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                await dbTransaction.CommitAsync();
 
-                // 6. INSERT CLOSURE TRANSACTION
-                using (var cmd = new SqlCommand(@"
-            INSERT INTO SavingsTransaction
-            (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
-            VALUES
-            (@AccountId, 'Closure', @Amount, 0, 'Closure', 'Account closed', GETUTCDATE())",
-                    conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@AccountId", accountId);
-                    cmd.Parameters.AddWithValue("@Amount", transferAmount);
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                await transaction.CommitAsync();
-
-                return new ClosureResult
+                return new ClosureResultDto
                 {
                     Success = true,
                     TransferredAmount = transferAmount,
-                    PenaltyApplied = penalty,
+                    PenaltyApplied = earlyClosurePenalty,
                     Message = "Account closed successfully.",
                     ClosedAt = DateTime.UtcNow
                 };
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                await transaction.RollbackAsync();
+                await dbTransaction.RollbackAsync();
 
-                return new ClosureResult
+                return new ClosureResultDto
                 {
                     Success = false,
                     TransferredAmount = 0,
                     PenaltyApplied = 0,
-                    Message = ex.Message,
+                    Message = exception.Message,
                     ClosedAt = DateTime.UtcNow
                 };
             }
         }
 
-        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel)
+
+        public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, decimal earlyWithdrawalPenalty)
         {
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-            using var transaction = conn.BeginTransaction();
+            using var dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
+            using var dbTransaction = dbConnection.BeginTransaction();
 
             try
             {
-                string savingsType;
+                string savingsAccountType;
                 DateTime? maturityDate;
-                decimal balance;
+                decimal oldBalance;
 
-                using (var cmd = new SqlCommand(@"
-                    SELECT balance, savingsType, maturityDate
-                    FROM SavingsAccount WITH (UPDLOCK, ROWLOCK)
-                    WHERE id = @Id", conn, transaction))
+                using (var selectAccountDataCommand = new SqlCommand(@"
+                SELECT balance, savingsType, maturityDate
+                FROM SavingsAccount WITH (UPDLOCK, ROWLOCK)
+                WHERE id = @Id", dbConnection, dbTransaction))
                 {
-                    cmd.Parameters.AddWithValue("@Id", accountId);
-                    using var reader = await cmd.ExecuteReaderAsync();
-                    if (!await reader.ReadAsync())
-                        throw new InvalidOperationException("Account not found.");
-                    balance = (decimal)reader["balance"];
-                    savingsType = reader["savingsType"].ToString();
+                    selectAccountDataCommand.Parameters.AddWithValue("@Id", accountId);
+                    using var reader = await selectAccountDataCommand.ExecuteReaderAsync();
+                    
+                    oldBalance = (decimal)reader["balance"];
+                    savingsAccountType = reader["savingsType"].ToString();
                     maturityDate = reader["maturityDate"] as DateTime?;
                 }
 
-                decimal penalty = 0;
-                if (savingsType == "FixedDeposit" &&
-                    maturityDate.HasValue &&
-                    maturityDate.Value > DateTime.UtcNow)
+                decimal newBalance = oldBalance - amount;
+
+                using (var updateAccountBalanceCommand = new SqlCommand(@"
+                UPDATE SavingsAccount SET balance = @Balance WHERE id = @Id",
+                dbConnection, dbTransaction))
                 {
-                    penalty = amount * 0.02m;
+                    updateAccountBalanceCommand.Parameters.AddWithValue("@Balance", newBalance);
+                    updateAccountBalanceCommand.Parameters.AddWithValue("@Id", accountId);
+                    await updateAccountBalanceCommand.ExecuteNonQueryAsync();
                 }
 
-                decimal totalDeducted = amount + penalty;
-                if (totalDeducted > balance)
-                    throw new InvalidOperationException("Insufficient balance after penalty.");
-
-                decimal newBalance = balance - totalDeducted;
-
-                using (var cmd = new SqlCommand(@"
-                    UPDATE SavingsAccount SET balance = @Balance WHERE id = @Id",
-                    conn, transaction))
+                using (var insertWithdrawalTransactionCommand = new SqlCommand(@"
+                INSERT INTO SavingsTransaction
+                (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
+                VALUES (@AccountId, 'Withdrawal', @Amount, @BalanceAfter, 'Manual',
+                        @Description, GETUTCDATE())", dbConnection, dbTransaction))
                 {
-                    cmd.Parameters.AddWithValue("@Balance", newBalance);
-                    cmd.Parameters.AddWithValue("@Id", accountId);
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                    insertWithdrawalTransactionCommand.Parameters.AddWithValue("@AccountId", accountId);
+                    insertWithdrawalTransactionCommand.Parameters.AddWithValue("@Amount", amount);
+                    insertWithdrawalTransactionCommand.Parameters.AddWithValue("@BalanceAfter", newBalance);
 
-                using (var cmd = new SqlCommand(@"
-                    INSERT INTO SavingsTransaction
-                    (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
-                    VALUES (@AccountId, 'Withdrawal', @Amount, @BalanceAfter, 'Manual',
-                            @Description, GETUTCDATE())", conn, transaction))
-                {
-                    cmd.Parameters.AddWithValue("@AccountId", accountId);
-                    cmd.Parameters.AddWithValue("@Amount", amount);
-                    cmd.Parameters.AddWithValue("@BalanceAfter", newBalance);
-                    string desc = penalty > 0
-                        ? $"To: {destinationLabel} | Early withdrawal penalty: {penalty:C2}"
+                    string withdrawalDescription = earlyWithdrawalPenalty > 0
+                        ? $"To: {destinationLabel} | Early withdrawal penalty: {earlyWithdrawalPenalty:C2}"
                         : $"To: {destinationLabel}";
-                    cmd.Parameters.AddWithValue("@Description", desc);
-                    await cmd.ExecuteNonQueryAsync();
+
+                    insertWithdrawalTransactionCommand.Parameters.AddWithValue("@Description", withdrawalDescription);
+                    await insertWithdrawalTransactionCommand.ExecuteNonQueryAsync();
                 }
 
-                await transaction.CommitAsync();
+                await dbTransaction.CommitAsync();
 
                 return new WithdrawResponseDto
                 {
                     Success = true,
                     AmountWithdrawn = amount,
-                    PenaltyApplied = penalty,
+                    PenaltyApplied = earlyWithdrawalPenalty,
                     NewBalance = newBalance,
-                    Message = penalty > 0
-                        ? $"Withdrawal successful. Early penalty of {penalty:C2} applied."
+                    Message = earlyWithdrawalPenalty > 0
+                        ? $"Withdrawal successful. Early penalty of {earlyWithdrawalPenalty:C2} applied."
                         : "Withdrawal successful.",
                     ProcessedAt = DateTime.UtcNow
                 };
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                await transaction.RollbackAsync();
+                await dbTransaction.RollbackAsync();
                 return new WithdrawResponseDto
                 {
                     Success = false,
-                    Message = ex.Message,
+                    Message = exception.Message,
                     ProcessedAt = DateTime.UtcNow
                 };
             }
         }
 
+
         public async Task<AutoDeposit?> GetAutoDepositAsync(int accountId)
         {
-            const string query = @"
+            const string selectAutoDepositByAccountIdQuery = @"
                 SELECT id, savingsAccountId, amount, frequency, nextRunDate, isActive
                 FROM AutoDeposit
                 WHERE savingsAccountId = @AccountId";
 
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@AccountId", accountId);
-            using var reader = await cmd.ExecuteReaderAsync();
+            using var dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
+
+            using var selectAutoDepositByAccountIdCommand = new SqlCommand(selectAutoDepositByAccountIdQuery, dbConnection);
+            selectAutoDepositByAccountIdCommand.Parameters.AddWithValue("@AccountId", accountId);
+            using var reader = await selectAutoDepositByAccountIdCommand.ExecuteReaderAsync();
 
             if (!await reader.ReadAsync()) return null;
 
@@ -398,40 +351,44 @@ namespace KarmaBanking.App.Repositories
             };
         }
 
+
         public async Task SaveAutoDepositAsync(AutoDeposit autoDeposit)
         {
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
+            using var dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
 
             if (autoDeposit.Id == 0)
             {
-                const string insert = @"
+                const string insertAutoDepositQuery = @"
                     INSERT INTO AutoDeposit (savingsAccountId, amount, frequency, nextRunDate, isActive)
                     VALUES (@AccountId, @Amount, @Frequency, @NextRunDate, @IsActive)";
-                using var cmd = new SqlCommand(insert, conn);
-                cmd.Parameters.AddWithValue("@AccountId", autoDeposit.SavingsAccountId);
-                cmd.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
-                cmd.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
-                cmd.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
-                cmd.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
-                await cmd.ExecuteNonQueryAsync();
+
+                using var insertAutoDepositCommand = new SqlCommand(insertAutoDepositQuery, dbConnection);
+                insertAutoDepositCommand.Parameters.AddWithValue("@AccountId", autoDeposit.SavingsAccountId);
+                insertAutoDepositCommand.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
+                insertAutoDepositCommand.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
+                insertAutoDepositCommand.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
+                insertAutoDepositCommand.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
+                await insertAutoDepositCommand.ExecuteNonQueryAsync();
             }
             else
             {
-                const string update = @"
+                const string updateAutoDepositQuery = @"
                     UPDATE AutoDeposit
                     SET amount = @Amount, frequency = @Frequency,
                         nextRunDate = @NextRunDate, isActive = @IsActive
                     WHERE id = @Id";
-                using var cmd = new SqlCommand(update, conn);
-                cmd.Parameters.AddWithValue("@Id", autoDeposit.Id);
-                cmd.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
-                cmd.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
-                cmd.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
-                cmd.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
-                await cmd.ExecuteNonQueryAsync();
+
+                using var updateAutoDepositCommand = new SqlCommand(updateAutoDepositQuery, dbConnection);
+                updateAutoDepositCommand.Parameters.AddWithValue("@Id", autoDeposit.Id);
+                updateAutoDepositCommand.Parameters.AddWithValue("@Amount", autoDeposit.Amount);
+                updateAutoDepositCommand.Parameters.AddWithValue("@Frequency", autoDeposit.Frequency.ToString());
+                updateAutoDepositCommand.Parameters.AddWithValue("@NextRunDate", autoDeposit.NextRunDate);
+                updateAutoDepositCommand.Parameters.AddWithValue("@IsActive", autoDeposit.IsActive);
+                await updateAutoDepositCommand.ExecuteNonQueryAsync();
             }
         }
+
 
         public Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId)
         {
@@ -441,6 +398,7 @@ namespace KarmaBanking.App.Repositories
                 new FundingSourceOption { Id = 2, DisplayName = "Checking Account ****5678" }
             });
         }
+
 
         private static SavingsAccount MapReaderToAccount(SqlDataReader r)
         {
@@ -462,6 +420,9 @@ namespace KarmaBanking.App.Repositories
             };
         }
 
+
+
+        // UNUSED METHOD
         public async Task<List<SavingsTransaction>> GetTransactionsAsync(int accountId)
         {
             const string query = @"
@@ -497,6 +458,9 @@ namespace KarmaBanking.App.Repositories
 
             return list;
         }
+
+
+        // UNUSED METHOD
         public async Task<bool> HasInterestTransactionThisMonthAsync(int accountId)
         {
             const string query = @"
@@ -517,6 +481,8 @@ namespace KarmaBanking.App.Repositories
             return count > 0;
         }
 
+
+        // UNUSED METHOD
         public async Task<bool> DepositWithTransactionAsync(int accountId, decimal amount)
         {
             using var conn = DatabaseConfig.GetDatabaseConnection();
@@ -556,7 +522,7 @@ namespace KarmaBanking.App.Repositories
                     await updateCmd.ExecuteNonQueryAsync();
                 }
 
-                // 3. Insert transaction
+                // 3. Insert sqlTransaction
                 using (var insertCmd = new SqlCommand(@"
                 INSERT INTO SavingsTransaction
                 (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
@@ -582,18 +548,21 @@ namespace KarmaBanking.App.Repositories
                 throw;
             }
         }
+
+
+
         public async Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsPagedAsync(
         int accountId,
         string typeFilter,
         int page,
         int pageSize)
         {
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
+            using var dbConnection = DatabaseConfig.GetDatabaseConnection();
+            await dbConnection.OpenAsync();
 
             string baseQuery = @"
-        FROM SavingsTransaction
-        WHERE accountId = @AccountId";
+                FROM SavingsTransaction
+                WHERE accountId = @AccountId";
 
             // filter
             if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All")
@@ -602,36 +571,36 @@ namespace KarmaBanking.App.Repositories
             }
 
             // total count
-            using var countCmd = new SqlCommand("SELECT COUNT(*) " + baseQuery, conn);
-            countCmd.Parameters.AddWithValue("@AccountId", accountId);
+            using var countAccountTransactionsCommand = new SqlCommand("SELECT COUNT(*) " + baseQuery, dbConnection);
+            countAccountTransactionsCommand.Parameters.AddWithValue("@AccountId", accountId);
 
             if (baseQuery.Contains("@Type"))
-                countCmd.Parameters.AddWithValue("@Type", typeFilter);
+                countAccountTransactionsCommand.Parameters.AddWithValue("@Type", typeFilter);
 
-            int totalCount = (int)await countCmd.ExecuteScalarAsync();
+            int numberOfAccountTransactions = (int)await countAccountTransactionsCommand.ExecuteScalarAsync();
 
-            // paginated query
-            string query = @"
-        SELECT id, accountId, transactionType, amount, balanceAfter, source, description, createdAt
-        " + baseQuery + @"
-        ORDER BY createdAt DESC
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            // paginated selectAccountsQuery
+            string paginatedSelectAccountsQuery = @"
+                SELECT id, accountId, transactionType, amount, balanceAfter, source, description, createdAt
+                " + baseQuery + @"
+                ORDER BY createdAt DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
-            using var cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@AccountId", accountId);
-            cmd.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
-            cmd.Parameters.AddWithValue("@PageSize", pageSize);
+            using var paginatedSelectAccountsCommand = new SqlCommand(paginatedSelectAccountsQuery, dbConnection);
+            paginatedSelectAccountsCommand.Parameters.AddWithValue("@AccountId", accountId);
+            paginatedSelectAccountsCommand.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
+            paginatedSelectAccountsCommand.Parameters.AddWithValue("@PageSize", pageSize);
 
             if (baseQuery.Contains("@Type"))
-                cmd.Parameters.AddWithValue("@Type", typeFilter);
+                paginatedSelectAccountsCommand.Parameters.AddWithValue("@Type", typeFilter);
 
-            var list = new List<SavingsTransaction>();
+            var transactionsList = new List<SavingsTransaction>();
 
-            using var reader = await cmd.ExecuteReaderAsync();
+            using var reader = await paginatedSelectAccountsCommand.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
-                list.Add(new SavingsTransaction
+                transactionsList.Add(new SavingsTransaction
                 {
                     Id = (int)reader["id"],
                     AccountId = (int)reader["accountId"],
@@ -644,7 +613,7 @@ namespace KarmaBanking.App.Repositories
                 });
             }
 
-            return (list, totalCount);
+            return (transactionsList, numberOfAccountTransactions);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace KarmaBanking.App.Models.DTOs
 {
-    public class ClosureResult
+    public class ClosureResultDto
     {
         public bool Success { get; set; }
         public decimal TransferredAmount { get; set; }

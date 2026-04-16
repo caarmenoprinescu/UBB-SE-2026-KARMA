@@ -63,19 +63,19 @@ namespace KarmaBanking.App.ViewModels
 
         public async Task LoadSavingsAccountsAsync(int userId)
         {
-            List<SavingsAccount> accounts;
+            List<SavingsAccount> openedSavingsAccountsList;
             try
             {
-                accounts = await savingsService.GetAccountsAsync(userId, includesClosed: false);
+                openedSavingsAccountsList = await savingsService.GetAccountsAsync(userId, includesClosed: false);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                LoadErrorMessage = ex.Message;
+                LoadErrorMessage = exception.Message;
                 return;
             }
 
             SavingsAccounts.Clear();
-            foreach (var account in accounts)
+            foreach (var account in openedSavingsAccountsList)
                 SavingsAccounts.Add(account);
 
             EmptyStateVisibility = SavingsAccounts.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -91,8 +91,8 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                var result = await savingsService.CloseAccountAsync(accountId, 1, 1);
-                bool success = result.Success;
+                var closureResultDto = await savingsService.CloseAccountAsync(accountId, 1, 1);
+                bool success = closureResultDto.Success;
 
                 if (!success)
                 {
@@ -102,9 +102,9 @@ namespace KarmaBanking.App.ViewModels
 
                 await LoadSavingsAccountsAsync(userId: 1);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                LoadErrorMessage = ex.Message;
+                LoadErrorMessage = exception.Message;
             }
         }
 
@@ -124,9 +124,9 @@ namespace KarmaBanking.App.ViewModels
                 // Refresh accounts after deposit
                 await LoadSavingsAccountsAsync(userId: 1);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                LoadErrorMessage = ex.Message;
+                LoadErrorMessage = exception.Message;
             }
         }
 
@@ -136,9 +136,9 @@ namespace KarmaBanking.App.ViewModels
             {
                 await LoadSavingsAccountsAsync(1);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                LoadErrorMessage = ex.Message;
+                LoadErrorMessage = exception.Message;
             }
         }
 

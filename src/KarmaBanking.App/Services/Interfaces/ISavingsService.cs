@@ -11,11 +11,15 @@ namespace KarmaBanking.App.Services.Interfaces
         Task<SavingsAccount> CreateAccountAsync(CreateSavingsAccountDto dto);
         Task<List<SavingsAccount>> GetAccountsAsync(int userId, bool includesClosed = false);
         Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source, int userId);
-        Task<ClosureResult> CloseAccountAsync(int accountId, int destinationAccountId, int userId);
+        Task<ClosureResultDto> CloseAccountAsync(int accountId, int destinationAccountId, int userId);
         Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, int userId);
         Task<AutoDeposit?> GetAutoDepositAsync(int accountId);
         Task SaveAutoDepositAsync(AutoDeposit autoDeposit);
         Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId);
         Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsAsync(int accountId, string filter, int page, int pageSize);
+        Task<List<SavingsAccount>> GetValidTransferDestinationsAsync(int currentAccountId);
+        decimal ComputeWithdrawalPenalty(decimal amount);
+        bool HasRiskEarlyWithdrawal(SavingsAccount savingsAccount);
+        decimal GetPenaltyDecimalFor(string penaltyCase);
     }
 }

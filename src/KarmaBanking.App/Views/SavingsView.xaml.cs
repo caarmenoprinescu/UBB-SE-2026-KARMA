@@ -16,6 +16,7 @@ namespace KarmaBanking.App.Views
     {
         private readonly SavingsViewModel viewModel;
 
+
         public SavingsView()
         {
             InitializeComponent();
@@ -25,6 +26,7 @@ namespace KarmaBanking.App.Views
             DataContext = viewModel;
             MainNavigationView.SelectedItem = MyAccountsTab;
         }
+
 
         protected override async void OnNavigatedTo(NavigationEventArgs args)
         {
@@ -74,15 +76,15 @@ namespace KarmaBanking.App.Views
 
         private void OnFrequencySelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (FrequencyRadioButtons.SelectedItem is RadioButton rb)
-                viewModel.SelectedFrequency = rb.Tag?.ToString() ?? string.Empty;
+            if (FrequencyRadioButtons.SelectedItem is RadioButton radioButton)
+                viewModel.SelectedFrequency = radioButton.Tag?.ToString() ?? string.Empty;
         }
 
         private void OnSavingsTypeChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (SavingsTypeRadioButtons.SelectedItem is RadioButton rb)
+            if (SavingsTypeRadioButtons.SelectedItem is RadioButton radioButton)
             {
-                viewModel.SelectedSavingsType = rb.Tag?.ToString() ?? string.Empty;
+                viewModel.SelectedSavingsType = radioButton.Tag?.ToString() ?? string.Empty;
 
                 GoalSavingsPanel.Visibility =
                     viewModel.SelectedSavingsType == "GoalSavings"
@@ -106,8 +108,8 @@ namespace KarmaBanking.App.Views
             if (viewModel.IsGoalSavings)
             {
                 if (decimal.TryParse(TargetAmountTextBox.Text, NumberStyles.Any,
-                        CultureInfo.InvariantCulture, out decimal ta))
-                    viewModel.TargetAmount = ta;
+                        CultureInfo.InvariantCulture, out decimal targetAmount))
+                    viewModel.TargetAmount = targetAmount;
                 viewModel.TargetDate = TargetDatePicker.Date;
             }
 
@@ -118,20 +120,20 @@ namespace KarmaBanking.App.Views
 
             await viewModel.CreateAccountCommand.ExecuteAsync(null);
 
-            if (viewModel.FieldErrors.TryGetValue("SavingsType", out string? te))
-                ShowError(TypeErrorText, te);
-            if (viewModel.FieldErrors.TryGetValue("AccountName", out string? ne))
-                ShowError(AccountNameError, ne);
-            if (viewModel.FieldErrors.TryGetValue("InitialDeposit", out string? de))
-                ShowError(InitialDepositError, de);
-            if (viewModel.FieldErrors.TryGetValue("FundingSource", out string? fe))
-                ShowError(FundingSourceError, fe);
-            if (viewModel.FieldErrors.TryGetValue("Frequency", out string? freq))
-                ShowError(FrequencyError, freq);
-            if (viewModel.FieldErrors.TryGetValue("TargetAmount", out string? tae))
-                ShowError(TargetAmountError, tae);
-            if (viewModel.FieldErrors.TryGetValue("TargetDate", out string? tde))
-                ShowError(TargetDateError, tde);
+            if (viewModel.FieldErrors.TryGetValue("SavingsType", out string? savingsTypeError))
+                ShowError(TypeErrorText, savingsTypeError);
+            if (viewModel.FieldErrors.TryGetValue("AccountName", out string? accountNameError))
+                ShowError(AccountNameError, accountNameError);
+            if (viewModel.FieldErrors.TryGetValue("InitialDeposit", out string? initialDepositError))
+                ShowError(InitialDepositError, initialDepositError);
+            if (viewModel.FieldErrors.TryGetValue("FundingSource", out string? fundingSourceError))
+                ShowError(FundingSourceError, fundingSourceError);
+            if (viewModel.FieldErrors.TryGetValue("Frequency", out string? frequencyError))
+                ShowError(FrequencyError, frequencyError);
+            if (viewModel.FieldErrors.TryGetValue("TargetAmount", out string? targetAmountError))
+                ShowError(TargetAmountError, targetAmountError);
+            if (viewModel.FieldErrors.TryGetValue("TargetDate", out string? targetDateError))
+                ShowError(TargetDateError, targetDateError);
 
             if (viewModel.HasError)
             {
@@ -233,8 +235,8 @@ namespace KarmaBanking.App.Views
             AutoDepositFrequencyRadios.SelectedIndex = -1;
             for (int i = 0; i < AutoDepositFrequencyRadios.Items.Count; i++)
             {
-                if (AutoDepositFrequencyRadios.Items[i] is RadioButton rb &&
-                    rb.Tag?.ToString() == viewModel.AutoDepositFrequency)
+                if (AutoDepositFrequencyRadios.Items[i] is RadioButton radioButton &&
+                    radioButton.Tag?.ToString() == viewModel.AutoDepositFrequency)
                 {
                     AutoDepositFrequencyRadios.SelectedIndex = i;
                     break;
@@ -289,8 +291,8 @@ namespace KarmaBanking.App.Views
 
         private void OnDepositSourceChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (DepositSourceComboBox.SelectedItem is FundingSourceOption src)
-                viewModel.DepositSource = src.DisplayName;
+            if (DepositSourceComboBox.SelectedItem is FundingSourceOption fundingSourceOption)
+                viewModel.DepositSource = fundingSourceOption.DisplayName;
         }
 
         private async void OnDepositConfirmed(object sender, RoutedEventArgs e)
@@ -362,8 +364,8 @@ namespace KarmaBanking.App.Views
 
         private void OnAutoDepositFrequencyChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (AutoDepositFrequencyRadios.SelectedItem is RadioButton rb)
-                viewModel.AutoDepositFrequency = rb.Tag?.ToString() ?? string.Empty;
+            if (AutoDepositFrequencyRadios.SelectedItem is RadioButton radioButton)
+                viewModel.AutoDepositFrequency = radioButton.Tag?.ToString() ?? string.Empty;
         }
 
         private async void OnAutoDepositSaved(object sender, RoutedEventArgs e)
@@ -401,8 +403,8 @@ namespace KarmaBanking.App.Views
 
         private void OnCloseDestChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (CloseDestComboBox.SelectedItem is SavingsAccount acc)
-                viewModel.SelectedCloseDestinationId = acc.Id;
+            if (CloseDestComboBox.SelectedItem is SavingsAccount savingsAccount)
+                viewModel.SelectedCloseDestinationId = savingsAccount.Id;
         }
 
         private void OnCloseConfirmChecked(object sender, RoutedEventArgs e)
@@ -473,12 +475,12 @@ namespace KarmaBanking.App.Views
 
         private async System.Threading.Tasks.Task ShowDialogAsync(string title, string msg)
         {
-            var d = new ContentDialog
+            var contentDialog = new ContentDialog
             {
                 Title = title, Content = msg,
                 CloseButtonText = "OK", XamlRoot = this.XamlRoot
             };
-            await d.ShowAsync();
+            await contentDialog.ShowAsync();
         }
     }
 }

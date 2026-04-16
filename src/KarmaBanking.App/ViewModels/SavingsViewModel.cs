@@ -72,7 +72,7 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private bool showDepositSuccess;
         [ObservableProperty] private string depositSuccessMessage = string.Empty;
 
-        private CancellationTokenSource? depositCts;
+        private CancellationTokenSource? depositCancelationTokenSource;
 
         public string LivePreview
         {
@@ -97,31 +97,31 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private string withdrawResultMessage = string.Empty;
         [ObservableProperty] private bool withdrawSuccess;
 
-        public bool WithdrawHasEarlyRisk =>
-            SelectedAccount?.SavingsType == "FixedDeposit" &&
-            SelectedAccount.MaturityDate.HasValue &&
-            SelectedAccount.MaturityDate.Value > DateTime.UtcNow;
+        public bool WithdrawHasEarlyRisk => savingsService.HasRiskEarlyWithdrawal(SelectedAccount);
 
         public decimal WithdrawEstimatedPenalty
         {
             get
             {
                 if (!WithdrawHasEarlyRisk) return 0;
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
-                return amt * 0.02m;
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0) return 0;
+                return savingsService.ComputeWithdrawalPenalty(withdrawAmount);
             }
         }
+
         public decimal WithdrawNetAmount
         {
             get
             {
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
-                return amt - WithdrawEstimatedPenalty;
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0) return 0;
+                return withdrawAmount - WithdrawEstimatedPenalty;
             }
         }
+
         public bool WithdrawHasPenalty => WithdrawEstimatedPenalty > 0;
+
         public string WithdrawPenaltySummary =>
-            WithdrawHasEarlyRisk ? $"Early withdrawal penalty: 2% of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
+            WithdrawHasEarlyRisk ? $"Early withdrawal penalty: {savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P2} of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
 
         public async Task<bool> ConfirmWithdrawAsync()
         {
@@ -134,19 +134,19 @@ namespace KarmaBanking.App.ViewModels
             IsLoading = true;
             try
             {
-                var result = await savingsService.WithdrawAsync(SelectedAccount!.Id, amount, WithdrawDestination.DisplayName, CurrentUserId);
-                WithdrawSuccess = result.Success;
-                WithdrawResultMessage = result.Success
-                    ? $"Withdrawn: ${result.AmountWithdrawn:N2}" + (result.PenaltyApplied > 0 ? $" (penalty: ${result.PenaltyApplied:N2})" : "") + $". New balance: ${result.NewBalance:N2}"
-                    : result.Message;
-                if (result.Success)
+                var withdrawResponseDto = await savingsService.WithdrawAsync(SelectedAccount!.Id, amount, WithdrawDestination.DisplayName, CurrentUserId);
+                WithdrawSuccess = withdrawResponseDto.Success;
+                WithdrawResultMessage = withdrawResponseDto.Success
+                    ? $"Withdrawn: ${withdrawResponseDto.AmountWithdrawn:N2}" + (withdrawResponseDto.PenaltyApplied > 0 ? $" (penalty: ${withdrawResponseDto.PenaltyApplied:N2})" : "") + $". New balance: ${withdrawResponseDto.NewBalance:N2}"
+                    : withdrawResponseDto.Message;
+                if (withdrawResponseDto.Success)
                 {
                     WithdrawAmountText = string.Empty;
                     await LoadAccountsAsync();
                 }
-                return result.Success;
+                return withdrawResponseDto.Success;
             }
-            catch (Exception ex) { WithdrawResultMessage = ex.Message; return false; }
+            catch (Exception exception) { WithdrawResultMessage = exception.Message; return false; }
             finally { IsLoading = false; }
         }
 
@@ -230,19 +230,19 @@ namespace KarmaBanking.App.ViewModels
             ErrorMessage = string.Empty;
             try
             {
-                var accounts = await savingsService.GetAccountsAsync(CurrentUserId);
+                var accountsList = await savingsService.GetAccountsAsync(CurrentUserId);
                 SavingsAccounts.Clear();
-                foreach (var a in accounts) SavingsAccounts.Add(a);
+                foreach (var account in accountsList) SavingsAccounts.Add(account);
 
                 OnPropertyChanged(nameof(IsEmpty));
                 OnPropertyChanged(nameof(ShowAccountsList));
 
-                TotalSavedAmount = $"${SavingsAccounts.Sum(a => a.Balance):F2}";
+                TotalSavedAmount = $"${SavingsAccounts.Sum(account => account.Balance):F2}";
                 NumberOfAccountsText = $"across {SavingsAccounts.Count} account{(SavingsAccounts.Count == 1 ? "" : "s")}";
-                decimal best = SavingsAccounts.Any() ? SavingsAccounts.Max(a => a.Apy) : 0;
-                BestInterestRate = $"{best * 100:F2}%";
+                decimal bestApy = SavingsAccounts.Any() ? SavingsAccounts.Max(account => account.Apy) : 0;
+                BestInterestRate = $"{bestApy * 100:F2}%";
             }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
+            catch (Exception exception) { ErrorMessage = exception.Message; }
             finally { IsLoading = false; }
         }
 
@@ -253,12 +253,12 @@ namespace KarmaBanking.App.ViewModels
             ErrorMessage = string.Empty;
             try
             {
-                var result = await savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
-                bool ok = result.Success;
+                var closureResultDto = await savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
+                bool ok = closureResultDto.Success;
                 if (!ok) { ErrorMessage = "Failed to close account."; return; }
                 await LoadAccountsAsync();
             }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
+            catch (Exception exception) { ErrorMessage = exception.Message; }
             finally { IsLoading = false; }
         }
 
@@ -292,10 +292,10 @@ namespace KarmaBanking.App.ViewModels
             CloseUserConfirmed = false;
             CloseResultMessage = string.Empty;
             CloseSuccess = false;
-            var accounts = await savingsService.GetAccountsAsync(CurrentUserId);
+            var openAccountsList = await savingsService.GetValidTransferDestinationsAsync(SelectedAccount!.Id);
             CloseDestinationAccounts.Clear();
-            foreach (var acc in accounts.Where(a => a.Id != SelectedAccount?.Id && a.AccountStatus != "Closed"))
-                CloseDestinationAccounts.Add(acc);
+            foreach (var account in openAccountsList)
+                CloseDestinationAccounts.Add(account);
             if (CloseDestinationAccounts.Count > 0)
                 SelectedCloseDestinationId = CloseDestinationAccounts[0].Id;
             OnPropertyChanged(nameof(CloseHasPenalty));
@@ -314,7 +314,7 @@ namespace KarmaBanking.App.ViewModels
                 if (result.Success) await LoadAccountsAsync();
                 return result.Success;
             }
-            catch (Exception ex) { CloseResultMessage = ex.Message; return false; }
+            catch (Exception exception) { CloseResultMessage = exception.Message; return false; }
             finally { IsLoading = false; }
         }
 
@@ -324,12 +324,12 @@ namespace KarmaBanking.App.ViewModels
         {
             try
             {
-                var sources = await savingsService.GetFundingSourcesAsync(CurrentUserId);
+                var fundingSourcesList = await savingsService.GetFundingSourcesAsync(CurrentUserId);
                 FundingSources.Clear();
-                foreach (var s in sources) FundingSources.Add(s);
+                foreach (var fundingSource in fundingSourcesList) FundingSources.Add(fundingSource);
                 if (FundingSources.Count > 0) SelectedFundingSource = FundingSources[0];
             }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
+            catch (Exception exception) { ErrorMessage = exception.Message; }
         }
 
         [RelayCommand]
@@ -366,7 +366,7 @@ namespace KarmaBanking.App.ViewModels
             IsLoading = true;
             try
             {
-                var dto = new CreateSavingsAccountDto
+                var createSavingsAccountDto = new CreateSavingsAccountDto
                 {
                     UserId = CurrentUserId,
                     SavingsType = SelectedSavingsType,
@@ -376,14 +376,14 @@ namespace KarmaBanking.App.ViewModels
                     TargetAmount = IsGoalSavings ? TargetAmount : null,
                     TargetDate = IsGoalSavings ? TargetDate?.DateTime : null,
                     MaturityDate = MaturityDate?.DateTime,
-                    DepositFrequency = Enum.TryParse<DepositFrequency>(SelectedFrequency, out var freq) ? freq : null
+                    DepositFrequency = Enum.TryParse<DepositFrequency>(SelectedFrequency, out var selectedFrequency) ? selectedFrequency : null
                 };
-                await savingsService.CreateAccountAsync(dto);
+                await savingsService.CreateAccountAsync(createSavingsAccountDto);
                 ShowCreateConfirmation = true;
                 ResetCreateForm();
                 await LoadAccountsAsync();
             }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
+            catch (Exception exception) { ErrorMessage = exception.Message; }
             finally { IsLoading = false; }
         }
 
@@ -414,26 +414,26 @@ namespace KarmaBanking.App.ViewModels
                 return;
             }
 
-            depositCts?.Cancel();
-            depositCts = new CancellationTokenSource();
+            depositCancelationTokenSource?.Cancel();
+            depositCancelationTokenSource = new CancellationTokenSource();
 
             IsLoading = true;
             try
             {
-                var response = await savingsService.DepositAsync(
+                var depositResponseDto = await savingsService.DepositAsync(
                     SelectedAccount.Id, amount, DepositSource, CurrentUserId);
 
-                DepositSuccessMessage = $"Deposit successful! New balance: ${response.NewBalance:N2}";
+                DepositSuccessMessage = $"Deposit successful! New balance: ${depositResponseDto.NewBalance:N2}";
                 ShowDepositSuccess = true;
                 DepositAmountText = string.Empty;
                 await LoadAccountsAsync();
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
+            catch (Exception exception) { ErrorMessage = exception.Message; }
             finally { IsLoading = false; }
         }
 
-        public void CancelDeposit() => depositCts?.Cancel();
+        public void CancelDeposit() => depositCancelationTokenSource?.Cancel();
 
         [ObservableProperty]
         private ObservableCollection<SavingsTransaction> transactions = new();
