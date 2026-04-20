@@ -1,6 +1,3 @@
-using System;
-using System.Globalization;
-using System.Linq;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;
@@ -8,7 +5,8 @@ using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using KarmaBanking.App.Models.DTOs;
+using System;
+using System.Globalization;
 
 namespace KarmaBanking.App.Views
 {
@@ -44,8 +42,8 @@ namespace KarmaBanking.App.Views
             string tag = tab.Tag?.ToString() ?? string.Empty;
 
             MyAccountsPanel.Visibility = tag == "MyAccounts" ? Visibility.Visible : Visibility.Collapsed;
-            OpenNewPanel.Visibility    = tag == "OpenNew"    ? Visibility.Visible : Visibility.Collapsed;
-            ManagePanel.Visibility     = tag == "Manage"     ? Visibility.Visible : Visibility.Collapsed;
+            OpenNewPanel.Visibility = tag == "OpenNew" ? Visibility.Visible : Visibility.Collapsed;
+            ManagePanel.Visibility = tag == "Manage" ? Visibility.Visible : Visibility.Collapsed;
 
             if (tag == "OpenNew")
             {
@@ -447,8 +445,8 @@ namespace KarmaBanking.App.Views
 
         private void HideAllActionPanels()
         {
-            DepositActionPanel.Visibility    = Visibility.Collapsed;
-            WithdrawActionPanel.Visibility   = Visibility.Collapsed;
+            DepositActionPanel.Visibility = Visibility.Collapsed;
+            WithdrawActionPanel.Visibility = Visibility.Collapsed;
             AutoDepositActionPanel.Visibility = Visibility.Collapsed;
             CloseAccountActionPanel.Visibility = Visibility.Collapsed;
         }
@@ -475,8 +473,10 @@ namespace KarmaBanking.App.Views
         {
             var d = new ContentDialog
             {
-                Title = title, Content = msg,
-                CloseButtonText = "OK", XamlRoot = this.XamlRoot
+                Title = title,
+                Content = msg,
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
             };
             await d.ShowAsync();
         }

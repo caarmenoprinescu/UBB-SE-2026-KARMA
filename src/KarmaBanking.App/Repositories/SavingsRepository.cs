@@ -1,7 +1,7 @@
+using KarmaBanking.App.Data;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Models.Enums;
-using System.Linq;
 using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
@@ -44,9 +44,9 @@ namespace KarmaBanking.App.Repositories
             decimal apy = dto.SavingsType switch
             {
                 "FixedDeposit" => 0.04m,
-                "GoalSavings"  => 0.03m,
-                "HighYield"    => 0.03m,
-                _              => 0.02m
+                "GoalSavings" => 0.03m,
+                "HighYield" => 0.03m,
+                _ => 0.02m
             };
 
             const string query = @"
@@ -74,7 +74,7 @@ namespace KarmaBanking.App.Repositories
             cmd.Parameters.AddWithValue("@FundingAccountId", dto.FundingAccountId == 0 ? (object)DBNull.Value : dto.FundingAccountId);
             cmd.Parameters.AddWithValue("@TargetAmount", (object?)dto.TargetAmount ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@TargetDate", (object?)dto.TargetDate ?? DBNull.Value);
-            
+
 
             int newId = (int)await cmd.ExecuteScalarAsync();
 
@@ -446,19 +446,19 @@ namespace KarmaBanking.App.Repositories
         {
             return new SavingsAccount
             {
-                Id               = r.GetInt32(r.GetOrdinal("id")),
-                UserId           = r.GetInt32(r.GetOrdinal("userId")),
-                SavingsType      = r["savingsType"]?.ToString() ?? string.Empty,
-                Balance          = r.GetDecimal(r.GetOrdinal("balance")),
-                AccruedInterest  = r.GetDecimal(r.GetOrdinal("accruedInterest")),
-                Apy              = r.GetDecimal(r.GetOrdinal("apy")),
-                MaturityDate     = r["maturityDate"] as DateTime?,
-                AccountStatus    = r["accountStatus"]?.ToString() ?? string.Empty,
-                CreatedAt        = r.GetDateTime(r.GetOrdinal("createdAt")),
-                AccountName      = r["accountName"] as string,
+                Id = r.GetInt32(r.GetOrdinal("id")),
+                UserId = r.GetInt32(r.GetOrdinal("userId")),
+                SavingsType = r["savingsType"]?.ToString() ?? string.Empty,
+                Balance = r.GetDecimal(r.GetOrdinal("balance")),
+                AccruedInterest = r.GetDecimal(r.GetOrdinal("accruedInterest")),
+                Apy = r.GetDecimal(r.GetOrdinal("apy")),
+                MaturityDate = r["maturityDate"] as DateTime?,
+                AccountStatus = r["accountStatus"]?.ToString() ?? string.Empty,
+                CreatedAt = r.GetDateTime(r.GetOrdinal("createdAt")),
+                AccountName = r["accountName"] as string,
                 FundingAccountId = r["fundingAccountId"] as int?,
-                TargetAmount     = r["targetAmount"] as decimal?,
-                TargetDate       = r["targetDate"] as DateTime?
+                TargetAmount = r["targetAmount"] as decimal?,
+                TargetDate = r["targetDate"] as DateTime?
             };
         }
 

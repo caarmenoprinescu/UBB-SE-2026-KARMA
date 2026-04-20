@@ -1,5 +1,5 @@
-using System;
 using KarmaBanking.App.Models.Enums;
+using System;
 
 namespace KarmaBanking.App.Models
 {

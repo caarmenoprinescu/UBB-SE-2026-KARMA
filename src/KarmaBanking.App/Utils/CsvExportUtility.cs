@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using KarmaBanking.App.Models;
+using System.Collections.Generic;
 using System.Text;
-using KarmaBanking.App.Models;
 
 namespace KarmaBanking.App.Utils
 {

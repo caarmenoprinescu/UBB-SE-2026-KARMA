@@ -1,9 +1,8 @@
+using KarmaBanking.App.ViewModels;
+using KarmaBanking.App.Views.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml.Navigation;
-using System.Threading.Tasks;
-using KarmaBanking.App.Views.Dialogs;
 using System;
 
 namespace KarmaBanking.App.Views

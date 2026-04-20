@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using KarmaBanking.App.Models;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.Utils;
 using System;

@@ -10,7 +10,7 @@ public class LoanApplicationValidator
         if (request.DesiredAmount <= 0)
             throw new Exception("Desired amount must be greater than 0");
 
-        if (!Enum.IsDefined(typeof(LoanType),request.LoanType))
+        if (!Enum.IsDefined(typeof(LoanType), request.LoanType))
             throw new Exception("Invalid Loan Type");
 
         if (request.PreferredTermMonths <= 0)

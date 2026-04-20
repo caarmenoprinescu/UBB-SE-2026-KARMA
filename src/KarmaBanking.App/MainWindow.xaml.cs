@@ -1,6 +1,5 @@
 using KarmaBanking.App.Views;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
 namespace KarmaBanking.App
 {

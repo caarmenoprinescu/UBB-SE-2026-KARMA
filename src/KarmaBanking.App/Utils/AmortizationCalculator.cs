@@ -1,6 +1,6 @@
+using KarmaBanking.App.Models;
 using System;
 using System.Collections.Generic;
-using KarmaBanking.App.Models;
 
 public class AmortizationCalculator
 {

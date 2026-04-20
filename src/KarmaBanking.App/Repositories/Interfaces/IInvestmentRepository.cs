@@ -1,4 +1,10 @@
-﻿using KarmaBanking.App.Models;
+﻿namespace KarmaBanking.App.Repositories.Interfaces
+{
+    using KarmaBanking.App.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+using KarmaBanking.App.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

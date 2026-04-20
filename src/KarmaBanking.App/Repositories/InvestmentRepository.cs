@@ -88,7 +88,7 @@ namespace KarmaBanking.App.Repositories
 
                     // Deduct the sold quantity from the current holding
                     decimal newQuantity = currentQuantity - quantity;
-                    string updateHoldingQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
+                    const string updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
 
                     using SqlCommand updateCmd = new SqlCommand(updateHoldingQuery, connection, transaction);
                     updateCmd.Parameters.AddWithValue("@NewQuantity", newQuantity);
@@ -123,7 +123,7 @@ namespace KarmaBanking.App.Repositories
                 // 4. Commit the transaction if all operations (holding update + transaction log) succeed
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception)
             {
                 // Revert all database changes if any exception occurs during the process
                 await transaction.RollbackAsync();
@@ -133,12 +133,12 @@ namespace KarmaBanking.App.Repositories
 
         public Portfolio GetPortfolio(int userId)
         {
-            const string selectPortfolioQuery = @"
+            const string selectPortfolioSqlQuery = @"
                 SELECT id, userId, totalValue, totalGainLoss, gainLossPercent
                 FROM Portfolio
                 WHERE userId = @UserId";
 
-            const string selectHoldingsQuery = @"
+            const string selectHoldingsSqlQuery = @"
                 SELECT id, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss
                 FROM InvestmentHolding
                 WHERE portfolioId = @PortfolioId
@@ -210,15 +210,15 @@ namespace KarmaBanking.App.Repositories
             // Dynamically append filters
             if (startDate.HasValue)
             {
-                query += " AND t.executedAt >= @StartDate";
+                filterLogsSqlQuery += " AND transactionLogs.executedAt >= @StartDate";
             }
             if (endDate.HasValue)
             {
-                query += " AND t.executedAt <= @EndDate";
+                filterLogsSqlQuery += " AND transactionLogs.executedAt <= @EndDate";
             }
             if (!string.IsNullOrWhiteSpace(ticker))
             {
-                query += " AND t.ticker = @Ticker";
+                filterLogsSqlQuery += " AND transactionLogs.ticker = @Ticker";
             }
 
             // Order by most recent transactions first

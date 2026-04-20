@@ -269,7 +269,7 @@ namespace KarmaBanking.App.Services
 
             if (status == LoanApplicationStatus.Approved)
             {
-               int loanId = await _loanService.AddLoanAsync(newApplication);
+                int loanId = await _loanService.AddLoanAsync(newApplication);
                 await _loanService.GenerateAmortizationAsync(loanId);
             }
 
