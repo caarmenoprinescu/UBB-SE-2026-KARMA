@@ -1,5 +1,4 @@
 ﻿using Microsoft.UI.Xaml;
-using Windows.ApplicationModel.Activation;
 
 namespace KarmaBanking.App
 {

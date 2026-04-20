@@ -1,10 +1,10 @@
-using System;
 using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using System;
 
 namespace KarmaBanking.App.Views
 {

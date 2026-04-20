@@ -1,114 +1,122 @@
-using System;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories.Interfaces;
-using KarmaBanking.App.Services;
-using Microsoft.UI.Dispatching;
-
 namespace KarmaBanking.App.ViewModels
 {
+    using System;
+    using System.ComponentModel;
+    using System.Linq;
+    using System.Runtime.CompilerServices;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories.Interfaces;
+    using KarmaBanking.App.Services;
+    using KarmaBanking.App.Services.Interfaces; // Ensure this is present
+    using Microsoft.UI.Dispatching;
+
     public class InvestmentsViewModel : INotifyPropertyChanged
     {
-        private const string RefreshPricesEvent = "refreshPrices";
-        private readonly IInvestmentRepository _repo;
-        private readonly MarketDataService _marketData;
-        private readonly DispatcherQueue? _dispatcherQueue;
+        private const string RefreshPricesEventName = "refreshPrices";
+        private readonly IInvestmentRepository investmentRepository;
+        private readonly IMarketDataService marketDataService; // Changed to Interface
+        private readonly DispatcherQueue? dispatcherQueue;
 
-        private Portfolio _portfolio;
-        private bool _isLoading;
+        private Portfolio userPortfolio;
+        private bool isPortfolioLoading;
 
-        public InvestmentsViewModel(IInvestmentRepository repo)
+        public InvestmentsViewModel(IInvestmentRepository investmentRepository)
         {
-            _repo = repo;
-            _marketData = new MarketDataService();
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            _marketData.onPriceUpdate(refreshPrices);
-            _portfolio = new Portfolio();
+            this.investmentRepository = investmentRepository;
+            marketDataService = new MarketDataService();
+            dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+            // Corrected: RegisterPriceUpdateHandler
+            marketDataService.RegisterPriceUpdateHandler(RefreshHoldingPrices);
+            userPortfolio = new Portfolio();
         }
 
-        public Portfolio portfolio
+        public Portfolio UserPortfolio
         {
-            get => _portfolio;
+            get => userPortfolio;
             set
             {
-                _portfolio = value;
+                userPortfolio = value;
                 OnPropertyChanged();
             }
         }
 
-        public bool isLoading
+        public bool IsPortfolioLoading
         {
-            get => _isLoading;
+            get => isPortfolioLoading;
             set
             {
-                _isLoading = value;
+                isPortfolioLoading = value;
                 OnPropertyChanged();
             }
         }
 
-        public void loadPortfolio()
+        public void LoadUserPortfolio()
         {
-            isLoading = true;
+            IsPortfolioLoading = true;
 
             try
             {
-                portfolio = _repo.GetPortfolio(1);
-                _marketData.startPolling(portfolio.Holdings.Select(holding => holding.Ticker).ToList());
+                UserPortfolio = investmentRepository.GetPortfolio(1);
 
+                // Corrected: StartPolling
+                marketDataService.StartPolling(UserPortfolio.Holdings.Select(holding => holding.Ticker).ToList());
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                System.Diagnostics.Debug.WriteLine($"loadPortfolio error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"LoadUserPortfolio error: {exception.Message}");
             }
             finally
             {
-                isLoading = false;
+                IsPortfolioLoading = false;
             }
         }
 
-        public void refreshPrices()
+        public void RefreshHoldingPrices()
         {
-            if (_dispatcherQueue != null && !_dispatcherQueue.HasThreadAccess)
+            if (dispatcherQueue != null && !dispatcherQueue.HasThreadAccess)
             {
-                _dispatcherQueue.TryEnqueue(refreshPrices);
+                dispatcherQueue.TryEnqueue(RefreshHoldingPrices);
                 return;
             }
 
-            if (portfolio?.Holdings == null || portfolio.Holdings.Count == 0)
-                return;
-
-            foreach (var holding in portfolio.Holdings)
+            if (UserPortfolio?.Holdings == null || UserPortfolio.Holdings.Count == 0)
             {
-                decimal updatedPrice = _marketData.getPrice(holding.Ticker);
-                if (updatedPrice <= 0) continue;
+                return;
+            }
+
+            foreach (var holding in UserPortfolio.Holdings)
+            {
+                // Corrected: GetPrice
+                decimal updatedPrice = marketDataService.GetPrice(holding.Ticker);
+                if (updatedPrice <= 0)
+                {
+                    continue;
+                }
 
                 holding.CurrentPrice = updatedPrice;
-                holding.UnrealizedGainLoss =
-                    (holding.CurrentPrice - holding.AvgPurchasePrice) * holding.Quantity;
+                holding.UnrealizedGainLoss = (holding.CurrentPrice - holding.AveragePurchasePrice) * holding.Quantity;
             }
 
-            portfolio.TotalValue = portfolio.Holdings.Sum(h => h.CurrentPrice * h.Quantity);
-            portfolio.TotalGainLoss = portfolio.Holdings.Sum(h => h.UnrealizedGainLoss);
+            UserPortfolio.TotalValue = UserPortfolio.Holdings.Sum(holding => holding.CurrentPrice * holding.Quantity);
+            UserPortfolio.TotalGainLoss = UserPortfolio.Holdings.Sum(holding => holding.UnrealizedGainLoss);
 
-            decimal totalCost = portfolio.Holdings.Sum(h => h.AvgPurchasePrice * h.Quantity);
-            portfolio.GainLossPercent = totalCost > 0
-                ? (portfolio.TotalGainLoss / totalCost) * 100
-                : 0;
+            decimal totalCost = UserPortfolio.Holdings.Sum(holding => holding.AveragePurchasePrice * holding.Quantity);
+            UserPortfolio.GainLossPercent = totalCost > 0 ? (UserPortfolio.TotalGainLoss / totalCost) * 100 : 0;
 
-            OnPropertyChanged(nameof(portfolio));
-            OnPropertyChanged(RefreshPricesEvent);
+            OnPropertyChanged(nameof(UserPortfolio));
+            OnPropertyChanged(RefreshPricesEventName);
         }
 
-        public void stopPolling()
+        public void StopMarketDataPolling()
         {
-            _marketData.stopPolling();
+            // Corrected: StopPolling
+            marketDataService.StopPolling();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
-using KarmaBanking.App.Models.Enums;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Repositories.Interfaces
 {
@@ -17,5 +16,5 @@ namespace KarmaBanking.App.Repositories.Interfaces
         Task SaveAutoDepositAsync(AutoDeposit autoDeposit);
         Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId);
         Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsPagedAsync(int accountId, string typeFilter, int page, int pageSize);
-        }
+    }
 }

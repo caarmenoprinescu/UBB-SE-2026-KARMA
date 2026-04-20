@@ -1,8 +1,10 @@
+using KarmaBanking.App.Data;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using KarmaBanking.App.Data;
 
 public class LoanRepository : ILoanRepository
 {
@@ -37,13 +39,13 @@ public class LoanRepository : ILoanRepository
         {
             Id = (int)reader["id"],
             UserId = (int)reader["userId"],
-            LoanType = Enum.Parse<LoanType>(reader["loanType"].ToString(), ignoreCase:true),
+            LoanType = Enum.Parse<LoanType>(reader["loanType"].ToString(), ignoreCase: true),
             Principal = (decimal)reader["principal"],
             OutstandingBalance = (decimal)reader["outstandingBalance"],
             InterestRate = (decimal)reader["interestRate"],
             MonthlyInstallment = (decimal)reader["monthlyInstallment"],
             RemainingMonths = (int)reader["remainingMonths"],
-            LoanStatus = Enum.Parse<LoanStatus>(reader["loanStatus"].ToString(), ignoreCase:true),
+            LoanStatus = Enum.Parse<LoanStatus>(reader["loanStatus"].ToString(), ignoreCase: true),
             TermInMonths = (int)reader["termInMonths"],
             StartDate = (DateTime)reader["startDate"]
         };
@@ -276,7 +278,7 @@ public class LoanRepository : ILoanRepository
     }
 
 
-   public async Task UpdateLoanApplicationStatusAsync(int id, LoanApplicationStatus loanApplicationStatus, string? reason)
+    public async Task UpdateLoanApplicationStatusAsync(int id, LoanApplicationStatus loanApplicationStatus, string? reason)
     {
 
 

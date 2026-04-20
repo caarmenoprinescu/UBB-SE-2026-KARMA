@@ -1,21 +1,12 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-
-namespace KarmaBanking.App.Models
+﻿namespace KarmaBanking.App.Models
 {
+    using System;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using System.Runtime.CompilerServices;
+
     public class ChatSession : INotifyPropertyChanged
     {
-        public int id { get; set; }
-        public int userId { get; set; }
-        public string issueCategory { get; set; } = string.Empty;
-        public string sessionStatus { get; set; } = string.Empty;
-        public int rating { get; set; }
-        public string feedback { get; set; } = string.Empty;
-        public DateTime startedAt { get; set; }
-        public DateTime endedAt { get; set; }
-
         private string title = "New chat";
         private string lastPreview = "No messages yet.";
         private DateTime lastUpdatedAt = DateTime.Now;
@@ -23,7 +14,17 @@ namespace KarmaBanking.App.Models
         private string teamContactMessage = string.Empty;
         private SelectedAttachment? attachment;
 
-        public ObservableCollection<ChatMessage> Messages { get; set; } = new ObservableCollection<ChatMessage>();
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public int IdentificationNumber { get; set; }
+
+        public string IssueCategory { get; set; } = string.Empty;
+
+        public string SessionStatus { get; set; } = string.Empty;
+
+        public DateTime StartedAt { get; set; }
+
+        public ObservableCollection<ChatMessage> Messages { get; set; } = [];
 
         public string Title
         {
@@ -109,9 +110,7 @@ namespace KarmaBanking.App.Models
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

@@ -1,9 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KarmaBanking.App.ViewModels
 {
@@ -14,7 +9,7 @@ namespace KarmaBanking.App.ViewModels
         public Loan Loan => _loan;
 
         public double RepaymentProgress =>
-           (double) AmortizationCalculator.ComputeRepaymentProgress(
+           (double)AmortizationCalculator.ComputeRepaymentProgress(
                 _loan.Principal,
                 _loan.OutstandingBalance);
 

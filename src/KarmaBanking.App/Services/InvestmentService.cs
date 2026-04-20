@@ -1,44 +1,53 @@
-﻿using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories.Interfaces;
-using KarmaBanking.App.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace KarmaBanking.App.Services
+﻿namespace KarmaBanking.App.Services
 {
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories.Interfaces;
+    using KarmaBanking.App.Services.Interfaces;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     internal class InvestmentService : IInvestmentService
     {
-        private readonly IInvestmentRepository _investmentRepository;
+        private readonly IInvestmentRepository investmentRepository;
 
-        // Defined business rules for fees
-        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% fee
-        private const decimal MinimumTradeFee = 0.50m; // Minimum fee of $0.50
+        // Reguli de business pentru comisioane
+        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% comision
+        private const decimal MinimumTradeFee = 0.50m; // Comision minim de $0.50
 
         public InvestmentService(IInvestmentRepository investmentRepository)
         {
-            _investmentRepository = investmentRepository;
+            this.investmentRepository = investmentRepository;
         }
 
-        public async Task<bool> ExecuteCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit)
+        public async Task<bool> ExecuteCryptoTradeAsync(int portfolioIdentificationNumber, string ticker, string actionType, decimal quantity, decimal pricePerUnit)
         {
-            // 1. Input Validation
+            // 1. Validarea datelor de intrare
             if (string.IsNullOrWhiteSpace(ticker))
+            {
                 throw new ArgumentException("Ticker symbol cannot be empty.", nameof(ticker));
+            }
 
             if (quantity <= 0)
+            {
                 throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
+            }
 
             if (pricePerUnit <= 0)
+            {
                 throw new ArgumentException("Price per unit must be greater than zero.", nameof(pricePerUnit));
+            }
 
-            if (!actionType.Equals("BUY", StringComparison.OrdinalIgnoreCase) &&
-                !actionType.Equals("SELL", StringComparison.OrdinalIgnoreCase))
+            const string ActionBuy = "BUY";
+            const string ActionSell = "SELL";
+
+            if (!actionType.Equals(ActionBuy, StringComparison.OrdinalIgnoreCase) &&
+                !actionType.Equals(ActionSell, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ArgumentException("Action type must be either 'BUY' or 'SELL'.", nameof(actionType));
+            }
 
-            // 2. Fee Validation and Calculation Logic
+            // 2. Calculul comisionului
             decimal totalTradeValue = quantity * pricePerUnit;
             decimal calculatedFee = Math.Round(totalTradeValue * CryptoTradeFeePercentage, 2);
 
@@ -47,11 +56,11 @@ namespace KarmaBanking.App.Services
                 calculatedFee = MinimumTradeFee;
             }
 
-            // 3. Trade Execution
+            // 3. Execuția tranzacției
             try
             {
-                await _investmentRepository.RecordCryptoTradeAsync(
-                    portfolioId,
+                await investmentRepository.RecordCryptoTradeAsync(
+                    portfolioIdentificationNumber,
                     ticker,
                     actionType,
                     quantity,
@@ -62,29 +71,24 @@ namespace KarmaBanking.App.Services
             }
             catch (InvalidOperationException)
             {
-                // Rethrow known business logic exceptions (e.g., insufficient balance from the repository)
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                // Capture unexpected database or execution errors
-                throw new Exception($"Trade execution failed: {ex.Message}", ex);
+                throw new Exception($"Trade execution failed: {exception.Message}", exception);
             }
         }
 
-        // Inside InvestmentService.cs, implement the new interface method:
-        public Portfolio GetPortfolio(int userId)
+        public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            // Pass the call down to the repository
-            return _investmentRepository.GetPortfolio(userId);
+            return investmentRepository.GetPortfolio(userIdentificationNumber);
         }
 
-        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
+        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioIdentificationNumber, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
         {
-            // 1. Business Logic Validation
-            if (portfolioId <= 0)
+            if (portfolioIdentificationNumber <= 0)
             {
-                throw new ArgumentException("Invalid portfolio ID.", nameof(portfolioId));
+                throw new ArgumentException("Invalid portfolio identification number.", nameof(portfolioIdentificationNumber));
             }
 
             if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
@@ -92,20 +96,13 @@ namespace KarmaBanking.App.Services
                 throw new ArgumentException("Start date cannot be after the end date.");
             }
 
-            if (ticker != null && string.IsNullOrWhiteSpace(ticker))
-            {
-                throw new ArgumentException("Ticker symbol cannot be empty if provided.", nameof(ticker));
-            }
-
-            // 2. Data Retrieval
             try
             {
-                return await _investmentRepository.GetInvestmentLogsAsync(portfolioId, startDate, endDate, ticker);
+                return await investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                // Wrap and propagate the error so the ViewModel can display an appropriate message
-                throw new Exception($"Failed to retrieve investment logs: {ex.Message}", ex);
+                throw new Exception($"Failed to retrieve investment logs: {exception.Message}", exception);
             }
         }
     }

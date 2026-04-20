@@ -1,18 +1,26 @@
-﻿using KarmaBanking.App.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace KarmaBanking.App.Repositories.Interfaces
+﻿namespace KarmaBanking.App.Repositories.Interfaces
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+
     public interface IInvestmentRepository
     {
-        Portfolio GetPortfolio(int userId);
-        Task RecordCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit, decimal fees);
+        Portfolio GetPortfolio(int userIdentificationNumber);
 
-        // New method for BA-60
-        Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null);
+        Task RecordCryptoTradeAsync(
+            int portfolioIdentificationNumber,
+            string ticker,
+            string actionType,
+            decimal quantity,
+            decimal pricePerUnit,
+            decimal fees);
+
+        Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
+            int portfolioIdentificationNumber,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? ticker = null);
     }
 }

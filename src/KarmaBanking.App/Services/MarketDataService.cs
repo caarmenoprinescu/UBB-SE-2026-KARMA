@@ -1,13 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-
 namespace KarmaBanking.App.Services
 {
-    public class MarketDataService
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using KarmaBanking.App.Services.Interfaces;
+
+    public class MarketDataService : IMarketDataService
     {
-        private readonly Dictionary<string, decimal> _prices = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
+        private const int DefaultPollingIntervalInMilliseconds = 5000;
+        private const double MaximumPriceFluctuationPercentage = 0.04;
+        private const double PriceFluctuationOffset = 0.02;
+
+        private readonly Dictionary<string, decimal> currentPrices = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
         {
             ["BTC"] = 68000m,
             ["ETH"] = 3400m,
@@ -18,76 +23,75 @@ namespace KarmaBanking.App.Services
             ["SPY"] = 520m
         };
 
-        private readonly object _syncRoot = new object();
-        private readonly Random _random = new Random();
-        private readonly int _pollIntervalMs = 5000;
+        private readonly object synchronizationRoot = new object();
+        private readonly Random randomNumberGenerator = new Random();
 
-        private Timer? _timer;
-        private List<string> _trackedTickers = new List<string>();
-        private Action? _priceUpdateHandler;
+        private Timer? pollingTimer;
+        private List<string> trackedTickerSymbols = new List<string>();
+        private Action? priceUpdateHandler;
 
-        public void startPolling(List<string> tickers)
+        public void StartPolling(List<string> tickerSymbols)
         {
-            lock (_syncRoot)
+            lock (synchronizationRoot)
             {
-                _trackedTickers = tickers
+                trackedTickerSymbols = tickerSymbols
                     .Where(ticker => !string.IsNullOrWhiteSpace(ticker))
                     .Select(ticker => ticker.Trim().ToUpperInvariant())
                     .Distinct()
                     .ToList();
 
-                if (_timer != null)
+                if (pollingTimer != null)
                 {
                     return;
                 }
 
-                _timer = new Timer(_ =>
+                pollingTimer = new Timer(timerState =>
                 {
-                    lock (_syncRoot)
+                    lock (synchronizationRoot)
                     {
-                        foreach (string ticker in _trackedTickers)
+                        foreach (string ticker in trackedTickerSymbols)
                         {
-                            if (!_prices.TryGetValue(ticker, out decimal currentPrice))
+                            if (!currentPrices.TryGetValue(ticker, out decimal currentPrice))
                             {
                                 continue;
                             }
 
-                            decimal changePercent = (decimal)(_random.NextDouble() * 0.04 - 0.02);
-                            decimal updatedPrice = currentPrice * (1 + changePercent);
-                            _prices[ticker] = decimal.Round(updatedPrice, 2);
+                            decimal changePercentage = (decimal)((randomNumberGenerator.NextDouble() * MaximumPriceFluctuationPercentage) - PriceFluctuationOffset);
+                            decimal updatedPrice = currentPrice * (1 + changePercentage);
+                            currentPrices[ticker] = decimal.Round(updatedPrice, 2);
                         }
                     }
 
-                    _priceUpdateHandler?.Invoke();
-                }, null, _pollIntervalMs, _pollIntervalMs);
+                    priceUpdateHandler?.Invoke();
+                }, null, DefaultPollingIntervalInMilliseconds, DefaultPollingIntervalInMilliseconds);
             }
         }
 
-        public void stopPolling()
+        public void StopPolling()
         {
-            lock (_syncRoot)
+            lock (synchronizationRoot)
             {
-                _timer?.Dispose();
-                _timer = null;
+                pollingTimer?.Dispose();
+                pollingTimer = null;
             }
         }
 
-        public decimal getPrice(string ticker)
+        public decimal GetPrice(string tickerSymbol)
         {
-            if (string.IsNullOrWhiteSpace(ticker))
+            if (string.IsNullOrWhiteSpace(tickerSymbol))
             {
                 return 0m;
             }
 
-            lock (_syncRoot)
+            lock (synchronizationRoot)
             {
-                return _prices.TryGetValue(ticker.Trim().ToUpperInvariant(), out decimal price) ? price : 0m;
+                return currentPrices.TryGetValue(tickerSymbol.Trim().ToUpperInvariant(), out decimal price) ? price : 0m;
             }
         }
 
-        public void onPriceUpdate(Action handler)
+        public void RegisterPriceUpdateHandler(Action updateHandler)
         {
-            _priceUpdateHandler = handler;
+            priceUpdateHandler = updateHandler;
         }
     }
 }

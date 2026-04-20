@@ -1,8 +1,10 @@
-﻿using KarmaBanking.App.Models;
+﻿using KarmaBanking.App.Data;
+using KarmaBanking.App.Models;
 using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using KarmaBanking.App.Data;
 
 namespace KarmaBanking.App.Repositories
 {

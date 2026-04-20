@@ -1,7 +1,10 @@
-﻿using System;
+﻿using KarmaBanking.App.Data;
+using Microsoft.Data.SqlClient;
+using System;
 using System.Data;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using KarmaBanking.App.Data;
 
 namespace KarmaBanking.App.Repositories
 {
@@ -9,7 +12,7 @@ namespace KarmaBanking.App.Repositories
     {
         public void SaveSessionRatingAndFeedback(int sessionId, int rating, string feedback)
         {
-            using (SqlConnection connection = new SqlConnection(DatabaseConfig.ConnectionString))
+            using (SqlConnection connection = new SqlConnection(DatabaseConfig.DatabaseConnectionString))
             {
                 connection.Open();
 

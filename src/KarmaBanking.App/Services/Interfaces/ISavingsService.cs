@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-using KarmaBanking.App.Models.Enums;
-using System.Threading.Tasks;
 using KarmaBanking.App.Models;
 using KarmaBanking.App.Models.DTOs;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace KarmaBanking.App.Services.Interfaces
 {

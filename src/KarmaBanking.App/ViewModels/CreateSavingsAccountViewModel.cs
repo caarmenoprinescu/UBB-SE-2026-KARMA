@@ -1,13 +1,10 @@
-using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using KarmaBanking.App.Models;
+using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Services.Interfaces;
 using KarmaBanking.App.Utils;
 using Microsoft.UI.Xaml;
-using KarmaBanking.App.Models.DTOs;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace KarmaBanking.App.ViewModels
 {
