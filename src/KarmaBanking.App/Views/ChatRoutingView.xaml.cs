@@ -1,20 +1,20 @@
-using KarmaBanking.App.Services;
-using KarmaBanking.App.ViewModels;
-using Microsoft.UI;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Storage.FileProperties;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
-
 namespace KarmaBanking.App.Views
 {
+    using KarmaBanking.App.Services;
+    using KarmaBanking.App.ViewModels;
+    using Microsoft.UI;
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Media;
+    using Microsoft.UI.Xaml.Navigation;
+    using System;
+    using System.IO;
+    using System.Threading.Tasks;
+    using Windows.Storage;
+    using Windows.Storage.FileProperties;
+    using Windows.Storage.Pickers;
+    using WinRT.Interop;
+
     public sealed partial class ChatRoutingView : Page
     {
         private readonly ChatViewModel viewModel = ChatViewModel.Instance;
@@ -62,110 +62,57 @@ namespace KarmaBanking.App.Views
                 ? "No active chat selected."
                 : $"{viewModel.CurrentSession.Title} ({viewModel.CurrentSession.SessionModeLabel})";
 
-            StatusText.Text = "The full chat transcript, your note, and the selected attachment details were prepared for the support team.";
+            StatusText.Text = "The chat session was prepared for the support team.";
             StatusText.Foreground = new SolidColorBrush(Colors.Green);
         }
 
         private async void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
             await PickAttachmentAsync();
-            AttachmentInfoTextBlock.Text = viewModel.SelectedAttachment == null
-                ? "No file attached."
-                : $"Attached file: {viewModel.SelectedAttachment.FileName} ({viewModel.SelectedAttachment.FileSizeDisplay})";
         }
 
         private async void OpenRatingDialog_Click(object sender, RoutedEventArgs e)
         {
             selectedRating = 0;
 
-            StackPanel dialogContent = new StackPanel
-            {
-                Spacing = 12
-            };
+            StackPanel dialogContent = new StackPanel { Spacing = 12 };
 
             TextBlock titleText = new TextBlock
             {
                 Text = "Rate your experience",
                 FontSize = 18,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             };
 
-            TextBlock ratingLabel = new TextBlock
+            TextBlock ratingLabel = new TextBlock { Text = "Please select a rating:" };
+            StackPanel starsPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            TextBlock selectedRatingText = new TextBlock { Text = "No rating selected." };
+
+            for (int i = 1; i <= 5; i++)
             {
-                Text = "Please select a rating:"
-            };
-
-            StackPanel starsPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 8
-            };
-
-            TextBlock selectedRatingText = new TextBlock
-            {
-                Text = "No rating selected."
-            };
-
-            Button star1 = new Button { Content = "⭐1", Tag = 1 };
-            Button star2 = new Button { Content = "⭐2", Tag = 2 };
-            Button star3 = new Button { Content = "⭐3", Tag = 3 };
-            Button star4 = new Button { Content = "⭐4", Tag = 4 };
-            Button star5 = new Button { Content = "⭐5", Tag = 5 };
-
-            star1.Click += (s, args) =>
-            {
-                selectedRating = 1;
-                selectedRatingText.Text = "Selected rating: 1 ⭐";
-            };
-
-            star2.Click += (s, args) =>
-            {
-                selectedRating = 2;
-                selectedRatingText.Text = "Selected rating: 2 ⭐";
-            };
-
-            star3.Click += (s, args) =>
-            {
-                selectedRating = 3;
-                selectedRatingText.Text = "Selected rating: 3 ⭐";
-            };
-
-            star4.Click += (s, args) =>
-            {
-                selectedRating = 4;
-                selectedRatingText.Text = "Selected rating: 4 ⭐";
-            };
-
-            star5.Click += (s, args) =>
-            {
-                selectedRating = 5;
-                selectedRatingText.Text = "Selected rating: 5 ⭐";
-            };
-
-            starsPanel.Children.Add(star1);
-            starsPanel.Children.Add(star2);
-            starsPanel.Children.Add(star3);
-            starsPanel.Children.Add(star4);
-            starsPanel.Children.Add(star5);
-
-            TextBlock feedbackLabel = new TextBlock
-            {
-                Text = "Leave feedback (optional):"
-            };
+                int ratingValue = i;
+                Button starButton = new Button { Content = $"⭐{ratingValue}", Tag = ratingValue };
+                starButton.Click += (s, args) =>
+                {
+                    selectedRating = ratingValue;
+                    selectedRatingText.Text = $"Selected rating: {ratingValue} ⭐";
+                };
+                starsPanel.Children.Add(starButton);
+            }
 
             TextBox feedbackTextBox = new TextBox
             {
                 PlaceholderText = "Write your feedback here...",
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,
-                Height = 100
+                Height = 100,
             };
 
             dialogContent.Children.Add(titleText);
             dialogContent.Children.Add(ratingLabel);
             dialogContent.Children.Add(starsPanel);
             dialogContent.Children.Add(selectedRatingText);
-            dialogContent.Children.Add(feedbackLabel);
+            dialogContent.Children.Add(new TextBlock { Text = "Leave feedback (optional):" });
             dialogContent.Children.Add(feedbackTextBox);
 
             ContentDialog ratingDialog = new ContentDialog
@@ -175,7 +122,7 @@ namespace KarmaBanking.App.Views
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Primary,
                 Content = dialogContent,
-                XamlRoot = this.XamlRoot
+                XamlRoot = XamlRoot,
             };
 
             ContentDialogResult result = await ratingDialog.ShowAsync();
@@ -192,18 +139,18 @@ namespace KarmaBanking.App.Views
                 try
                 {
                     ApiService api = new ApiService();
-
-                    int sessionId = viewModel.CurrentSession?.id ?? 1;
+                    // FIXED: IdentificationNumber
+                    int sessionIdentificationNumber = viewModel.CurrentSession?.IdentificationNumber ?? 1;
                     string feedback = feedbackTextBox.Text;
 
-                    api.SubmitFeedback(sessionId, selectedRating, feedback);
+                    api.SubmitFeedback(sessionIdentificationNumber, selectedRating, feedback);
 
                     StatusText.Text = $"Thank you! Rating submitted: {selectedRating} ⭐";
                     StatusText.Foreground = new SolidColorBrush(Colors.Green);
                 }
                 catch
                 {
-                    StatusText.Text = "Feedback submission failed (database connection unavailable locally).";
+                    StatusText.Text = "Feedback submission failed.";
                     StatusText.Foreground = new SolidColorBrush(Colors.Red);
                 }
             }
@@ -222,9 +169,8 @@ namespace KarmaBanking.App.Views
             try
             {
                 FileOpenPicker picker = new FileOpenPicker();
-
-                IntPtr hwnd = WindowNative.GetWindowHandle(App.MainAppWindow);
-                InitializeWithWindow.Initialize(picker, hwnd);
+                IntPtr windowHandle = WindowNative.GetWindowHandle(App.MainAppWindow);
+                InitializeWithWindow.Initialize(picker, windowHandle);
 
                 picker.ViewMode = PickerViewMode.List;
                 picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
@@ -254,20 +200,21 @@ namespace KarmaBanking.App.Views
                     FileName = file.Name,
                     FilePath = file.Path,
                     FileType = Path.GetExtension(file.Name).ToLowerInvariant(),
-                    FileSizeBytes = (long)properties.Size
+                    FileSizeBytes = (long)properties.Size,
                 };
 
                 viewModel.StatusMessage = "Attachment selected successfully.";
                 viewModel.SetAttachmentSelected();
-
                 viewModel.SetUploadStarted();
                 await Task.Delay(1000);
                 viewModel.SetUploadSucceeded();
+
+                AttachmentInfoTextBlock.Text = $"Attached file: {file.Name} ({viewModel.SelectedAttachment.FileSizeDisplay})";
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                viewModel.StatusMessage = $"Attachment selection failed: {ex.Message}";
-                viewModel.SetUploadFailed(ex.Message);
+                viewModel.StatusMessage = $"Attachment selection failed: {exception.Message}";
+                viewModel.SetUploadFailed(exception.Message);
             }
         }
     }

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-
 namespace KarmaBanking.App.Services
 {
     // Mock version of ApiService for testing without a real backend
@@ -42,48 +41,48 @@ namespace KarmaBanking.App.Services
             {
                 new ChatMessage
                 {
-                    Id = 1,
-                    SessionId = sessionId,
+                    IdentificationNumber = 1,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "USER",
                     Content = "Hi, I need help with my account.",
                     SentAt = DateTime.Now.AddMinutes(-15)
                 },
                 new ChatMessage
                 {
-                    Id = 2,
-                    SessionId = sessionId,
+                    IdentificationNumber = 2,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "CONSULTANT",
                     Content = "Hello! How can I assist you today?",
                     SentAt = DateTime.Now.AddMinutes(-14)
                 },
                 new ChatMessage
                 {
-                    Id = 3,
-                    SessionId = sessionId,
+                    IdentificationNumber = 3,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "USER",
                     Content = "I want to check my balance.",
                     SentAt = DateTime.Now.AddMinutes(-10)
                 },
                 new ChatMessage
                 {
-                    Id = 4,
-                    SessionId = sessionId,
+                    IdentificationNumber = 4,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "CONSULTANT",
                     Content = "Sure! Your current balance is $1,245.50.",
                     SentAt = DateTime.Now.AddMinutes(-8)
                 },
                 new ChatMessage
                 {
-                    Id = 5,
-                    SessionId = sessionId,
+                    IdentificationNumber = 5,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "USER",
                     Content = "Thanks!",
                     SentAt = DateTime.Now.AddMinutes(-5)
                 },
                 new ChatMessage
                 {
-                    Id = 6,
-                    SessionId = sessionId,
+                    IdentificationNumber = 6,
+                    SessionIdentificationNumber = sessionId,
                     SenderType = "CONSULTANT",
                     Content = "You're welcome! Anything else I can help with?",
                     SentAt = DateTime.Now.AddMinutes(-2)
@@ -92,6 +91,5 @@ namespace KarmaBanking.App.Services
 
             return Task.FromResult<List<ChatMessage>?>(messages);
         }
-
     }
 }

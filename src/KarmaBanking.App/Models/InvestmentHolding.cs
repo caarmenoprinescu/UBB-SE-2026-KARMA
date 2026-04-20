@@ -22,21 +22,21 @@ namespace KarmaBanking.App.Models
 
         public decimal CurrentPrice
         {
-            get => this.currentPrice;
+            get => currentPrice;
             set
             {
-                this.currentPrice = value;
-                this.OnPropertyChanged();
+                currentPrice = value;
+                OnPropertyChanged();
             }
         }
 
         public decimal UnrealizedGainLoss
         {
-            get => this.unrealizedGainLoss;
+            get => unrealizedGainLoss;
             set
             {
-                this.unrealizedGainLoss = value;
-                this.OnPropertyChanged();
+                unrealizedGainLoss = value;
+                OnPropertyChanged();
             }
         }
 
@@ -44,7 +44,7 @@ namespace KarmaBanking.App.Models
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -4,10 +4,10 @@
     using System.Collections.Generic;
     using System.Data;
     using System.Threading.Tasks;
+    using KarmaBanking.App.Data;
     using KarmaBanking.App.Models;
     using KarmaBanking.App.Repositories.Interfaces;
     using Microsoft.Data.SqlClient;
-    using KarmaBanking.App.Data;
 
     public class InvestmentRepository : IInvestmentRepository
     {
@@ -18,10 +18,10 @@
 
         public async Task RecordCryptoTradeAsync(int portfolioIdentificationNumber, string ticker, string actionType, decimal quantity, decimal pricePerUnit, decimal fees)
         {
-            using SqlConnection connection = DatabaseConfig.GetDatabaseConnection();
-            await connection.OpenAsync();
+            using SqlConnection sqlConnection = DatabaseConfig.GetDatabaseConnection();
+            await sqlConnection.OpenAsync();
 
-            using SqlTransaction databaseTransaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            using SqlTransaction sqlTransaction = (SqlTransaction)await sqlConnection.BeginTransactionAsync();
 
             try
             {
@@ -29,8 +29,8 @@
                 decimal currentQuantity = 0;
                 decimal currentAveragePrice = 0;
 
-                string checkHoldingQuery = "SELECT id, quantity, avgPurchasePrice FROM InvestmentHolding WHERE portfolioId = @PortfolioId AND ticker = @Ticker";
-                using (SqlCommand checkCommand = new SqlCommand(checkHoldingQuery, connection, databaseTransaction))
+                string checkHoldingSqlQuery = "SELECT id, quantity, avgPurchasePrice FROM InvestmentHolding WHERE portfolioId = @PortfolioId AND ticker = @Ticker";
+                using (SqlCommand checkCommand = new SqlCommand(checkHoldingSqlQuery, sqlConnection, sqlTransaction))
                 {
                     checkCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
                     checkCommand.Parameters.AddWithValue("@Ticker", ticker);
@@ -52,8 +52,8 @@
                         decimal newQuantity = currentQuantity + quantity;
                         decimal newAveragePrice = totalCost / newQuantity;
 
-                        string updateHoldingQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity, avgPurchasePrice = @NewAveragePrice WHERE id = @HoldingId";
-                        using SqlCommand updateCommand = new SqlCommand(updateHoldingQuery, connection, databaseTransaction);
+                        string updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity, avgPurchasePrice = @NewAveragePrice WHERE id = @HoldingId";
+                        using SqlCommand updateCommand = new SqlCommand(updateHoldingSqlQuery, sqlConnection, sqlTransaction);
                         updateCommand.Parameters.AddWithValue("@NewQuantity", newQuantity);
                         updateCommand.Parameters.AddWithValue("@NewAveragePrice", newAveragePrice);
                         updateCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber.Value);
@@ -62,12 +62,12 @@
                     }
                     else
                     {
-                        string insertHoldingQuery = @"
+                        string insertHoldingSqlQuery = @"
                             INSERT INTO InvestmentHolding (portfolioId, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss)
                             OUTPUT INSERTED.id
                             VALUES (@PortfolioId, @Ticker, @AssetType, @Quantity, @AveragePrice, @AveragePrice, 0)";
 
-                        using SqlCommand insertCommand = new SqlCommand(insertHoldingQuery, connection, databaseTransaction);
+                        using SqlCommand insertCommand = new SqlCommand(insertHoldingSqlQuery, sqlConnection, sqlTransaction);
                         insertCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
                         insertCommand.Parameters.AddWithValue("@Ticker", ticker);
                         insertCommand.Parameters.AddWithValue("@AssetType", AssetTypeCrypto);
@@ -85,20 +85,20 @@
                     }
 
                     decimal newQuantity = currentQuantity - quantity;
-                    const string updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
+                    string updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
 
-                    using SqlCommand updateCommand = new SqlCommand(updateHoldingQuery, connection, databaseTransaction);
+                    using SqlCommand updateCommand = new SqlCommand(updateHoldingSqlQuery, sqlConnection, sqlTransaction);
                     updateCommand.Parameters.AddWithValue("@NewQuantity", newQuantity);
                     updateCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber.Value);
 
                     await updateCommand.ExecuteNonQueryAsync();
                 }
 
-                string insertTransactionQuery = @"
+                string insertTransactionSqlQuery = @"
                     INSERT INTO InvestmentTransaction (holdingId, ticker, actionType, quantity, pricePerUnit, fees, orderType, executedAt)
                     VALUES (@HoldingId, @Ticker, @ActionType, @Quantity, @PricePerUnit, @Fees, @OrderType, @ExecutedAt)";
 
-                using (SqlCommand transactionLogCommand = new SqlCommand(insertTransactionQuery, connection, databaseTransaction))
+                using (SqlCommand transactionLogCommand = new SqlCommand(insertTransactionSqlQuery, sqlConnection, sqlTransaction))
                 {
                     transactionLogCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber.Value);
                     transactionLogCommand.Parameters.AddWithValue("@Ticker", ticker);
@@ -112,11 +112,11 @@
                     await transactionLogCommand.ExecuteNonQueryAsync();
                 }
 
-                await databaseTransaction.CommitAsync();
+                await sqlTransaction.CommitAsync();
             }
             catch (Exception)
             {
-                await databaseTransaction.RollbackAsync();
+                await sqlTransaction.RollbackAsync();
                 throw;
             }
         }
@@ -139,10 +139,10 @@
                 UserIdentificationNumber = userIdentificationNumber
             };
 
-            using SqlConnection databaseConnection = new SqlConnection(DatabaseConfig.DatabaseConnectionString);
-            databaseConnection.Open();
+            using SqlConnection sqlConnection = new SqlConnection(DatabaseConfig.DatabaseConnectionString);
+            sqlConnection.Open();
 
-            using (SqlCommand selectPortfolioCommand = new SqlCommand(selectPortfolioQuery, databaseConnection))
+            using (SqlCommand selectPortfolioCommand = new SqlCommand(selectPortfolioSqlQuery, sqlConnection))
             {
                 selectPortfolioCommand.Parameters.Add("@UserId", SqlDbType.Int).Value = userIdentificationNumber;
 
@@ -161,7 +161,7 @@
                 }
             }
 
-            using SqlCommand selectHoldingsCommand = new SqlCommand(selectHoldingsQuery, databaseConnection);
+            using SqlCommand selectHoldingsCommand = new SqlCommand(selectHoldingsSqlQuery, sqlConnection);
             selectHoldingsCommand.Parameters.Add("@PortfolioId", SqlDbType.Int).Value = userPortfolio.IdentificationNumber;
 
             using SqlDataReader holdingsDataReader = selectHoldingsCommand.ExecuteReader();
@@ -186,10 +186,10 @@
         {
             var investmentLogs = new List<InvestmentTransaction>();
 
-            using SqlConnection databaseConnection = DatabaseConfig.GetDatabaseConnection();
-            await databaseConnection.OpenAsync();
+            using SqlConnection sqlConnection = DatabaseConfig.GetDatabaseConnection();
+            await sqlConnection.OpenAsync();
 
-            string query = @"
+            string filterLogsSqlQuery = @"
                 SELECT t.id, t.holdingId, t.ticker, t.actionType, t.quantity, 
                        t.pricePerUnit, t.fees, t.orderType, t.executedAt 
                 FROM InvestmentTransaction t
@@ -198,22 +198,22 @@
 
             if (startDate.HasValue)
             {
-                filterLogsSqlQuery += " AND transactionLogs.executedAt >= @StartDate";
+                filterLogsSqlQuery += " AND t.executedAt >= @StartDate";
             }
 
             if (endDate.HasValue)
             {
-                filterLogsSqlQuery += " AND transactionLogs.executedAt <= @EndDate";
+                filterLogsSqlQuery += " AND t.executedAt <= @EndDate";
             }
 
             if (!string.IsNullOrWhiteSpace(ticker))
             {
-                filterLogsSqlQuery += " AND transactionLogs.ticker = @Ticker";
+                filterLogsSqlQuery += " AND t.ticker = @Ticker";
             }
 
-            query += " ORDER BY t.executedAt DESC";
+            filterLogsSqlQuery += " ORDER BY t.executedAt DESC";
 
-            using SqlCommand filterCommand = new SqlCommand(query, databaseConnection);
+            using SqlCommand filterCommand = new SqlCommand(filterLogsSqlQuery, sqlConnection);
             filterCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
 
             if (startDate.HasValue)

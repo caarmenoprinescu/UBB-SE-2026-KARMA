@@ -1,20 +1,20 @@
 namespace KarmaBanking.App.ViewModels
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using KarmaBanking.App.Models;
     using KarmaBanking.App.Repositories.Interfaces;
     using KarmaBanking.App.Services;
+    using KarmaBanking.App.Services.Interfaces; // Ensure this is present
     using Microsoft.UI.Dispatching;
 
     public class InvestmentsViewModel : INotifyPropertyChanged
     {
         private const string RefreshPricesEventName = "refreshPrices";
         private readonly IInvestmentRepository investmentRepository;
-        private readonly MarketDataService marketDataService;
+        private readonly IMarketDataService marketDataService; // Changed to Interface
         private readonly DispatcherQueue? dispatcherQueue;
 
         private Portfolio userPortfolio;
@@ -23,41 +23,44 @@ namespace KarmaBanking.App.ViewModels
         public InvestmentsViewModel(IInvestmentRepository investmentRepository)
         {
             this.investmentRepository = investmentRepository;
-            this.marketDataService = new MarketDataService();
-            this.dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            this.marketDataService.onPriceUpdate(this.RefreshHoldingPrices);
-            this.userPortfolio = new Portfolio();
+            marketDataService = new MarketDataService();
+            dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+            // Corrected: RegisterPriceUpdateHandler
+            marketDataService.RegisterPriceUpdateHandler(RefreshHoldingPrices);
+            userPortfolio = new Portfolio();
         }
 
         public Portfolio UserPortfolio
         {
-            get => this.userPortfolio;
+            get => userPortfolio;
             set
             {
-                this.userPortfolio = value;
-                this.OnPropertyChanged();
+                userPortfolio = value;
+                OnPropertyChanged();
             }
         }
 
         public bool IsPortfolioLoading
         {
-            get => this.isPortfolioLoading;
+            get => isPortfolioLoading;
             set
             {
-                this.isPortfolioLoading = value;
-                this.OnPropertyChanged();
+                isPortfolioLoading = value;
+                OnPropertyChanged();
             }
         }
 
         public void LoadUserPortfolio()
         {
-            this.IsPortfolioLoading = true;
+            IsPortfolioLoading = true;
 
             try
             {
-                // Hardcoded identification number for initial integration
-                this.UserPortfolio = this.investmentRepository.GetPortfolio(1);
-                this.marketDataService.startPolling(this.UserPortfolio.Holdings.Select(holding => holding.Ticker).ToList());
+                UserPortfolio = investmentRepository.GetPortfolio(1);
+
+                // Corrected: StartPolling
+                marketDataService.StartPolling(UserPortfolio.Holdings.Select(holding => holding.Ticker).ToList());
             }
             catch (Exception exception)
             {
@@ -65,26 +68,27 @@ namespace KarmaBanking.App.ViewModels
             }
             finally
             {
-                this.IsPortfolioLoading = false;
+                IsPortfolioLoading = false;
             }
         }
 
         public void RefreshHoldingPrices()
         {
-            if (this.dispatcherQueue != null && !this.dispatcherQueue.HasThreadAccess)
+            if (dispatcherQueue != null && !dispatcherQueue.HasThreadAccess)
             {
-                this.dispatcherQueue.TryEnqueue(this.RefreshHoldingPrices);
+                dispatcherQueue.TryEnqueue(RefreshHoldingPrices);
                 return;
             }
 
-            if (this.UserPortfolio?.Holdings == null || this.UserPortfolio.Holdings.Count == 0)
+            if (UserPortfolio?.Holdings == null || UserPortfolio.Holdings.Count == 0)
             {
                 return;
             }
 
-            foreach (var holding in this.UserPortfolio.Holdings)
+            foreach (var holding in UserPortfolio.Holdings)
             {
-                decimal updatedPrice = this.marketDataService.getPrice(holding.Ticker);
+                // Corrected: GetPrice
+                decimal updatedPrice = marketDataService.GetPrice(holding.Ticker);
                 if (updatedPrice <= 0)
                 {
                     continue;
@@ -94,26 +98,27 @@ namespace KarmaBanking.App.ViewModels
                 holding.UnrealizedGainLoss = (holding.CurrentPrice - holding.AveragePurchasePrice) * holding.Quantity;
             }
 
-            this.UserPortfolio.TotalValue = this.UserPortfolio.Holdings.Sum(holding => holding.CurrentPrice * holding.Quantity);
-            this.UserPortfolio.TotalGainLoss = this.UserPortfolio.Holdings.Sum(holding => holding.UnrealizedGainLoss);
+            UserPortfolio.TotalValue = UserPortfolio.Holdings.Sum(holding => holding.CurrentPrice * holding.Quantity);
+            UserPortfolio.TotalGainLoss = UserPortfolio.Holdings.Sum(holding => holding.UnrealizedGainLoss);
 
-            decimal totalCost = this.UserPortfolio.Holdings.Sum(holding => holding.AveragePurchasePrice * holding.Quantity);
-            this.UserPortfolio.GainLossPercent = totalCost > 0 ? (this.UserPortfolio.TotalGainLoss / totalCost) * 100 : 0;
+            decimal totalCost = UserPortfolio.Holdings.Sum(holding => holding.AveragePurchasePrice * holding.Quantity);
+            UserPortfolio.GainLossPercent = totalCost > 0 ? (UserPortfolio.TotalGainLoss / totalCost) * 100 : 0;
 
-            this.OnPropertyChanged(nameof(this.UserPortfolio));
-            this.OnPropertyChanged(RefreshPricesEventName);
+            OnPropertyChanged(nameof(UserPortfolio));
+            OnPropertyChanged(RefreshPricesEventName);
         }
 
         public void StopMarketDataPolling()
         {
-            this.marketDataService.stopPolling();
+            // Corrected: StopPolling
+            marketDataService.StopPolling();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -11,7 +11,7 @@ namespace KarmaBanking.App.Views
 
         public InvestmentLogsView()
         {
-            this.InitializeComponent();
+            InitializeComponent();
 
             var repository = new InvestmentRepository();
             var service = new InvestmentService(repository);

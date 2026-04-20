@@ -1,11 +1,11 @@
 ﻿namespace KarmaBanking.App.Services
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using KarmaBanking.App.Models;
     using KarmaBanking.App.Repositories.Interfaces;
     using KarmaBanking.App.Services.Interfaces;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     internal class InvestmentService : IInvestmentService
     {
@@ -59,7 +59,7 @@
             // 3. Execuția tranzacției
             try
             {
-                await this.investmentRepository.RecordCryptoTradeAsync(
+                await investmentRepository.RecordCryptoTradeAsync(
                     portfolioIdentificationNumber,
                     ticker,
                     actionType,
@@ -81,7 +81,7 @@
 
         public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            return this.investmentRepository.GetPortfolio(userIdentificationNumber);
+            return investmentRepository.GetPortfolio(userIdentificationNumber);
         }
 
         public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioIdentificationNumber, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
@@ -98,7 +98,7 @@
 
             try
             {
-                return await this.investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
+                return await investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
             }
             catch (Exception exception)
             {

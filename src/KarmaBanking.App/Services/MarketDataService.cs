@@ -1,10 +1,10 @@
 namespace KarmaBanking.App.Services
 {
-    using KarmaBanking.App.Services.Interfaces;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using KarmaBanking.App.Services.Interfaces;
 
     public class MarketDataService : IMarketDataService
     {
@@ -32,47 +32,47 @@ namespace KarmaBanking.App.Services
 
         public void StartPolling(List<string> tickerSymbols)
         {
-            lock (this.synchronizationRoot)
+            lock (synchronizationRoot)
             {
-                this.trackedTickerSymbols = tickerSymbols
+                trackedTickerSymbols = tickerSymbols
                     .Where(ticker => !string.IsNullOrWhiteSpace(ticker))
                     .Select(ticker => ticker.Trim().ToUpperInvariant())
                     .Distinct()
                     .ToList();
 
-                if (this.pollingTimer != null)
+                if (pollingTimer != null)
                 {
                     return;
                 }
 
-                this.pollingTimer = new Timer(timerState =>
+                pollingTimer = new Timer(timerState =>
                 {
-                    lock (this.synchronizationRoot)
+                    lock (synchronizationRoot)
                     {
-                        foreach (string ticker in this.trackedTickerSymbols)
+                        foreach (string ticker in trackedTickerSymbols)
                         {
-                            if (!this.currentPrices.TryGetValue(ticker, out decimal currentPrice))
+                            if (!currentPrices.TryGetValue(ticker, out decimal currentPrice))
                             {
                                 continue;
                             }
 
-                            decimal changePercentage = (decimal)((this.randomNumberGenerator.NextDouble() * MaximumPriceFluctuationPercentage) - PriceFluctuationOffset);
+                            decimal changePercentage = (decimal)((randomNumberGenerator.NextDouble() * MaximumPriceFluctuationPercentage) - PriceFluctuationOffset);
                             decimal updatedPrice = currentPrice * (1 + changePercentage);
-                            this.currentPrices[ticker] = decimal.Round(updatedPrice, 2);
+                            currentPrices[ticker] = decimal.Round(updatedPrice, 2);
                         }
                     }
 
-                    this.priceUpdateHandler?.Invoke();
+                    priceUpdateHandler?.Invoke();
                 }, null, DefaultPollingIntervalInMilliseconds, DefaultPollingIntervalInMilliseconds);
             }
         }
 
         public void StopPolling()
         {
-            lock (this.synchronizationRoot)
+            lock (synchronizationRoot)
             {
-                this.pollingTimer?.Dispose();
-                this.pollingTimer = null;
+                pollingTimer?.Dispose();
+                pollingTimer = null;
             }
         }
 
@@ -83,15 +83,15 @@ namespace KarmaBanking.App.Services
                 return 0m;
             }
 
-            lock (this.synchronizationRoot)
+            lock (synchronizationRoot)
             {
-                return this.currentPrices.TryGetValue(tickerSymbol.Trim().ToUpperInvariant(), out decimal price) ? price : 0m;
+                return currentPrices.TryGetValue(tickerSymbol.Trim().ToUpperInvariant(), out decimal price) ? price : 0m;
             }
         }
 
         public void RegisterPriceUpdateHandler(Action updateHandler)
         {
-            this.priceUpdateHandler = updateHandler;
+            priceUpdateHandler = updateHandler;
         }
     }
 }

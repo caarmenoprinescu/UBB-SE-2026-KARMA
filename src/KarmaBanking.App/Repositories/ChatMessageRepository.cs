@@ -1,46 +1,41 @@
-﻿using KarmaBanking.App.Data;
-using KarmaBanking.App.Models;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using KarmaBanking.App.Data;
-
-public class ChatMessageRepository
+﻿namespace KarmaBanking.App.Repositories
 {
-    public List<ChatMessage> GetMessagesBySessionId(int sessionId)
+    using KarmaBanking.App.Data;
+    using KarmaBanking.App.Models;
+    using Microsoft.Data.SqlClient;
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+
+    public class ChatMessageRepository
     {
-        List<ChatMessage> messages = new List<ChatMessage>();
-
-        using (SqlConnection connection = new SqlConnection(DatabaseConfig.DatabaseConnectionString))
+        public List<ChatMessage> GetMessagesBySessionIdentificationNumber(int sessionIdentificationNumber)
         {
-            connection.Open();
+            List<ChatMessage> chatMessages = [];
 
-            string query = @"SELECT id, sessionId, senderType, content, sentAt
-                             FROM ChatMessage
-                             WHERE sessionId = @sessionId
-                             ORDER BY sentAt ASC";
-
-            SqlCommand command = new SqlCommand(query, connection);
-            command.Parameters.Add("@sessionId", SqlDbType.Int).Value = sessionId;
-
-            SqlDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
+            using (SqlConnection sqlConnection = DatabaseConfig.GetDatabaseConnection())
             {
-                ChatMessage message = new ChatMessage
+                sqlConnection.Open();
+
+                const string query = "SELECT id, sessionId, senderType, content, sentAt FROM ChatMessage WHERE sessionId = @sessionId ORDER BY sentAt ASC";
+                using SqlCommand command = new SqlCommand(query, sqlConnection);
+                command.Parameters.Add("@sessionId", SqlDbType.Int).Value = sessionIdentificationNumber;
+
+                using SqlDataReader reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    Id = (int)reader["id"],
-                    SessionId = (int)reader["sessionId"],
-                    SenderType = reader["senderType"].ToString(),
-                    Content = reader["content"].ToString(),
-                    SentAt = (DateTime)reader["sentAt"]
-                };
-
-                messages.Add(message);
+                    chatMessages.Add(new ChatMessage
+                    {
+                        IdentificationNumber = (int)reader["id"],
+                        SessionIdentificationNumber = (int)reader["sessionId"],
+                        SenderType = reader["senderType"].ToString() ?? string.Empty,
+                        Content = reader["content"].ToString() ?? string.Empty,
+                        SentAt = (DateTime)reader["sentAt"]
+                    });
+                }
             }
-        }
 
-        return messages;
+            return chatMessages;
+        }
     }
 }
