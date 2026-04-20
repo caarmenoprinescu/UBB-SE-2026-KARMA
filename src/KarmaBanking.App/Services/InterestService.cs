@@ -18,7 +18,7 @@
 
 //        public async Task ApplyMonthlyInterest(int userId)
 //        {
-//            var accounts = await _repo.GetByUserIdAsync(userId, includesClosed: false);
+//            var accounts = await _repo.GetSavingsAccountsByUserIdAsync(userId, includesClosed: false);
 
 //            foreach (var acc in accounts.Where(a => a.AccountStatus == "Active"))
 //            {

@@ -11,10 +11,10 @@ namespace KarmaBanking.App.Utils
         {
             return value?.ToString() switch
             {
-                "Active"  => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 29,  185, 84)),  // green
-                "Closed"  => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 229, 57,  53)), // red
-                "Matured" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 30,  136, 229)),// blue
-                _        => new SolidColorBrush(Colors.Gray)
+                "Active" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84)),  // green
+                "Closed" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 229, 57, 53)), // red
+                "Matured" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 30, 136, 229)),// blue
+                _ => new SolidColorBrush(Colors.Gray)
             };
         }
 

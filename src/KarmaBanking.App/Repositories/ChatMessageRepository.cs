@@ -1,4 +1,5 @@
-﻿using KarmaBanking.App.Models;
+﻿using KarmaBanking.App.Data;
+using KarmaBanking.App.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;

@@ -85,7 +85,7 @@
                     }
 
                     decimal newQuantity = currentQuantity - quantity;
-                    string updateHoldingQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
+                    const string updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
 
                     using SqlCommand updateCommand = new SqlCommand(updateHoldingQuery, connection, databaseTransaction);
                     updateCommand.Parameters.AddWithValue("@NewQuantity", newQuantity);
@@ -114,7 +114,7 @@
 
                 await databaseTransaction.CommitAsync();
             }
-            catch
+            catch (Exception)
             {
                 await databaseTransaction.RollbackAsync();
                 throw;
@@ -123,12 +123,12 @@
 
         public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            const string selectPortfolioQuery = @"
+            const string selectPortfolioSqlQuery = @"
                 SELECT id, userId, totalValue, totalGainLoss, gainLossPercent
                 FROM Portfolio
                 WHERE userId = @UserId";
 
-            const string selectHoldingsQuery = @"
+            const string selectHoldingsSqlQuery = @"
                 SELECT id, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss
                 FROM InvestmentHolding
                 WHERE portfolioId = @PortfolioId
@@ -198,17 +198,17 @@
 
             if (startDate.HasValue)
             {
-                query += " AND t.executedAt >= @StartDate";
+                filterLogsSqlQuery += " AND transactionLogs.executedAt >= @StartDate";
             }
 
             if (endDate.HasValue)
             {
-                query += " AND t.executedAt <= @EndDate";
+                filterLogsSqlQuery += " AND transactionLogs.executedAt <= @EndDate";
             }
 
             if (!string.IsNullOrWhiteSpace(ticker))
             {
-                query += " AND t.ticker = @Ticker";
+                filterLogsSqlQuery += " AND transactionLogs.ticker = @Ticker";
             }
 
             query += " ORDER BY t.executedAt DESC";
