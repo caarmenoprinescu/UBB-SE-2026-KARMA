@@ -1,45 +1,45 @@
-﻿using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Services.Interfaces;
-using KarmaBanking.App.Utils;
-
-namespace KarmaBanking.App.ViewModels
+﻿namespace KarmaBanking.App.ViewModels
 {
+    using System;
+    using System.ComponentModel;
+    using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Services.Interfaces;
+    using KarmaBanking.App.Utils;
+
     public class CryptoTradingViewModel : INotifyPropertyChanged
     {
-        private readonly IInvestmentService _investmentService;
+        private readonly IInvestmentService investmentService;
 
-        private string _selectedTicker = "BTC";
-        private string _actionType = "BUY";
-        private string _quantityText = string.Empty;
-        private string _statusMessage = string.Empty;
-        private bool _isSubmitting;
+        private string selectedTicker = "BTC";
+        private string selectedActionType = "BUY";
+        private string quantityText = string.Empty;
+        private string statusMessage = string.Empty;
+        private bool isSubmitting;
 
-        // New properties for UI Synchronization (BA-58)
-        private decimal _currentBalance;
-        private decimal _estimatedFee;
-        private decimal _totalAmount;
+        private decimal currentWalletBalance;
+        private decimal estimatedTransactionFee;
+        private decimal totalTransactionAmount;
 
         public CryptoTradingViewModel(IInvestmentService investmentService)
         {
-            _investmentService = investmentService;
-            SubmitTradeCommand = new RelayCommand(ExecuteTradeAsync, CanExecuteTrade);
-
-            // Load the initial wallet balance when the ViewModel is created
+            this.investmentService = investmentService;
+            SubmitTradeCommand = new RelayCommand(async () => await ExecuteTradeAsync(), CanExecuteTrade);
             LoadWalletBalance();
         }
 
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public RelayCommand SubmitTradeCommand { get; }
+
         public string SelectedTicker
         {
-            get => _selectedTicker;
+            get => selectedTicker;
             set
             {
-                _selectedTicker = value;
+                selectedTicker = value;
                 OnPropertyChanged();
-                // Recalculate when the asset changes (since price changes)
                 UpdateCalculations();
                 SubmitTradeCommand.RaiseCanExecuteChanged();
             }
@@ -47,24 +47,22 @@ namespace KarmaBanking.App.ViewModels
 
         public string ActionType
         {
-            get => _actionType;
+            get => selectedActionType;
             set
             {
-                _actionType = value;
+                selectedActionType = value;
                 OnPropertyChanged();
-                // Recalculate fees and totals when switching between Buy/Sell
                 UpdateCalculations();
             }
         }
 
         public string QuantityText
         {
-            get => _quantityText;
+            get => quantityText;
             set
             {
-                _quantityText = value;
+                quantityText = value;
                 OnPropertyChanged();
-                // Live sync: Recalculate whenever the user types a new quantity
                 UpdateCalculations();
                 SubmitTradeCommand.RaiseCanExecuteChanged();
             }
@@ -72,59 +70,74 @@ namespace KarmaBanking.App.ViewModels
 
         public string StatusMessage
         {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
+            get => statusMessage;
+            set
+            {
+                statusMessage = value;
+                OnPropertyChanged();
+            }
         }
 
         public bool IsSubmitting
         {
-            get => _isSubmitting;
-            set { _isSubmitting = value; OnPropertyChanged(); SubmitTradeCommand.RaiseCanExecuteChanged(); }
+            get => isSubmitting;
+            set
+            {
+                isSubmitting = value;
+                OnPropertyChanged();
+                SubmitTradeCommand.RaiseCanExecuteChanged();
+            }
         }
-
-        // --- Synchronized Properties ---
 
         public decimal CurrentBalance
         {
-            get => _currentBalance;
-            set { _currentBalance = value; OnPropertyChanged(); }
+            get => currentWalletBalance;
+            set
+            {
+                currentWalletBalance = value;
+                OnPropertyChanged();
+            }
         }
 
         public decimal EstimatedFee
         {
-            get => _estimatedFee;
-            set { _estimatedFee = value; OnPropertyChanged(); }
+            get => estimatedTransactionFee;
+            set
+            {
+                estimatedTransactionFee = value;
+                OnPropertyChanged();
+            }
         }
 
         public decimal TotalAmount
         {
-            get => _totalAmount;
-            set { _totalAmount = value; OnPropertyChanged(); }
+            get => totalTransactionAmount;
+            set
+            {
+                totalTransactionAmount = value;
+                OnPropertyChanged();
+            }
         }
-
-        public RelayCommand SubmitTradeCommand { get; }
 
         private void LoadWalletBalance()
         {
             try
             {
-                // Hardcoded userId 1 for standard project flow. 
-                // Fetches the portfolio to display the available funds.
-                Portfolio portfolio = _investmentService.GetPortfolio(1);
-                if (portfolio != null)
+                // Folosim identificatorul hardcodat 1 pentru flow-ul actual al proiectului
+                Portfolio userPortfolio = investmentService.GetPortfolio(1);
+                if (userPortfolio != null)
                 {
-                    CurrentBalance = portfolio.TotalValue;
+                    CurrentBalance = userPortfolio.TotalValue;
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                StatusMessage = "Failed to sync wallet balance.";
+                StatusMessage = $"Failed to sync wallet balance: {exception.Message}";
             }
         }
 
         private void UpdateCalculations()
         {
-            // Reset values if input is empty or invalid
             if (string.IsNullOrWhiteSpace(QuantityText) || !decimal.TryParse(QuantityText, out decimal quantity) || quantity <= 0)
             {
                 EstimatedFee = 0;
@@ -132,20 +145,19 @@ namespace KarmaBanking.App.ViewModels
                 return;
             }
 
-            // Mock price selection (in a real scenario, this fetches a live quote)
-            decimal currentPrice = SelectedTicker == "BTC" ? 65000m : 3000m;
-            decimal tradeValue = quantity * currentPrice;
+            // Simulam pretul curent (intr-un scenariu real, acesta vine dintr-un serviciu de Market Data)
+            decimal currentMarketPrice = SelectedTicker == "BTC" ? 65000m : 3000m;
+            decimal tradeValue = quantity * currentMarketPrice;
 
-            // Apply the fee logic defined in BA-56 (1.5% fee, minimum $0.50)
+            // Logica de calcul a comisionului (1.5% cu minim 0.50$)
             decimal calculatedFee = Math.Round(tradeValue * 0.015m, 2);
             EstimatedFee = calculatedFee < 0.50m ? 0.50m : calculatedFee;
 
-            // Sync total cost: BUY means cost + fee. SELL means revenue - fee.
             if (ActionType == "BUY")
             {
                 TotalAmount = tradeValue + EstimatedFee;
             }
-            else // SELL
+            else
             {
                 TotalAmount = tradeValue - EstimatedFee;
             }
@@ -153,19 +165,28 @@ namespace KarmaBanking.App.ViewModels
 
         private bool CanExecuteTrade()
         {
-            if (_isSubmitting || string.IsNullOrWhiteSpace(QuantityText) || !decimal.TryParse(QuantityText, out decimal qty) || qty <= 0)
-                return false;
+            bool hasValidQuantity = decimal.TryParse(QuantityText, out decimal quantity) && quantity > 0;
 
-            // Optional: Prevent BUY if TotalAmount exceeds CurrentBalance
-            if (ActionType == "BUY" && TotalAmount > CurrentBalance)
+            if (IsSubmitting || !hasValidQuantity)
+            {
                 return false;
+            }
+
+            // Validare de baza pentru fonduri insuficiente la cumparare
+            if (ActionType == "BUY" && TotalAmount > CurrentBalance)
+            {
+                return false;
+            }
 
             return true;
         }
 
         private async Task ExecuteTradeAsync()
         {
-            if (!decimal.TryParse(QuantityText, out decimal quantity)) return;
+            if (!decimal.TryParse(QuantityText, out decimal quantity))
+            {
+                return;
+            }
 
             IsSubmitting = true;
             StatusMessage = "Executing trade...";
@@ -174,17 +195,16 @@ namespace KarmaBanking.App.ViewModels
             {
                 decimal mockPrice = SelectedTicker == "BTC" ? 65000m : 3000m;
 
-                await _investmentService.ExecuteCryptoTradeAsync(1, SelectedTicker, ActionType, quantity, mockPrice);
+                await investmentService.ExecuteCryptoTradeAsync(1, SelectedTicker, ActionType, quantity, mockPrice);
 
                 StatusMessage = $"Successfully executed {ActionType} for {quantity} {SelectedTicker}.";
                 QuantityText = string.Empty;
 
-                // Re-sync the wallet balance after a successful trade
                 LoadWalletBalance();
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                StatusMessage = $"Error: {ex.Message}";
+                StatusMessage = $"Error: {exception.Message}";
             }
             finally
             {
@@ -192,8 +212,7 @@ namespace KarmaBanking.App.ViewModels
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

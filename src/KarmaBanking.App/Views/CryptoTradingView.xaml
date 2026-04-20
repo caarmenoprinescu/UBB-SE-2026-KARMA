@@ -11,19 +11,18 @@
     <Page.Resources>
         <utils:DecimalToCurrencyConverter x:Key="CurrencyConverter" />
     </Page.Resources>
-    
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24" Spacing="24" MaxWidth="600" HorizontalAlignment="Left">
-
             <TextBlock Text="Crypto Trading" FontSize="28" FontWeight="Bold" />
 
+            <!-- Warning Box -->
             <Border Background="#FFF4CE" BorderBrush="#FFD666" BorderThickness="1" CornerRadius="8" Padding="16">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="⚠️" FontSize="20" VerticalAlignment="Center"/>
                     <StackPanel>
                         <TextBlock Text="High Volatility Warning" FontWeight="SemiBold" Foreground="#8A6D3B"/>
-                        <TextBlock Text="Cryptocurrency prices are highly volatile. You may lose all or part of your invested capital. Trade carefully." 
-                                   TextWrapping="Wrap" Foreground="#8A6D3B" FontSize="12"/>
+                        <TextBlock Text="Cryptocurrency prices are highly volatile. You may lose all or part of your invested capital." TextWrapping="Wrap" Foreground="#8A6D3B" FontSize="12"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -40,6 +39,7 @@
             <StackPanel Spacing="8">
                 <TextBlock Text="Action" FontWeight="SemiBold"/>
                 <StackPanel Orientation="Horizontal" Spacing="16">
+                    <!-- Binding-ul ActionType va fi actualizat in code-behind via OnActionTypeChecked -->
                     <RadioButton Content="Buy" GroupName="TradeAction" IsChecked="True" Checked="OnActionTypeChecked"/>
                     <RadioButton Content="Sell" GroupName="TradeAction" Checked="OnActionTypeChecked"/>
                 </StackPanel>
@@ -52,32 +52,25 @@
 
             <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="DarkBlue" />
 
+            <!-- Summary Table -->
             <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="12">
                     <Grid>
                         <TextBlock Text="Available Wallet Balance:" Foreground="Gray"/>
                         <TextBlock Text="{Binding CurrentBalance, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
                     </Grid>
-
                     <Grid>
                         <TextBlock Text="Estimated Fee (1.5%):" Foreground="Gray"/>
                         <TextBlock Text="{Binding EstimatedFee, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
                     </Grid>
-
-                    <Line X1="0" Y1="0" X2="400" Y2="0" Stroke="LightGray" StrokeThickness="1" HorizontalAlignment="Stretch"/>
-
                     <Grid>
-                        <TextBlock Text="Total Estimated Cost/Revenue:" FontWeight="SemiBold"/>
+                        <TextBlock Text="Total Estimated Amount:" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding TotalAmount, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{ThemeResource SystemControlForegroundAccentBrush}"/>
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <Button Content="Execute Trade" 
-                    Command="{Binding SubmitTradeCommand}" 
-                    Style="{StaticResource AccentButtonStyle}" 
-                    Width="150"/>
-
+            <Button Content="Execute Trade" Command="{Binding SubmitTradeCommand}" Style="{StaticResource AccentButtonStyle}" Width="150"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

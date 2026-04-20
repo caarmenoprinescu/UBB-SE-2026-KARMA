@@ -1,65 +1,70 @@
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories;
-using KarmaBanking.App.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-
 namespace KarmaBanking.App.Views
 {
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories;
+    using KarmaBanking.App.ViewModels;
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Controls.Primitives;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using System.Linq;
+
     public sealed partial class InvestmentsView : Page
     {
-        private const string RefreshPricesEvent = "refreshPrices";
-        private readonly ObservableCollection<InvestmentHolding> _displayedHoldings;
-        private readonly List<ToggleButton> _filterButtons;
-        private InvestmentsViewModel ViewModel { get; }
-        private string _activeFilter = "All";
-        private bool _hasLoaded;
+        // Redenumit pentru a fi semantic conform cerintei
+        private const string RefreshPricesEventName = "refreshPrices";
+        private readonly ObservableCollection<InvestmentHolding> displayedHoldings;
+        private readonly List<ToggleButton> filterButtons;
+        private bool hasPageLoaded;
+        private string activeFilterType = "All";
 
         public InvestmentsView()
         {
             InitializeComponent();
 
+            // Dependency Injection manual
             ViewModel = new InvestmentsViewModel(new InvestmentRepository());
             DataContext = ViewModel;
 
-            _displayedHoldings = new ObservableCollection<InvestmentHolding>();
-            _filterButtons = new List<ToggleButton>
-            {
+            displayedHoldings = [];
+            filterButtons =
+            [
                 AllFilterButton,
                 StocksFilterButton,
                 EtfsFilterButton,
                 BondsFilterButton,
                 CryptoFilterButton,
                 OtherFilterButton
-            };
+            ];
 
-            HoldingsListView.ItemsSource = _displayedHoldings;
+            HoldingsListView.ItemsSource = displayedHoldings;
 
             Loaded += OnPageLoaded;
             Unloaded += OnPageUnloaded;
             ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
+        public InvestmentsViewModel ViewModel { get; }
+
         private void OnPageLoaded(object sender, RoutedEventArgs e)
         {
-            if (_hasLoaded)
+            if (hasPageLoaded)
             {
                 return;
             }
 
-            _hasLoaded = true;
-            ViewModel.loadPortfolio();
+            hasPageLoaded = true;
+            // Redenumit din loadPortfolio() -> LoadUserPortfolio()
+            ViewModel.LoadUserPortfolio();
             RefreshDisplayedHoldings();
         }
 
         private void OnPageUnloaded(object sender, RoutedEventArgs e)
         {
-            ViewModel.stopPolling();
+            // Redenumit din stopPolling() -> StopMarketDataPolling()
+            ViewModel.StopMarketDataPolling();
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
             Loaded -= OnPageLoaded;
             Unloaded -= OnPageUnloaded;
@@ -67,15 +72,16 @@ namespace KarmaBanking.App.Views
 
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(InvestmentsViewModel.portfolio))
+            // Sincronizat cu noile nume de proprietati din ViewModel
+            if (e.PropertyName == nameof(InvestmentsViewModel.UserPortfolio))
             {
                 RefreshDisplayedHoldings();
             }
-            else if (e.PropertyName == RefreshPricesEvent)
+            else if (e.PropertyName == RefreshPricesEventName)
             {
                 RefreshDisplayedHoldings();
             }
-            else if (e.PropertyName == nameof(InvestmentsViewModel.isLoading))
+            else if (e.PropertyName == nameof(InvestmentsViewModel.IsPortfolioLoading))
             {
                 UpdateEmptyState();
             }
@@ -85,9 +91,9 @@ namespace KarmaBanking.App.Views
         {
             if (sender is ToggleButton selectedButton)
             {
-                _activeFilter = selectedButton.Tag?.ToString() ?? "All";
+                activeFilterType = selectedButton.Tag?.ToString() ?? "All";
 
-                foreach (ToggleButton button in _filterButtons)
+                foreach (ToggleButton button in filterButtons)
                 {
                     button.IsChecked = button == selectedButton;
                 }
@@ -98,12 +104,13 @@ namespace KarmaBanking.App.Views
 
         private void RefreshDisplayedHoldings()
         {
-            _displayedHoldings.Clear();
+            displayedHoldings.Clear();
 
-            IEnumerable<InvestmentHolding> holdings = ViewModel.portfolio?.Holdings ?? Enumerable.Empty<InvestmentHolding>();
+            // Sincronizat: portfolio -> UserPortfolio
+            IEnumerable<InvestmentHolding> holdings = ViewModel.UserPortfolio?.Holdings ?? Enumerable.Empty<InvestmentHolding>();
             foreach (InvestmentHolding holding in holdings.Where(MatchesActiveFilter))
             {
-                _displayedHoldings.Add(holding);
+                displayedHoldings.Add(holding);
             }
 
             UpdateEmptyState();
@@ -113,7 +120,7 @@ namespace KarmaBanking.App.Views
         {
             string assetType = holding.AssetType?.Trim() ?? string.Empty;
 
-            return _activeFilter switch
+            return activeFilterType switch
             {
                 "Stocks" => assetType.Equals("Stock", System.StringComparison.OrdinalIgnoreCase)
                     || assetType.Equals("Stocks", System.StringComparison.OrdinalIgnoreCase),
@@ -135,7 +142,8 @@ namespace KarmaBanking.App.Views
 
         private void UpdateEmptyState()
         {
-            bool isEmpty = !ViewModel.isLoading && _displayedHoldings.Count == 0;
+            // Sincronizat: isLoading -> IsPortfolioLoading
+            bool isEmpty = !ViewModel.IsPortfolioLoading && displayedHoldings.Count == 0;
             EmptyStateTextBlock.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
             HoldingsListView.Visibility = isEmpty ? Visibility.Collapsed : Visibility.Visible;
         }

@@ -18,7 +18,7 @@ namespace KarmaBanking.App.Utils
             {
                 foreach (var tx in transactions)
                 {
-                    builder.AppendLine($"{tx.Id},{tx.Ticker},{tx.ActionType},{tx.Quantity},{tx.PricePerUnit},{tx.Fees},{tx.OrderType},{tx.ExecutedAt:yyyy-MM-dd HH:mm:ss}");
+                    builder.AppendLine($"{tx.IdentificationNumber},{tx.Ticker},{tx.ActionType},{tx.Quantity},{tx.PricePerUnit},{tx.Fees},{tx.OrderType},{tx.ExecutedAt:yyyy-MM-dd HH:mm:ss}");
                 }
             }
 
