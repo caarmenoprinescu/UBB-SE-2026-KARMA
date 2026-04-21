@@ -1,3 +1,7 @@
+// <copyright file="ApiService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Services;
 
 using System;
@@ -88,7 +92,7 @@ public class ApiService
         var dto = new
         {
             destinationAccountId,
-            confirmClosure = true
+            confirmClosure = true,
         };
 
         var body = new StringContent(
@@ -245,7 +249,7 @@ public class ApiService
             ".png" => "image/png",
             ".jpg" => "image/jpeg",
             ".jpeg" => "image/jpeg",
-            _ => "application/octet-stream"
+            _ => "application/octet-stream",
         };
     }
 

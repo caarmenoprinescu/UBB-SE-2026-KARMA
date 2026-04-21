@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.ViewModels;
+﻿// <copyright file="ChatViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.ViewModels;
 
 using System;
 using System.Collections.ObjectModel;
@@ -341,14 +345,14 @@ public class ChatViewModel : INotifyPropertyChanged
             {
                 Text = "Rate your experience",
                 FontSize = 18,
-                FontWeight = FontWeights.SemiBold
+                FontWeight = FontWeights.SemiBold,
             };
 
             var ratingLabel = new TextBlock { Text = "Please select a rating:" };
             var starsPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 8
+                Spacing = 8,
             };
             var selectedRatingText = new TextBlock { Text = "No rating selected." };
             var selectedRating = 0;
@@ -359,7 +363,7 @@ public class ChatViewModel : INotifyPropertyChanged
                 var starButton = new Button
                 {
                     Content = $"⭐{ratingValue}",
-                    Tag = ratingValue
+                    Tag = ratingValue,
                 };
                 starButton.Click += (s, args) =>
                 {
@@ -374,7 +378,7 @@ public class ChatViewModel : INotifyPropertyChanged
                 PlaceholderText = "Write your feedback here...",
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,
-                Height = 100
+                Height = 100,
             };
 
             dialogContent.Children.Add(titleText);
@@ -391,7 +395,7 @@ public class ChatViewModel : INotifyPropertyChanged
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Primary,
                 Content = dialogContent,
-                XamlRoot = xamlRoot
+                XamlRoot = xamlRoot,
             };
 
             var result = await ratingDialog.ShowAsync();

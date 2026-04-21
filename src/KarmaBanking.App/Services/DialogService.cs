@@ -1,3 +1,7 @@
+// <copyright file="DialogService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Services;
 
 using System;
@@ -20,7 +24,7 @@ public class DialogService
             Content = message,
             PrimaryButtonText = primaryButtonText,
             CloseButtonText = closeButtonText,
-            XamlRoot = xamlRoot
+            XamlRoot = xamlRoot,
         };
 
         var result = await WindowsRuntimeSystemExtensions.AsTask(dialog.ShowAsync());
@@ -37,7 +41,7 @@ public class DialogService
             Title = title,
             Content = message,
             CloseButtonText = "OK",
-            XamlRoot = xamlRoot
+            XamlRoot = xamlRoot,
         };
 
         await WindowsRuntimeSystemExtensions.AsTask(dialog.ShowAsync());
@@ -52,7 +56,7 @@ public class DialogService
     {
         var inputTextBox = new TextBox
         {
-            PlaceholderText = placeholder
+            PlaceholderText = placeholder,
         };
 
         var dialog = new ContentDialog
@@ -61,7 +65,7 @@ public class DialogService
             Content = inputTextBox,
             PrimaryButtonText = primaryButtonText,
             CloseButtonText = closeButtonText,
-            XamlRoot = xamlRoot
+            XamlRoot = xamlRoot,
         };
 
         var result = await WindowsRuntimeSystemExtensions.AsTask(dialog.ShowAsync());
@@ -78,7 +82,7 @@ public class DialogService
             Title = title,
             Content = message,
             CloseButtonText = "OK",
-            XamlRoot = xamlRoot
+            XamlRoot = xamlRoot,
         };
 
         await WindowsRuntimeSystemExtensions.AsTask(dialog.ShowAsync());

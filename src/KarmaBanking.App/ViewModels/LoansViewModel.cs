@@ -1,3 +1,7 @@
+// <copyright file="LoansViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.ViewModels;
 
 using System;
@@ -74,12 +78,15 @@ public partial class LoansViewModel : ObservableObject
     [ObservableProperty]
     private LoanViewModel selectedLoan;
 
-    [ObservableProperty] private LoanType selectedLoanType;
+    [ObservableProperty]
+    private LoanType selectedLoanType;
 
-    [NotifyPropertyChangedFor(nameof(FilteredLoans))] [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredLoans))]
+    [ObservableProperty]
     private LoanStatus? statusFilter;
 
-    [NotifyPropertyChangedFor(nameof(FilteredLoans))] [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredLoans))]
+    [ObservableProperty]
     private LoanType? typeFilter;
 
     public LoansViewModel()
@@ -329,7 +336,7 @@ public partial class LoansViewModel : ObservableObject
                 new ProcessStartInfo
                 {
                     FileName = filePath,
-                    UseShellExecute = true
+                    UseShellExecute = true,
                 });
         }
         catch (Exception e)

@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Views;
+﻿// <copyright file="CryptoTradingView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Views;
 
 using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;

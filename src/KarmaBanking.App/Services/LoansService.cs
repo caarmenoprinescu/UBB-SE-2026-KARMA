@@ -1,3 +1,7 @@
+// <copyright file="LoansService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -238,7 +242,7 @@ public class LoanService : ILoanService
             LoanType.Personal => 8.5m,
             LoanType.Mortgage => 4.5m,
             LoanType.Student => 3.0m,
-            LoanType.Auto => 6.5m
+            LoanType.Auto => 6.5m,
         };
     }
 }

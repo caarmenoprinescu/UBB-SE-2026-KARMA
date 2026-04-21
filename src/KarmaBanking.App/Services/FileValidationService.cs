@@ -1,3 +1,7 @@
+// <copyright file="FileValidationService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Services;
 
 using System;
@@ -62,7 +66,7 @@ public class FileValidationService
                 FileName = file.Name,
                 FilePath = file.Path,
                 FileType = Path.GetExtension(file.Name).ToLowerInvariant(),
-                FileSizeBytes = (long)properties.Size
+                FileSizeBytes = (long)properties.Size,
             };
         }
         catch (Exception ex)

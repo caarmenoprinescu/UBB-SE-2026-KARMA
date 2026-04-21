@@ -1,8 +1,6 @@
-// <copyright file="SavingsAccount.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="SavingsAccount.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
 // </copyright>
-
-
 
 namespace KarmaBanking.App.Models;
 

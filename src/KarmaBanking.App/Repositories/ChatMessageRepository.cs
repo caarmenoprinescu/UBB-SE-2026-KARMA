@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Repositories;
+﻿// <copyright file="ChatMessageRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Repositories;
 
 using System;
 using System.Collections.Generic;
@@ -7,8 +11,16 @@ using KarmaBanking.App.Data;
 using KarmaBanking.App.Models;
 using Microsoft.Data.SqlClient;
 
+/// <summary>
+/// Provides direct SQL access for chat message retrieval.
+/// </summary>
 public class ChatMessageRepository
 {
+    /// <summary>
+    /// Gets all chat messages for a given session identifier.
+    /// </summary>
+    /// <param name="sessionIdentificationNumber">The chat session identifier.</param>
+    /// <returns>The messages belonging to the requested session.</returns>
     public List<ChatMessage> GetMessagesBySessionIdentificationNumber(int sessionIdentificationNumber)
     {
         List<ChatMessage> chatMessages = [];
@@ -32,7 +44,7 @@ public class ChatMessageRepository
                         SessionIdentificationNumber = (int)reader["sessionId"],
                         SenderType = reader["senderType"].ToString() ?? string.Empty,
                         Content = reader["content"].ToString() ?? string.Empty,
-                        SentAt = (DateTime)reader["sentAt"]
+                        SentAt = (DateTime)reader["sentAt"],
                     });
             }
         }

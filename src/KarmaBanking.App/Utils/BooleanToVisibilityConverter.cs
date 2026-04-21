@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Utils;
+﻿// <copyright file="BooleanToVisibilityConverter.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Utils;
 
 using System;
 using Microsoft.UI.Xaml;

@@ -1,5 +1,5 @@
-// <copyright file="AccountStatus.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="AccountStatus.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
 // </copyright>
 
 namespace KarmaBanking.App.Models.Enums;
@@ -24,5 +24,5 @@ public enum AccountStatus
     /// <summary>
     ///     Represents a matured savings account that has reached its maturity date and can no longer accrue interest.
     /// </summary>
-    Matured
+    Matured,
 }

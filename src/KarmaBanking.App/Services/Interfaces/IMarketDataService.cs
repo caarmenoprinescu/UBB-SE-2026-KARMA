@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Services.Interfaces;
+﻿// <copyright file="IMarketDataService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services.Interfaces;
 
 using System;
 using System.Collections.Generic;

@@ -1,3 +1,7 @@
+// <copyright file="AmortizationScheduleView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Views;
 
 using KarmaBanking.App.ViewModels;

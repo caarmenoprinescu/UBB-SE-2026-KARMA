@@ -1,3 +1,7 @@
+// <copyright file="InvestmentsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.ViewModels;
 
 using System;
@@ -16,7 +20,6 @@ using KarmaBanking.App.Utils;
 using Microsoft.UI.Dispatching;
 
 // Ensure this is present
-
 public class InvestmentsViewModel : INotifyPropertyChanged
 {
     private const string RefreshPricesEventName = "refreshPrices";

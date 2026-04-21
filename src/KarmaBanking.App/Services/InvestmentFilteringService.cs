@@ -1,3 +1,7 @@
+// <copyright file="InvestmentFilteringService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Services;
 
 using System;
@@ -44,7 +48,7 @@ public class InvestmentFilteringService
                        && !assetType.Equals("Bond", StringComparison.OrdinalIgnoreCase)
                        && !assetType.Equals("Bonds", StringComparison.OrdinalIgnoreCase)
                        && !assetType.Equals("Crypto", StringComparison.OrdinalIgnoreCase),
-            _ => true
+            _ => true,
         };
     }
 }

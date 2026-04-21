@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Services;
+﻿// <copyright file="EmailTranscriptService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services;
 
 using System;
 using System.Collections.Generic;
@@ -52,7 +56,7 @@ public class EmailTranscriptService
         // Note: In a production environment, these credentials would be moved to a secure configuration file
         var mailMessage = new MailMessage
         {
-            From = new MailAddress("noreply@karmabanking.com")
+            From = new MailAddress("noreply@karmabanking.com"),
         };
 
         mailMessage.To.Add(recipientEmailAddress);

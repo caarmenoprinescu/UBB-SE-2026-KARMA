@@ -1,3 +1,7 @@
+// <copyright file="ChatSessionService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Services;
 
 using System;
@@ -14,7 +18,7 @@ public class ChatSessionService
             IssueCategory = "General",
             SessionStatus = "Open",
             StartedAt = DateTime.Now,
-            Title = $"Session {sessionId}"
+            Title = $"Session {sessionId}",
         };
 
         session.Messages.Add(
@@ -35,7 +39,7 @@ public class ChatSessionService
             SessionIdentificationNumber = session.IdentificationNumber,
             SenderType = senderType,
             Content = content,
-            SentAt = sentAt
+            SentAt = sentAt,
         };
     }
 

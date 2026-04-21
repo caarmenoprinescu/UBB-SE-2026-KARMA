@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.ViewModels;
+﻿// <copyright file="InvestmentLogsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.ViewModels;
 
 using System;
 using System.Collections.Generic;
