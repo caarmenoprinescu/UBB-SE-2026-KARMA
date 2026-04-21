@@ -9,13 +9,15 @@ public interface IInvestmentRepository
 {
     Portfolio GetPortfolio(int userIdentificationNumber);
 
-    Task RecordCryptoTradeAsync(
-        int portfolioIdentificationNumber,
-        string ticker,
-        string actionType,
-        decimal quantity,
-        decimal pricePerUnit,
-        decimal fees);
+        Task RecordCryptoTradeAsync(
+            int portfolioIdentificationNumber,
+            string ticker,
+            string actionType,
+            decimal quantity,
+            decimal pricePerUnit,
+            decimal fees,
+            decimal finalQuantity,
+            decimal finalAveragePrice);
 
     Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
         int portfolioIdentificationNumber,
