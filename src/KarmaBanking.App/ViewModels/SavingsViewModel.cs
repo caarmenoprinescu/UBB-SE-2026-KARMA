@@ -38,6 +38,7 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
         [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
         private SavingsAccount? selectedAccount;
 
@@ -48,6 +49,7 @@ namespace KarmaBanking.App.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsGoalSavings))]
+        [NotifyPropertyChangedFor(nameof(IsFixedDeposit))]
         private string selectedSavingsType = string.Empty;
 
         [ObservableProperty] private string accountName = string.Empty;
@@ -60,6 +62,7 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private string selectedFrequency = string.Empty;
 
         public bool IsGoalSavings => SelectedSavingsType == "GoalSavings";
+        public bool IsFixedDeposit => SelectedSavingsType == "FixedDeposit";
         public Dictionary<string, string> FieldErrors { get; } = new();
 
         // ── Deposit ──────────────────────────────────────────────────────────
@@ -92,6 +95,7 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
         private string withdrawAmountText = string.Empty;
 
         [ObservableProperty] private FundingSourceOption? withdrawDestination;
@@ -123,6 +127,8 @@ namespace KarmaBanking.App.ViewModels
 
         public string WithdrawPenaltyBreakdownText =>
             $"Penalty ({savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P0}): -${WithdrawEstimatedPenalty:N2}";
+
+        public string WithdrawNetAmountText => $"Net amount received: ${WithdrawNetAmount:N2}";
 
         public string WithdrawPenaltySummary =>
             WithdrawHasEarlyRisk ? $"Early withdrawal penalty: {savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P2} of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;

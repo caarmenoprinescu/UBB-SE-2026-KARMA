@@ -52,7 +52,6 @@ namespace KarmaBanking.App.Views
                 FrequencyRadioButtons.SelectedIndex = -1;
                 viewModel.SelectedSavingsType = string.Empty;
                 viewModel.SelectedFrequency = string.Empty;
-                GoalSavingsPanel.Visibility = Visibility.Collapsed;
                 ClearCreateErrors();
 
                 await viewModel.LoadFundingSourcesAsync();
@@ -82,14 +81,6 @@ namespace KarmaBanking.App.Views
             if (SavingsTypeRadioButtons.SelectedItem is RadioButton radioButton)
             {
                 viewModel.SelectedSavingsType = radioButton.Tag?.ToString() ?? string.Empty;
-
-                GoalSavingsPanel.Visibility =
-                    viewModel.SelectedSavingsType == "GoalSavings"
-                        ? Visibility.Visible : Visibility.Collapsed;
-
-                FixedDepositPanel.Visibility =
-                    viewModel.SelectedSavingsType == "FixedDeposit"
-                        ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -198,12 +189,6 @@ namespace KarmaBanking.App.Views
             viewModel.WithdrawAmountText = string.Empty;
             WithdrawResultBar.IsOpen = false;
 
-            // Show penalty warning if applicable
-            WithdrawPenaltyWarning.Visibility = viewModel.WithdrawHasEarlyRisk
-                ? Visibility.Visible : Visibility.Collapsed;
-            WithdrawPenaltySummaryText.Text = viewModel.WithdrawPenaltySummary;
-            WithdrawPenaltyBreakdown.Visibility = Visibility.Collapsed;
-
             HideAllActionPanels();
             ManageButtonsPanel.Visibility = Visibility.Collapsed;
             WithdrawActionPanel.Visibility = Visibility.Visible;
@@ -259,22 +244,12 @@ namespace KarmaBanking.App.Views
                 CloseDestComboBox.SelectedIndex = 0;
             }
 
-            // Show penalty warning for fixed deposit before maturity
-            ClosePenaltyWarning.Visibility = viewModel.CloseHasPenalty
-                ? Visibility.Visible : Visibility.Collapsed;
-
             HideAllActionPanels();
             ManageButtonsPanel.Visibility = Visibility.Collapsed;
             CloseAccountActionPanel.Visibility = Visibility.Visible;
         }
 
         // ── Deposit action ───────────────────────────────────────────────────
-
-        private void OnDepositAmountChanged(object sender, TextChangedEventArgs e)
-        {
-            viewModel.DepositAmountText = DepositAmountTextBox.Text;
-            DepositLivePreview.Text = viewModel.LivePreview;
-        }
 
         private void OnDepositSourceChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -310,18 +285,6 @@ namespace KarmaBanking.App.Views
 
         // ── Withdraw action ──────────────────────────────────────────────────
 
-        private void OnWithdrawAmountChanged(object sender, TextChangedEventArgs e)
-        {
-            viewModel.WithdrawAmountText = WithdrawAmountTextBox.Text;
-
-            bool hasPenalty = viewModel.WithdrawHasPenalty;
-            WithdrawPenaltyBreakdown.Visibility = hasPenalty ? Visibility.Visible : Visibility.Collapsed;
-            if (hasPenalty)
-            {
-                WithdrawPenaltyAmountText.Text = viewModel.WithdrawPenaltyBreakdownText;
-                WithdrawNetAmountText.Text = $"Net amount received: ${viewModel.WithdrawNetAmount:N2}";
-            }
-        }
 
         private void OnWithdrawDestChanged(object sender, SelectionChangedEventArgs e)
         {

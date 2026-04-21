@@ -5,11 +5,13 @@ namespace KarmaBanking.App.ViewModels
     using System.ComponentModel;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Windows.Input;
     using KarmaBanking.App.Models;
     using KarmaBanking.App.Repositories;
     using KarmaBanking.App.Repositories.Interfaces;
     using KarmaBanking.App.Services;
     using KarmaBanking.App.Services.Interfaces; // Ensure this is present
+    using KarmaBanking.App.Utils;
     using Microsoft.UI.Dispatching;
 
     public class InvestmentsViewModel : INotifyPropertyChanged
@@ -24,6 +26,7 @@ namespace KarmaBanking.App.ViewModels
         private bool isPortfolioLoading;
         private string activeFilterType = "All";
         private ObservableCollection<InvestmentHolding> displayedHoldings;
+        private bool hasLoaded;
 
         public InvestmentsViewModel(IInvestmentRepository investmentRepository)
         {
@@ -31,6 +34,7 @@ namespace KarmaBanking.App.ViewModels
             marketDataService = new MarketDataService();
             filteringService = new InvestmentFilteringService();
             dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            SelectFilterCommand = new RelayCommand<string>(ApplyFilter);
 
             // Corrected: RegisterPriceUpdateHandler
             marketDataService.RegisterPriceUpdateHandler(RefreshHoldingPrices);
@@ -59,6 +63,12 @@ namespace KarmaBanking.App.ViewModels
             }
         }
 
+        public ICommand SelectFilterCommand { get; }
+
+        public bool IsEmptyStateVisible => !IsPortfolioLoading && DisplayedHoldings.Count == 0;
+
+        public bool IsHoldingsVisible => !IsEmptyStateVisible;
+
         public ObservableCollection<InvestmentHolding> DisplayedHoldings
         {
             get => displayedHoldings;
@@ -66,6 +76,7 @@ namespace KarmaBanking.App.ViewModels
             {
                 displayedHoldings = value;
                 OnPropertyChanged();
+                NotifyEmptyStateChanged();
             }
         }
 
@@ -86,7 +97,19 @@ namespace KarmaBanking.App.ViewModels
             {
                 isPortfolioLoading = value;
                 OnPropertyChanged();
+                NotifyEmptyStateChanged();
             }
+        }
+
+        public void EnsureInitialized()
+        {
+            if (hasLoaded)
+            {
+                return;
+            }
+
+            hasLoaded = true;
+            LoadUserPortfolio();
         }
 
         public void LoadUserPortfolio()
@@ -162,6 +185,8 @@ namespace KarmaBanking.App.ViewModels
             {
                 DisplayedHoldings.Add(holding);
             }
+
+            NotifyEmptyStateChanged();
         }
 
         public void StopMarketDataPolling()
@@ -175,6 +200,12 @@ namespace KarmaBanking.App.ViewModels
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void NotifyEmptyStateChanged()
+        {
+            OnPropertyChanged(nameof(IsEmptyStateVisible));
+            OnPropertyChanged(nameof(IsHoldingsVisible));
         }
     }
 }
