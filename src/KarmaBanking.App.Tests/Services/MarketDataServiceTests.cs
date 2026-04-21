@@ -13,7 +13,6 @@
             var service = new MarketDataService();
             string ticker = "BTC";
             decimal expectedLowerBound = 10000m; // BTC is set to 68000
-
             decimal price = service.GetPrice(ticker);
 
             Assert.True(price > expectedLowerBound, $"Price for {ticker} should be retrieved from the dictionary.");

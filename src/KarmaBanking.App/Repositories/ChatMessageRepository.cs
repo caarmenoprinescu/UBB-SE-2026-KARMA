@@ -7,6 +7,9 @@ using KarmaBanking.App.Data;
 using KarmaBanking.App.Models;
 using Microsoft.Data.SqlClient;
 
+/// <summary>
+/// Provides direct SQL access for chat message retrieval.
+/// </summary>
 public class ChatMessageRepository
 {
     public List<ChatMessage> GetMessagesBySessionId(int sessionId)
@@ -32,7 +35,7 @@ public class ChatMessageRepository
                         SessionId = (int)reader["sessionId"],
                         SenderType = reader["senderType"].ToString() ?? string.Empty,
                         Content = reader["content"].ToString() ?? string.Empty,
-                        SentAt = (DateTime)reader["sentAt"]
+                        SentAt = (DateTime)reader["sentAt"],
                     });
             }
         }

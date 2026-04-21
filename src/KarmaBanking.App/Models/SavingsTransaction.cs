@@ -1,11 +1,11 @@
-// <copyright file="SavingsTransaction.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="SavingsTransaction.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
 // </copyright>
+
+namespace KarmaBanking.App.Models;
 
 using System;
 using KarmaBanking.App.Models.Enums;
-
-namespace KarmaBanking.App.Models;
 
 /// <summary>
 ///     This model is used to represent a transaction that occurs on a savings account.

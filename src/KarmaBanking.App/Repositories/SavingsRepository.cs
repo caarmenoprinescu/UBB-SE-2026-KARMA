@@ -1,3 +1,7 @@
+// <copyright file="SavingsRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Repositories;
 
 using System;
@@ -10,8 +14,17 @@ using KarmaBanking.App.Models.Enums;
 using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 
+/// <summary>
+/// SQL-backed savings repository implementation.
+/// </summary>
 public class SavingsRepository : ISavingsRepository
 {
+    /// <summary>
+    /// Gets savings accounts for a user with optional inclusion of closed accounts.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="includesClosedAccounts">Whether closed accounts should be included.</param>
+    /// <returns>The user's matching savings accounts.</returns>
     public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(
         int userId,
         bool includesClosedAccounts = false)
@@ -42,6 +55,12 @@ public class SavingsRepository : ISavingsRepository
         return accountsList;
     }
 
+    /// <summary>
+    /// Creates a new savings account using the provided request and APY.
+    /// </summary>
+    /// <param name="dto">The create-account request payload.</param>
+    /// <param name="apy">The annual percentage yield to assign.</param>
+    /// <returns>The created savings account.</returns>
     public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto, decimal apy)
     {
         const string insertAccountQuery = @"
@@ -87,10 +106,17 @@ public class SavingsRepository : ISavingsRepository
             CreatedAt = DateTime.Now,
             FundingAccountId = dto.FundingAccountId == 0 ? null : dto.FundingAccountId,
             TargetAmount = dto.TargetAmount,
-            TargetDate = dto.TargetDate
+            TargetDate = dto.TargetDate,
         };
     }
 
+    /// <summary>
+    /// Deposits funds into a savings account and records a transaction row.
+    /// </summary>
+    /// <param name="accountId">The target account identifier.</param>
+    /// <param name="amount">The amount to deposit.</param>
+    /// <param name="source">The source label for the deposit.</param>
+    /// <returns>The resulting deposit response.</returns>
     public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
     {
         using var dbConnection = DatabaseConfig.GetDatabaseConnection();
@@ -148,7 +174,7 @@ public class SavingsRepository : ISavingsRepository
             {
                 NewBalance = newAccountBalance,
                 TransactionId = newTransactionId,
-                Timestamp = DateTime.Now
+                Timestamp = DateTime.Now,
             };
         }
         catch
@@ -158,6 +184,14 @@ public class SavingsRepository : ISavingsRepository
         }
     }
 
+    /// <summary>
+    /// Closes a savings account and transfers the specified amount to another account.
+    /// </summary>
+    /// <param name="accountId">The source account identifier to close.</param>
+    /// <param name="destinationAccountId">The destination account identifier.</param>
+    /// <param name="transferAmount">The amount to transfer out during closure.</param>
+    /// <param name="earlyClosurePenalty">The penalty applied on closure, if any.</param>
+    /// <returns>The closure operation result.</returns>
     public async Task<ClosureResultDto> CloseSavingsAccountAsync(
         int accountId,
         int destinationAccountId,
@@ -247,7 +281,7 @@ public class SavingsRepository : ISavingsRepository
                 TransferredAmount = transferAmount,
                 PenaltyApplied = earlyClosurePenalty,
                 Message = "Account closed successfully.",
-                ClosedAt = DateTime.UtcNow
+                ClosedAt = DateTime.UtcNow,
             };
         }
         catch (Exception exception)
@@ -260,11 +294,19 @@ public class SavingsRepository : ISavingsRepository
                 TransferredAmount = 0,
                 PenaltyApplied = 0,
                 Message = exception.Message,
-                ClosedAt = DateTime.UtcNow
+                ClosedAt = DateTime.UtcNow,
             };
         }
     }
 
+    /// <summary>
+    /// Withdraws funds from a savings account and logs the transaction.
+    /// </summary>
+    /// <param name="accountId">The source account identifier.</param>
+    /// <param name="amount">The amount to withdraw.</param>
+    /// <param name="destinationLabel">The destination label shown in transaction history.</param>
+    /// <param name="earlyWithdrawalPenalty">The early-withdrawal penalty, if any.</param>
+    /// <returns>The withdrawal operation result.</returns>
     public async Task<WithdrawResponseDto> WithdrawAsync(
         int accountId,
         decimal amount,
@@ -342,7 +384,7 @@ public class SavingsRepository : ISavingsRepository
                 Message = earlyWithdrawalPenalty > 0
                     ? $"Withdrawal successful. Early penalty of {earlyWithdrawalPenalty:C2} applied."
                     : "Withdrawal successful.",
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = DateTime.UtcNow,
             };
         }
         catch (Exception exception)
@@ -352,11 +394,16 @@ public class SavingsRepository : ISavingsRepository
             {
                 Success = false,
                 Message = exception.Message,
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = DateTime.UtcNow,
             };
         }
     }
 
+    /// <summary>
+    /// Gets auto-deposit configuration for a savings account.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <returns>The auto-deposit settings, or <see langword="null"/> when missing.</returns>
     public async Task<AutoDeposit?> GetAutoDepositAsync(int accountId)
     {
         const string selectAutoDepositByAccountIdQuery = @"
@@ -383,10 +430,15 @@ public class SavingsRepository : ISavingsRepository
             Amount = (decimal)reader["amount"],
             Frequency = Enum.Parse<DepositFrequency>(reader["frequency"].ToString()!),
             NextRunDate = (DateTime)reader["nextRunDate"],
-            IsActive = (bool)reader["isActive"]
+            IsActive = (bool)reader["isActive"],
         };
     }
 
+    /// <summary>
+    /// Creates or updates auto-deposit settings for a savings account.
+    /// </summary>
+    /// <param name="autoDeposit">The auto-deposit entity to save.</param>
+    /// <returns>A task that completes when persistence is done.</returns>
     public async Task SaveAutoDepositAsync(AutoDeposit autoDeposit)
     {
         using var dbConnection = DatabaseConfig.GetDatabaseConnection();
@@ -424,16 +476,29 @@ public class SavingsRepository : ISavingsRepository
         }
     }
 
+    /// <summary>
+    /// Gets available funding-source options for a user.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <returns>The list of funding-source options.</returns>
     public Task<List<FundingSourceOption>> GetFundingSourcesAsync(int userId)
     {
         return Task.FromResult(
             new List<FundingSourceOption>
             {
                 new() { Id = 1, DisplayName = "Checking Account ****1234" },
-                new() { Id = 2, DisplayName = "Checking Account ****5678" }
+                new() { Id = 2, DisplayName = "Checking Account ****5678" },
             });
     }
 
+    /// <summary>
+    /// Gets paginated savings transactions for an account and filter.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="typeFilter">The transaction-type filter value.</param>
+    /// <param name="page">The 1-based page number.</param>
+    /// <param name="pageSize">The page size.</param>
+    /// <returns>A tuple containing page items and total transaction count.</returns>
     public async Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsPagedAsync(
         int accountId,
         string typeFilter,
@@ -497,7 +562,7 @@ public class SavingsRepository : ISavingsRepository
                     BalanceAfter = (decimal)reader["balanceAfter"],
                     Source = reader["source"].ToString(),
                     Description = reader["description"] as string,
-                    CreatedAt = (DateTime)reader["createdAt"]
+                    CreatedAt = (DateTime)reader["createdAt"],
                 });
         }
 
@@ -520,7 +585,7 @@ public class SavingsRepository : ISavingsRepository
             AccountName = r["accountName"] as string,
             FundingAccountId = r["fundingAccountId"] as int?,
             TargetAmount = r["targetAmount"] as decimal?,
-            TargetDate = r["targetDate"] as DateTime?
+            TargetDate = r["targetDate"] as DateTime?,
         };
     }
 }

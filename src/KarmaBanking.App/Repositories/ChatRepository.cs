@@ -37,7 +37,7 @@
                             SessionId = reader.GetInt32(1),
                             SenderType = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                             Content = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-                            SentAt = reader.GetDateTime(4)
+                            SentAt = reader.GetDateTime(4),
                         });
                     }
                 }

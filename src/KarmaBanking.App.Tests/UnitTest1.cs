@@ -1,4 +1,5 @@
-﻿using Xunit; // This fixes the 'Fact' could not be found error
+﻿using Xunit;
+
 namespace KarmaBanking.App.Tests
 {
     public class UnitTest1

@@ -1,3 +1,7 @@
+// <copyright file="LoanRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -5,10 +9,17 @@ using System.Threading.Tasks;
 using KarmaBanking.App.Data;
 using Microsoft.Data.SqlClient;
 
+/// <summary>
+/// SQL-backed repository for loans and loan applications.
+/// </summary>
 public class LoanRepository : ILoanRepository
 {
     private const int CommandTimeoutSeconds = 120;
 
+    /// <summary>
+    /// Retrieves all loans from storage.
+    /// </summary>
+    /// <returns>The complete list of loans.</returns>
     public async Task<List<Loan>> GetAllLoansAsync()
     {
         List<Loan> loans = [];
@@ -30,6 +41,11 @@ public class LoanRepository : ILoanRepository
         return loans;
     }
 
+    /// <summary>
+    /// Retrieves a loan by its identifier.
+    /// </summary>
+    /// <param name="id">The loan identifier.</param>
+    /// <returns>The matching loan, or <see langword="null"/> when not found.</returns>
     public async Task<Loan> GetLoanByIdAsync(int id)
     {
         using var connection = DatabaseConfig.GetDatabaseConnection();
@@ -53,6 +69,11 @@ public class LoanRepository : ILoanRepository
         return null;
     }
 
+    /// <summary>
+    /// Retrieves all loans belonging to a user.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <returns>The loans owned by the user.</returns>
     public async Task<List<Loan>> GetLoansByUserAsync(int userId)
     {
         List<Loan> loans = [];
@@ -77,6 +98,11 @@ public class LoanRepository : ILoanRepository
         return loans;
     }
 
+    /// <summary>
+    /// Retrieves loans filtered by type.
+    /// </summary>
+    /// <param name="loanType">The loan type to filter by.</param>
+    /// <returns>The loans matching the requested type.</returns>
     public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
     {
         List<Loan> loans = [];
@@ -101,6 +127,11 @@ public class LoanRepository : ILoanRepository
         return loans;
     }
 
+    /// <summary>
+    /// Retrieves loans filtered by status.
+    /// </summary>
+    /// <param name="loanStatus">The loan status to filter by.</param>
+    /// <returns>The loans matching the requested status.</returns>
     public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
     {
         List<Loan> loans = [];
@@ -126,6 +157,11 @@ public class LoanRepository : ILoanRepository
         return loans;
     }
 
+    /// <summary>
+    /// Saves an amortization schedule for a loan.
+    /// </summary>
+    /// <param name="rows">The amortization rows to persist.</param>
+    /// <returns>A task that completes when persistence finishes.</returns>
     public async Task SaveAmortizationAsync(List<AmortizationRow> rows)
     {
         if (rows == null || rows.Count == 0)
@@ -185,6 +221,11 @@ public class LoanRepository : ILoanRepository
         }
     }
 
+    /// <summary>
+    /// Retrieves amortization rows for a loan.
+    /// </summary>
+    /// <param name="loanId">The loan identifier.</param>
+    /// <returns>The amortization schedule rows.</returns>
     public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
     {
         List<AmortizationRow> rows = [];
@@ -216,7 +257,7 @@ public class LoanRepository : ILoanRepository
                         DueDate = (DateTime)reader["dueDate"],
                         PrincipalPortion = (decimal)reader["principalPortion"],
                         InterestPortion = (decimal)reader["interestPortion"],
-                        RemainingBalance = (decimal)reader["remainingBalance"]
+                        RemainingBalance = (decimal)reader["remainingBalance"],
                     };
 
                     rows.Add(row);
@@ -227,6 +268,11 @@ public class LoanRepository : ILoanRepository
         return rows;
     }
 
+    /// <summary>
+    /// Creates a new loan application.
+    /// </summary>
+    /// <param name="application">The application payload to persist.</param>
+    /// <returns>The created loan application identifier.</returns>
     public async Task<int> CreateLoanApplicationAsync(LoanApplicationRequest application)
     {
         using var connection = DatabaseConfig.GetDatabaseConnection();
@@ -254,6 +300,13 @@ public class LoanRepository : ILoanRepository
         return newId;
     }
 
+    /// <summary>
+    /// Updates review status and optional rejection reason for an application.
+    /// </summary>
+    /// <param name="id">The loan application identifier.</param>
+    /// <param name="loanApplicationStatus">The new application status.</param>
+    /// <param name="reason">The optional rejection reason.</param>
+    /// <returns>A task that completes when the update is applied.</returns>
     public async Task UpdateLoanApplicationStatusAsync(
         int id,
         LoanApplicationStatus loanApplicationStatus,
@@ -279,6 +332,11 @@ public class LoanRepository : ILoanRepository
         await command.ExecuteNonQueryAsync();
     }
 
+    /// <summary>
+    /// Creates a new loan record.
+    /// </summary>
+    /// <param name="loan">The loan to persist.</param>
+    /// <returns>The created loan identifier.</returns>
     public async Task<int> CreateLoanAsync(Loan loan)
     {
         using var connection = DatabaseConfig.GetDatabaseConnection();
@@ -309,6 +367,14 @@ public class LoanRepository : ILoanRepository
         return newId;
     }
 
+    /// <summary>
+    /// Updates a loan after a payment is processed.
+    /// </summary>
+    /// <param name="id">The loan identifier.</param>
+    /// <param name="newBalance">The updated outstanding balance.</param>
+    /// <param name="newRemainingMonths">The updated remaining term.</param>
+    /// <param name="newStatus">The updated loan status.</param>
+    /// <returns>A task that completes when the update is applied.</returns>
     public async Task UpdateLoanAfterPaymentAsync(
         int id,
         decimal newBalance,
@@ -350,7 +416,7 @@ public class LoanRepository : ILoanRepository
             RemainingMonths = (int)reader["remainingMonths"],
             LoanStatus = Enum.Parse<LoanStatus>(reader["loanStatus"].ToString(), true),
             TermInMonths = (int)reader["termInMonths"],
-            StartDate = (DateTime)reader["startDate"]
+            StartDate = (DateTime)reader["startDate"],
         };
     }
 }

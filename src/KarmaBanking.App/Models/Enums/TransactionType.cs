@@ -35,5 +35,5 @@ public enum TransactionType
     ///     Represents the action of closing a savings account, which typically involves transferring the remaining balance to
     ///     another account and marking the savings account as closed.
     /// </summary>
-    Closure
+    Closure,
 }

@@ -1,3 +1,7 @@
+// <copyright file="SavingsView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Views;
 
 using System;
@@ -512,7 +516,7 @@ public sealed partial class SavingsView : Page
             Title = title,
             Content = msg,
             CloseButtonText = "OK",
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
         };
         await contentDialog.ShowAsync();
     }

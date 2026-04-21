@@ -1,3 +1,7 @@
+// <copyright file="DecimalToPercentConverter.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Utils;
 
 using System;

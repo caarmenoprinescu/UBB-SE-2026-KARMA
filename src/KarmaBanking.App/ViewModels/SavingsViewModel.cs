@@ -1,3 +1,7 @@
+// <copyright file="SavingsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.ViewModels;
 
 using System;
@@ -21,42 +25,58 @@ public partial class SavingsViewModel : BaseViewModel
     private readonly SavingsUiRulesService savingsUiRulesService;
     private readonly SavingsWorkflowService savingsWorkflowService;
 
-    [ObservableProperty] private string accountName = string.Empty;
+    [ObservableProperty]
+    private string accountName = string.Empty;
 
-    [ObservableProperty] private string autoDepositAmountText = string.Empty;
-    [ObservableProperty] private string autoDepositFrequency = string.Empty;
-    [ObservableProperty] private bool autoDepositIsActive = true;
-    [ObservableProperty] private string autoDepositSaveMessage = string.Empty;
-    [ObservableProperty] private DateTimeOffset? autoDepositStartDate = DateTimeOffset.Now.AddDays(1);
-    [ObservableProperty] private string bestInterestRate = "0.00%";
+    [ObservableProperty]
+    private string autoDepositAmountText = string.Empty;
+    [ObservableProperty]
+    private string autoDepositFrequency = string.Empty;
+    [ObservableProperty]
+    private bool autoDepositIsActive = true;
+    [ObservableProperty]
+    private string autoDepositSaveMessage = string.Empty;
+    [ObservableProperty]
+    private DateTimeOffset? autoDepositStartDate = DateTimeOffset.Now.AddDays(1);
+    [ObservableProperty]
+    private string bestInterestRate = "0.00%";
 
     // ── Close Account Panel ──────────────────────────────────────────────
-    [ObservableProperty] private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
+    [ObservableProperty]
+    private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
 
-    [ObservableProperty] private string closeResultMessage = string.Empty;
-    [ObservableProperty] private bool closeSuccess;
+    [ObservableProperty]
+    private string closeResultMessage = string.Empty;
+    [ObservableProperty]
+    private bool closeSuccess;
 
     private bool closeUserConfirmed;
 
     // ── Auto Deposit ─────────────────────────────────────────────────────
-
     private AutoDeposit? currentAutoDeposit;
 
-    [ObservableProperty] private int currentPage = 1;
+    [ObservableProperty]
+    private int currentPage = 1;
 
     // ── Deposit ──────────────────────────────────────────────────────────
-
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(LivePreview))]
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LivePreview))]
     private string depositAmountText = string.Empty;
 
     private CancellationTokenSource? depositCancelationTokenSource;
 
-    [ObservableProperty] private string depositSource = string.Empty;
-    [ObservableProperty] private string depositSuccessMessage = string.Empty;
-    [ObservableProperty] private ObservableCollection<FundingSourceOption> fundingSources = new();
-    [ObservableProperty] private bool hasExistingAutoDeposit;
-    [ObservableProperty] private string initialDepositText = string.Empty;
-    [ObservableProperty] private string numberOfAccountsText = "across 0 accounts";
+    [ObservableProperty]
+    private string depositSource = string.Empty;
+    [ObservableProperty]
+    private string depositSuccessMessage = string.Empty;
+    [ObservableProperty]
+    private ObservableCollection<FundingSourceOption> fundingSources = new();
+    [ObservableProperty]
+    private bool hasExistingAutoDeposit;
+    [ObservableProperty]
+    private string initialDepositText = string.Empty;
+    [ObservableProperty]
+    private string numberOfAccountsText = "across 0 accounts";
 
     // ── My Accounts ──────────────────────────────────────────────────────
     [ObservableProperty]
@@ -84,22 +104,28 @@ public partial class SavingsViewModel : BaseViewModel
     [ObservableProperty] private FundingSourceOption? selectedFundingSource;
 
     // ── Create Account ───────────────────────────────────────────────────
-
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsGoalSavings))]
     [NotifyPropertyChangedFor(nameof(IsFixedDeposit))]
     private string selectedSavingsType = string.Empty;
 
-    [ObservableProperty] private bool showCreateConfirmation;
-    [ObservableProperty] private bool showDepositSuccess;
-    [ObservableProperty] private decimal? targetAmount;
-    [ObservableProperty] private DateTimeOffset? targetDate;
+    [ObservableProperty]
+    private bool showCreateConfirmation;
+    [ObservableProperty]
+    private bool showDepositSuccess;
+    [ObservableProperty]
+    private decimal? targetAmount;
+    [ObservableProperty]
+    private DateTimeOffset? targetDate;
 
-    [ObservableProperty] private int totalPages;
+    [ObservableProperty]
+    private int totalPages;
 
-    [ObservableProperty] private string totalSavedAmount = "$0.00";
+    [ObservableProperty]
+    private string totalSavedAmount = "$0.00";
 
-    [ObservableProperty] private ObservableCollection<SavingsTransaction> transactions = new();
+    [ObservableProperty]
+    private ObservableCollection<SavingsTransaction> transactions = new();
 
     // ── Withdraw Panel ───────────────────────────────────────────────────
     [ObservableProperty]
@@ -110,12 +136,14 @@ public partial class SavingsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
     private string withdrawAmountText = string.Empty;
 
-    [ObservableProperty] private FundingSourceOption? withdrawDestination;
-    [ObservableProperty] private string withdrawResultMessage = string.Empty;
-    [ObservableProperty] private bool withdrawSuccess;
+    [ObservableProperty]
+    private FundingSourceOption? withdrawDestination;
+    [ObservableProperty]
+    private string withdrawResultMessage = string.Empty;
+    [ObservableProperty]
+    private bool withdrawSuccess;
 
     // ── Constructor ──────────────────────────────────────────────────────
-
     public SavingsViewModel(ISavingsService savingsService)
     {
         this.savingsService = savingsService;
@@ -300,7 +328,7 @@ public partial class SavingsViewModel : BaseViewModel
             Amount = amount,
             Frequency = freq,
             NextRunDate = this.AutoDepositStartDate?.DateTime ?? DateTime.Now.AddDays(1),
-            IsActive = this.AutoDepositIsActive
+            IsActive = this.AutoDepositIsActive,
         };
 
         await this.savingsService.SaveAutoDepositAsync(autoDeposit);
@@ -309,7 +337,6 @@ public partial class SavingsViewModel : BaseViewModel
     }
 
     // ── Commands: My Accounts ────────────────────────────────────────────
-
     [RelayCommand]
     public async Task LoadAccountsAsync()
     {
@@ -425,7 +452,6 @@ public partial class SavingsViewModel : BaseViewModel
     }
 
     // ── Commands: Create Account ─────────────────────────────────────────
-
     public async Task LoadFundingSourcesAsync()
     {
         try
@@ -516,7 +542,7 @@ public partial class SavingsViewModel : BaseViewModel
                         this.SelectedFrequency,
                         out var selectedFrequency)
                         ? selectedFrequency
-                        : null
+                        : null,
             };
             await this.savingsService.CreateAccountAsync(createSavingsAccountDto);
             this.ShowCreateConfirmation = true;
@@ -544,7 +570,6 @@ public partial class SavingsViewModel : BaseViewModel
     }
 
     // ── Commands: Deposit ────────────────────────────────────────────────
-
     [RelayCommand]
     public async Task DepositAsync()
     {
