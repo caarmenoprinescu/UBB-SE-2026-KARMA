@@ -48,23 +48,17 @@ namespace KarmaBanking.App.Views
 
         private void OnFundingSourceSelected(object sender, SelectionChangedEventArgs args)
         {
-            if (FundingSourceComboBox.SelectedItem is ComboBoxItem selectedItem
-                && int.TryParse(selectedItem.Tag?.ToString(), out int fundingAccountId))
-            {
-                createSavingsAccountViewModel.SelectedFundingAccountId = fundingAccountId;
-            }
+            string? fundingAccountTag = (FundingSourceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            createSavingsAccountViewModel.SetSelectedFundingAccountFromTag(fundingAccountTag);
         }
 
         private async void OnOpenAccountClicked(object sender, RoutedEventArgs args)
         {
-            createSavingsAccountViewModel.AccountNickname = AccountNicknameTextBox.Text;
-            createSavingsAccountViewModel.InitialDepositAmountText = InitialDepositAmountTextBox.Text;
-
-            if (FundingSourceComboBox.SelectedItem is ComboBoxItem selectedFundingSource
-                && int.TryParse(selectedFundingSource.Tag?.ToString(), out int fundingAccountId))
-                createSavingsAccountViewModel.SelectedFundingAccountId = fundingAccountId;
-            else
-                createSavingsAccountViewModel.SelectedFundingAccountId = 1;
+            string? fundingAccountTag = (FundingSourceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            createSavingsAccountViewModel.PrepareCreateAccountSubmission(
+                AccountNicknameTextBox.Text,
+                InitialDepositAmountTextBox.Text,
+                fundingAccountTag);
 
             await createSavingsAccountViewModel.SubmitCreateAccountFormAsync();
         }

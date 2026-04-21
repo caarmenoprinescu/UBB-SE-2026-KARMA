@@ -13,6 +13,8 @@ namespace KarmaBanking.App.ViewModels
                 _loan.Principal,
                 _loan.OutstandingBalance);
 
+        public int PaidInstallments => _loan.TermInMonths - _loan.RemainingMonths;
+
         public LoanViewModel(Loan loan)
         {
             _loan = loan;

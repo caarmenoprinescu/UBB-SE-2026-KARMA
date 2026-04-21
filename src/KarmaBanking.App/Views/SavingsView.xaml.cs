@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Globalization;
 
 namespace KarmaBanking.App.Views
 {
@@ -98,23 +97,13 @@ namespace KarmaBanking.App.Views
         {
             ClearCreateErrors();
 
-            viewModel.AccountName = AccountNameTextBox.Text;
-            viewModel.InitialDepositText = InitialDepositTextBox.Text;
-            viewModel.SelectedFundingSource =
-                FundingSourceComboBox.SelectedItem as KarmaBanking.App.Models.FundingSourceOption;
-
-            if (viewModel.IsGoalSavings)
-            {
-                if (decimal.TryParse(TargetAmountTextBox.Text, NumberStyles.Any,
-                        CultureInfo.InvariantCulture, out decimal targetAmount))
-                    viewModel.TargetAmount = targetAmount;
-                viewModel.TargetDate = TargetDatePicker.Date;
-            }
-
-            if (viewModel.SelectedSavingsType == "FixedDeposit")
-            {
-                viewModel.MaturityDate = MaturityDatePicker.Date;
-            }
+            viewModel.PrepareCreateAccountSubmission(
+                AccountNameTextBox.Text,
+                InitialDepositTextBox.Text,
+                FundingSourceComboBox.SelectedItem as KarmaBanking.App.Models.FundingSourceOption,
+                TargetAmountTextBox.Text,
+                TargetDatePicker.Date,
+                MaturityDatePicker.Date);
 
             await viewModel.CreateAccountCommand.ExecuteAsync(null);
 
@@ -329,7 +318,7 @@ namespace KarmaBanking.App.Views
             WithdrawPenaltyBreakdown.Visibility = hasPenalty ? Visibility.Visible : Visibility.Collapsed;
             if (hasPenalty)
             {
-                WithdrawPenaltyAmountText.Text = $"Penalty (2%): -${viewModel.WithdrawEstimatedPenalty:N2}";
+                WithdrawPenaltyAmountText.Text = viewModel.WithdrawPenaltyBreakdownText;
                 WithdrawNetAmountText.Text = $"Net amount received: ${viewModel.WithdrawNetAmount:N2}";
             }
         }

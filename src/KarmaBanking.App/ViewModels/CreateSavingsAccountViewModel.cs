@@ -2,6 +2,7 @@ using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Services.Interfaces;
 using KarmaBanking.App.Utils;
 using Microsoft.UI.Xaml;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -123,6 +124,27 @@ namespace KarmaBanking.App.ViewModels
                 IsAccountCreated = true;
             else
                 ErrorMessage = "Failed to create account. Please check your details and try again.";
+        }
+
+        public void SetSelectedFundingAccountFromTag(string? fundingAccountTag)
+        {
+            if (int.TryParse(fundingAccountTag, out int fundingAccountId))
+            {
+                SelectedFundingAccountId = fundingAccountId;
+            }
+        }
+
+        public void PrepareCreateAccountSubmission(string accountNicknameText, string initialDepositText, string? fundingAccountTag)
+        {
+            AccountNickname = accountNicknameText;
+            InitialDepositAmountText = initialDepositText;
+
+            if (!int.TryParse(fundingAccountTag, out int fundingAccountId))
+            {
+                fundingAccountId = 1;
+            }
+
+            SelectedFundingAccountId = fundingAccountId;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -37,7 +37,11 @@ public partial class LoansViewModel : ObservableObject
     [ObservableProperty] private int preferredTermMonths;
     [ObservableProperty] private string purpose = string.Empty;
     [ObservableProperty] private LoanEstimate currentEstimate;
-    [ObservableProperty] private string applicationResult = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ApplicationWasApproved))]
+    private string applicationResult = string.Empty;
+
+    public bool ApplicationWasApproved => ApplicationResult.Contains("approved", StringComparison.OrdinalIgnoreCase);
     [ObservableProperty] private LoanViewModel selectedLoan;
     [ObservableProperty] private double? customAmount;
 

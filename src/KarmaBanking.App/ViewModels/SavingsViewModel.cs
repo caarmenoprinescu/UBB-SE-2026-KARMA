@@ -37,6 +37,7 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
         [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
         private SavingsAccount? selectedAccount;
 
@@ -90,6 +91,7 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
         private string withdrawAmountText = string.Empty;
 
         [ObservableProperty] private FundingSourceOption? withdrawDestination;
@@ -118,6 +120,9 @@ namespace KarmaBanking.App.ViewModels
         }
 
         public bool WithdrawHasPenalty => WithdrawEstimatedPenalty > 0;
+
+        public string WithdrawPenaltyBreakdownText =>
+            $"Penalty ({savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P0}): -${WithdrawEstimatedPenalty:N2}";
 
         public string WithdrawPenaltySummary =>
             WithdrawHasEarlyRisk ? $"Early withdrawal penalty: {savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P2} of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
@@ -329,6 +334,28 @@ namespace KarmaBanking.App.ViewModels
                 if (FundingSources.Count > 0) SelectedFundingSource = FundingSources[0];
             }
             catch (Exception exception) { ErrorMessage = exception.Message; }
+        }
+
+        public void PrepareCreateAccountSubmission(
+            string accountName,
+            string initialDepositText,
+            FundingSourceOption? fundingSource,
+            string targetAmountText,
+            DateTimeOffset? targetDate,
+            DateTimeOffset? maturityDate)
+        {
+            AccountName = accountName;
+            InitialDepositText = initialDepositText;
+            SelectedFundingSource = fundingSource;
+
+            if (IsGoalSavings
+                && decimal.TryParse(targetAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsedTargetAmount))
+            {
+                TargetAmount = parsedTargetAmount;
+            }
+
+            TargetDate = IsGoalSavings ? targetDate : null;
+            MaturityDate = SelectedSavingsType == "FixedDeposit" ? maturityDate : null;
         }
 
         [RelayCommand]

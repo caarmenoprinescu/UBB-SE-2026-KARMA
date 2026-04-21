@@ -78,6 +78,9 @@ namespace KarmaBanking.App.ViewModels
             catch (Exception exception)
             {
                 LoadErrorMessage = exception.Message;
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "karma_error.txt"),
+                    $"{DateTime.Now}: {exception.Message}\n");
                 return;
             }
 

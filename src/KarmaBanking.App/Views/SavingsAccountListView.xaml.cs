@@ -28,10 +28,6 @@ namespace KarmaBanking.App.Views
             base.OnNavigatedTo(args);
             await savingsAccountListViewModel.ProcessSchedulesAsync();
             await savingsAccountListViewModel.LoadSavingsAccountsAsync(userId: 1);
-            if (!string.IsNullOrEmpty(savingsAccountListViewModel.LoadErrorMessage))
-                System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "karma_error.txt"),
-                    $"{DateTime.Now}: {savingsAccountListViewModel.LoadErrorMessage}\n");
         }
 
         private void OnTabSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -124,22 +120,21 @@ namespace KarmaBanking.App.Views
 
             if (result == ContentDialogResult.Primary)
             {
-                if (!decimal.TryParse(amountTextBox.Text, out decimal amount) || amount <= 0)
+                var viewModel = (SavingsAccountListViewModel)DataContext;
+                var depositResult = await viewModel.TryDepositAsync(selectedAccount.Id, amountTextBox.Text);
+
+                if (!depositResult.Success)
                 {
                     var errorDialog = new ContentDialog
                     {
                         Title = "Invalid amount",
-                        Content = "Please enter a valid positive number.",
+                        Content = depositResult.ErrorMessage,
                         CloseButtonText = "OK",
                         XamlRoot = this.Content.XamlRoot
                     };
 
                     await errorDialog.ShowAsync();
-                    return;
                 }
-
-                var viewModel = (SavingsAccountListViewModel)DataContext;
-                await viewModel.DepositAsync(selectedAccount.Id, amount);
             }
         }
 

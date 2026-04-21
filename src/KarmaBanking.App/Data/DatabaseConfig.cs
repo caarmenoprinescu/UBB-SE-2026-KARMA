@@ -6,7 +6,7 @@ namespace KarmaBanking.App.Data
     {
         // Redenumit din ConnectionString in DatabaseConnectionString (No Abbreviations)
         public static readonly string DatabaseConnectionString =
-            "Server=(localdb)\\MSSQLLocalDB;Database=KarmaBankingDb;Trusted_Connection=True;TrustServerCertificate=True;";
+            @"Data Source=localhost\SQLEXPRESS;Initial Catalog=KarmaBankingDb;Integrated Security=True;Encrypt=True;Trust Server Certificate=True";
 
         public static SqlConnection GetDatabaseConnection()
         {
