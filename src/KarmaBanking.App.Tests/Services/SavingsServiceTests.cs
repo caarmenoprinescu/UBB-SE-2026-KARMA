@@ -9,6 +9,7 @@ using Xunit;
 using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.Models;
+using KarmaBanking.App.Models.Enums;
 
 namespace KarmaBanking.App.Tests.Services
 {
@@ -266,6 +267,124 @@ namespace KarmaBanking.App.Tests.Services
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("GoalSavings accounts require a positive target amount.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task GetAccountsAsync_NegativeUserId_ThrowsArgumentException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.GetAccountsAsync(-1));
+            Assert.Equal("User ID must be a positive integer.", ex.Message);
+            await repository.DidNotReceive().GetSavingsAccountsByUserIdAsync(Arg.Any<int>(), Arg.Any<bool>());
+        }
+
+        [Fact]
+        public async Task GetAccountsAsync_ValidUserId_ReturnsAccounts()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accounts = new List<SavingsAccount>
+            {
+                new SavingsAccount { Id = 1, UserId = userId, AccountName = "Savings 1" },
+                new SavingsAccount { Id = 2, UserId = userId, AccountName = "Savings 2" },
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, false).Returns(Task.FromResult(accounts));
+
+            var result = await service.GetAccountsAsync(userId);
+            Assert.Equal(accounts, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, false);
+        }
+
+        [Fact]
+        public async Task DepositAsync_NegativeAmount_ThrowsArgumentException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+            var accountId = 1;
+            var userId = 1;
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.DepositAsync(accountId, -100m, "Source", userId));
+            Assert.Equal("Deposit amount must be positive.", ex.Message);
+            await repository.DidNotReceive().DepositAsync(Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task DepositAsync_InvalidAccountId_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var inexistentAccountId = 999;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = 1, UserId = userId } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(inexistentAccountId, 100m, "Source", userId));
+            Assert.Equal("Account not found or does not belong to you.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+        }
+
+        [Fact]
+        public async Task DepositAsync_AccountStatusClosed_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(accountId, 100m, "Source", userId));
+            Assert.Equal("Cannot deposit into a closed account.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+        }
+
+        [Fact]
+        public async Task DepositAsync_DisplayStatusMatured_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Matured.ToString() } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(accountId, 100m, "Source", userId));
+            Assert.Equal("Cannot deposit into a matured account.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+        }
+
+        [Fact]
+        public async Task DepositAsync_ValidDeposit_ReturnsDepositResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var amount = 100m;
+            var source = "Source";
+
+            var account = new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString(), Balance = 0m };
+            var expectedResponse = new DepositResponseDto { NewBalance = 100m, TransactionId = 1, Timestamp = DateTime.UtcNow };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true).Returns(Task.FromResult(new List<SavingsAccount> { account }));
+            repository.DepositAsync(accountId, amount, source).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.DepositAsync(accountId, amount, source, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).DepositAsync(accountId, amount, source);
         }
     }
 }
