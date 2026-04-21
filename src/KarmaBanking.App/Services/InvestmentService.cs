@@ -7,7 +7,7 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    internal class InvestmentService : IInvestmentService
+    public class InvestmentService : IInvestmentService
     {
         private readonly IInvestmentRepository investmentRepository;
 
@@ -54,6 +54,17 @@
             if (calculatedFee < MinimumTradeFee)
             {
                 calculatedFee = MinimumTradeFee;
+            }
+
+            if (actionType.Equals(ActionBuy, StringComparison.OrdinalIgnoreCase))
+            {
+                Portfolio portfolio = investmentRepository.GetPortfolio(portfolioIdentificationNumber);
+                decimal totalCost = totalTradeValue + calculatedFee;
+
+                if (portfolio.TotalValue < totalCost)
+                {
+                    throw new ArgumentException("Insufficient portfolio balance for this trade.");
+                }
             }
 
             // 3. Execuția tranzacției

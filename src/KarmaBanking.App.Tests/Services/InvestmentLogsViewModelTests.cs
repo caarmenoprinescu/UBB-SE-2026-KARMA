@@ -19,7 +19,7 @@ namespace KarmaBanking.App.Tests.Services
                 It.IsAny<int>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
-                null)) 
+                null))
                 .ReturnsAsync(new List<InvestmentTransaction>());
 
             var viewModel = new InvestmentLogsViewModel(mockInvestmentService.Object);

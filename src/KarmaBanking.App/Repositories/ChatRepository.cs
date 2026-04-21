@@ -4,7 +4,6 @@ using KarmaBanking.App.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using KarmaBanking.App.Data;
 
 namespace KarmaBanking.App.Repositories
 {
@@ -34,8 +33,8 @@ namespace KarmaBanking.App.Repositories
                     {
                         messages.Add(new ChatMessage
                         {
-                            Id = reader.GetInt32(0),
-                            SessionId = reader.GetInt32(1),
+                            IdentificationNumber = reader.GetInt32(0),
+                            SessionIdentificationNumber = reader.GetInt32(1),
                             SenderType = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                             Content = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                             SentAt = reader.GetDateTime(4)
