@@ -5,15 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using NSubstitute;
 using KarmaBanking.App.Repositories.Interfaces;
-using NUnit.Framework;
+using Xunit;
 using KarmaBanking.App.Models.DTOs;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.Models;
 
 namespace KarmaBanking.App.Tests.Services
 {
-    [TestFixture]
-    internal class SavingsServiceTests
+    public class SavingsServiceTests
     {
         private const decimal FIXED_DEPOSIT_APY = 0.04m;
         private const decimal GOAL_SAVINGS_APY = 0.03m;
@@ -23,10 +22,12 @@ namespace KarmaBanking.App.Tests.Services
         private const decimal DECIMAL_EARLY_CLOSURE_PENALTY = 0.02m;
         private const decimal DECIMAL_EARLY_WITHDRAWAL_PENALTY = 0.02m;
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_StandardAccountIsCreated_ReturnsCreatedAccount()
         {
             var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
             var inputDto = new CreateSavingsAccountDto
             {
                 UserId = 1,
@@ -46,19 +47,19 @@ namespace KarmaBanking.App.Tests.Services
                 AccountStatus = "Active"
             };
 
-            var service = new SavingsService(repository);
             repository.CreateSavingsAccountAsync(inputDto, DEFAULT_APY).Returns(Task.FromResult(outputDto));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
-            await service.CreateAccountAsync(inputDto);
-
-            Assert.Equals(outputDto, await service.CreateAccountAsync(inputDto));
+            Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, DEFAULT_APY);
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_GoalSavingsAccountIsCreated_ReturnsCreatedAccount()
         {
             var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
             var inputDto = new CreateSavingsAccountDto
             {
                 UserId = 1,
@@ -66,6 +67,8 @@ namespace KarmaBanking.App.Tests.Services
                 AccountName = "My Savings",
                 InitialDeposit = 1000m,
                 FundingAccountId = 123,
+                TargetAmount = 5000m,
+                TargetDate = DateTime.UtcNow.AddDays(30)
             };
 
             var outputDto = new SavingsAccount
@@ -75,22 +78,24 @@ namespace KarmaBanking.App.Tests.Services
                 AccountName = inputDto.AccountName,
                 Balance = inputDto.InitialDeposit,
                 SavingsType = inputDto.SavingsType,
-                AccountStatus = "Active"
+                AccountStatus = "Active",
+                TargetAmount = 5000m,
+                TargetDate = DateTime.UtcNow.AddDays(30)
             };
 
-            var service = new SavingsService(repository);
             repository.CreateSavingsAccountAsync(inputDto, GOAL_SAVINGS_APY).Returns(Task.FromResult(outputDto));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
-            await service.CreateAccountAsync(inputDto);
-
-            Assert.Equals(outputDto, await service.CreateAccountAsync(inputDto));
+            Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, GOAL_SAVINGS_APY);
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_FixedDepositAccountIsCreated_ReturnsCreatedAccount()
         {
             var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
             var inputDto = new CreateSavingsAccountDto
             {
                 UserId = 1,
@@ -110,19 +115,19 @@ namespace KarmaBanking.App.Tests.Services
                 AccountStatus = "Active"
             };
 
-            var service = new SavingsService(repository);
             repository.CreateSavingsAccountAsync(inputDto, FIXED_DEPOSIT_APY).Returns(Task.FromResult(outputDto));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
-            await service.CreateAccountAsync(inputDto);
-
-            Assert.Equals(outputDto, await service.CreateAccountAsync(inputDto));
+            Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, FIXED_DEPOSIT_APY);
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_HighYieldAccountIsCreated_ReturnsCreatedAccount()
         {
             var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
             var inputDto = new CreateSavingsAccountDto
             {
                 UserId = 1,
@@ -142,16 +147,14 @@ namespace KarmaBanking.App.Tests.Services
                 AccountStatus = "Active"
             };
 
-            var service = new SavingsService(repository);
             repository.CreateSavingsAccountAsync(inputDto, HIGH_YIELD_APY).Returns(Task.FromResult(outputDto));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
-            await service.CreateAccountAsync(inputDto);
-
-            Assert.Equals(outputDto, await service.CreateAccountAsync(inputDto));
+            Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, HIGH_YIELD_APY);
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_UserHasMaxActiveAccounts_ThrowsInvalidOperationException()
         {
             var repository = Substitute.For<ISavingsRepository>();
@@ -170,12 +173,12 @@ namespace KarmaBanking.App.Tests.Services
 
             var dto = new CreateSavingsAccountDto { UserId = userId, SavingsType = "Standard" };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CreateAccountAsync(dto));
-            Assert.That(ex.Message, Is.EqualTo("You cannot have more than 5 active savings accounts."));
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CreateAccountAsync(dto));
+            Assert.Equal("You cannot have more than 5 active savings accounts.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithoutTargetDate_ThrowsArgumentException()
         {
             var repository = Substitute.For<ISavingsRepository>();
@@ -190,12 +193,14 @@ namespace KarmaBanking.App.Tests.Services
                 TargetAmount = 5000m
             };
 
-            var ex = Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
-            Assert.That(ex.Message, Is.EqualTo("GoalSavings accounts require a target date."));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
+            Assert.Equal("GoalSavings accounts require a target date.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithPastTargetDate_ThrowsArgumentException()
         {
             var repository = Substitute.For<ISavingsRepository>();
@@ -211,12 +216,14 @@ namespace KarmaBanking.App.Tests.Services
                 TargetDate = DateTime.UtcNow.AddDays(-1)
             };
 
-            var ex = Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
-            Assert.That(ex.Message, Is.EqualTo("Target date must be in the future."));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
+            Assert.Equal("Target date must be in the future.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithoutTargetAmount_ThrowsArgumentException()
         {
             var repository = Substitute.For<ISavingsRepository>();
@@ -231,12 +238,14 @@ namespace KarmaBanking.App.Tests.Services
                 TargetDate = DateTime.UtcNow.AddDays(30)
             };
 
-            var ex = Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
-            Assert.That(ex.Message, Is.EqualTo("GoalSavings accounts require a positive target amount."));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
+            Assert.Equal("GoalSavings accounts require a positive target amount.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
         }
 
-        [Test]
+        [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithNegativeTargetAmount_ThrowsArgumentException()
         {
             var repository = Substitute.For<ISavingsRepository>();
@@ -252,8 +261,10 @@ namespace KarmaBanking.App.Tests.Services
                 TargetAmount = -5000m
             };
 
-            var ex = Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
-            Assert.That(ex.Message, Is.EqualTo("GoalSavings accounts require a positive target amount."));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
+            Assert.Equal("GoalSavings accounts require a positive target amount.", ex.Message);
             await repository.DidNotReceive().CreateSavingsAccountAsync(Arg.Any<CreateSavingsAccountDto>(), Arg.Any<decimal>());
         }
     }
