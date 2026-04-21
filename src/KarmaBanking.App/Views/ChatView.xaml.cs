@@ -1,48 +1,48 @@
-namespace KarmaBanking.App.Views;
-
 using KarmaBanking.App.Models;
 using KarmaBanking.App.ViewModels;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-public sealed partial class ChatView : Page
+namespace KarmaBanking.App.Views
 {
-    public ChatView()
+    public sealed partial class ChatView : Page
     {
-        this.InitializeComponent();
-        this.ViewModel = ChatViewModel.Instance;
-        this.DataContext = this.ViewModel;
-    }
+        public ChatViewModel ViewModel { get; }
 
-    public ChatViewModel ViewModel { get; }
-
-    protected override void OnNavigatedTo(NavigationEventArgs e)
-    {
-        base.OnNavigatedTo(e);
-        this.ViewModel.EnsureSession();
-        this.SessionsListView.SelectedItem = this.ViewModel.CurrentSession;
-    }
-
-    private async void PresetQuestionButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button button && button.Content is string question)
+        public ChatView()
         {
-            await this.ViewModel.AskPresetQuestionAsync(question);
-            this.SessionsListView.SelectedItem = this.ViewModel.CurrentSession;
+            InitializeComponent();
+            ViewModel = ChatViewModel.Instance;
+            DataContext = ViewModel;
         }
-    }
 
-    private void SessionsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (this.SessionsListView.SelectedItem is ChatSession session)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            this.ViewModel.SelectSession(session);
+            base.OnNavigatedTo(e);
+            await ViewModel.LoadSessionsAsync();
+            SessionsListView.SelectedItem = ViewModel.CurrentSession;
         }
-    }
 
-    private void ContactTeamButton_Click(object sender, RoutedEventArgs e)
-    {
-        this.Frame.Navigate(typeof(ChatRoutingView));
+        private async void PresetQuestionButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Content is string question)
+            {
+                await ViewModel.AskPresetQuestionAsync(question);
+                SessionsListView.SelectedItem = ViewModel.CurrentSession;
+            }
+        }
+
+        private async void SessionsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SessionsListView.SelectedItem is ChatSession session)
+            {
+                await ViewModel.SelectSessionAsync(session);
+            }
+        }
+
+        private void ContactTeamButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(ChatRoutingView));
+        }
     }
 }

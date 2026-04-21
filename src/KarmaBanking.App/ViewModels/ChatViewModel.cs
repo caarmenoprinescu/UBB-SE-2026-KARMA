@@ -1,489 +1,533 @@
-﻿namespace KarmaBanking.App.ViewModels;
-
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Windows.Storage;
 using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.Utils;
-using Microsoft.UI.Text;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
-public class ChatViewModel : INotifyPropertyChanged
+namespace KarmaBanking.App.ViewModels
 {
-    private readonly ApiService apiService = new MockApiService();
-    private readonly ChatCategoryService chatCategoryService = new();
-    private readonly ChatSessionService chatSessionService = new();
-    private readonly DialogService dialogService = new();
-    private readonly FileValidationService fileValidationService = new();
-    private ObservableCollection<ChatMessage> chatMessages = [];
-    private ObservableCollection<ChatSession> chatSessions = [];
-    private ChatSession? currentSession;
-    private bool isUploading;
-    private int nextSessionIdentificationNumber = 1;
-    private ObservableCollection<string> presetQuestions = [];
-    private SelectedAttachment? selectedAttachment;
-    private string statusMessage = "Choose a preset question to start a chat session.";
-    private string uploadStatusMessage = "No file uploaded.";
-
-    private ChatViewModel()
+    public class ChatViewModel : INotifyPropertyChanged
     {
-        this.StartNewSessionCommand = new RelayCommand(this.OnStartNewSessionAsync);
-        this.RemoveAttachmentCommand = new RelayCommand(this.OnRemoveAttachmentAsync, () => this.CanRemoveAttachment);
-        this.CreateSession();
-        _ = this.LoadPresetQuestionsAsync();
-    }
+        public static ChatViewModel Instance { get; } = new ChatViewModel();
 
-    public static ChatViewModel Instance { get; } = new();
+        private readonly ApiService apiService = new ApiService(null, new ChatRepository());
+        private ObservableCollection<ChatSession> sessions = new ObservableCollection<ChatSession>();
+        private ObservableCollection<ChatMessage> messages = new ObservableCollection<ChatMessage>();
+        private ObservableCollection<string> presetQuestions = new ObservableCollection<string>();
+        private ChatSession? currentSession;
+        private string statusMessage = "Choose a preset question to start a chat session.";
+        private SelectedAttachment? selectedAttachment;
+        private bool isUploading;
+        private string uploadStatusMessage = "No file uploaded.";
+        private int nextSessionId = 1;
 
-    public ObservableCollection<ChatSession> Sessions
-    {
-        get => this.chatSessions;
-        set
+        public ObservableCollection<ChatSession> Sessions
         {
-            if (this.chatSessions != value)
+            get => sessions;
+            set
             {
-                this.chatSessions = value;
-                this.OnPropertyChanged();
-            }
-        }
-    }
-
-    public ObservableCollection<ChatMessage> Messages
-    {
-        get => this.chatMessages;
-        set
-        {
-            if (this.chatMessages != value)
-            {
-                this.chatMessages = value;
-                this.OnPropertyChanged();
-            }
-        }
-    }
-
-    public ObservableCollection<string> PresetQuestions
-    {
-        get => this.presetQuestions;
-        set
-        {
-            if (this.presetQuestions != value)
-            {
-                this.presetQuestions = value;
-                this.OnPropertyChanged();
-            }
-        }
-    }
-
-    public ChatSession? CurrentSession
-    {
-        get => this.currentSession;
-        set
-        {
-            if (this.currentSession != value)
-            {
-                this.currentSession = value;
-                this.Messages = this.currentSession?.Messages ?? [];
-                this.selectedAttachment = this.currentSession?.Attachment;
-                this.OnPropertyChanged();
-                this.OnPropertyChanged(nameof(this.SelectedAttachment));
-                this.OnPropertyChanged(nameof(this.CurrentSessionTitle));
-                this.OnPropertyChanged(nameof(this.CurrentSessionModeLabel));
-                this.OnPropertyChanged(nameof(this.CanContactTeam));
-                this.OnPropertyChanged(nameof(this.HasMessages));
-                this.OnPropertyChanged(nameof(this.HasAttachmentPreview));
-                this.OnPropertyChanged(nameof(this.CanAttachFile));
-                this.OnPropertyChanged(nameof(this.CanRemoveAttachment));
-                this.RemoveAttachmentCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
-    public string CurrentSessionTitle => this.CurrentSession?.Title ?? "Customer Support";
-
-    public string CurrentSessionModeLabel => this.CurrentSession?.SessionModeLabel ?? "Chatbot assistance";
-
-    public bool HasMessages => this.Messages.Count > 0;
-
-    public SelectedAttachment? SelectedAttachment
-    {
-        get => this.selectedAttachment;
-        set
-        {
-            if (this.selectedAttachment != value)
-            {
-                this.selectedAttachment = value;
-                this.OnPropertyChanged();
-                this.OnPropertyChanged(nameof(this.HasAttachmentPreview));
-                if (this.CurrentSession != null)
+                if (sessions != value)
                 {
-                    this.CurrentSession.Attachment = value;
-                    this.UpdateSessionSummary(this.CurrentSession);
+                    sessions = value;
+                    OnPropertyChanged();
                 }
-
-                this.OnPropertyChanged(nameof(this.CanRemoveAttachment));
             }
         }
-    }
 
-    public bool HasAttachmentPreview => this.SelectedAttachment != null;
-
-    public bool IsUploading
-    {
-        get => this.isUploading;
-        set
+        public ObservableCollection<ChatMessage> Messages
         {
-            if (this.isUploading != value)
+            get => messages;
+            set
             {
-                this.isUploading = value;
-                this.OnPropertyChanged();
-                this.OnPropertyChanged(nameof(this.CanAttachFile));
-                this.OnPropertyChanged(nameof(this.CanRemoveAttachment));
-                this.RemoveAttachmentCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
-    public bool CanAttachFile => this.CurrentSession != null && !this.IsUploading;
-
-    public bool CanRemoveAttachment => this.SelectedAttachment != null && !this.IsUploading;
-
-    public bool CanContactTeam => this.CurrentSession != null;
-
-    public string UploadStatusMessage
-    {
-        get => this.uploadStatusMessage;
-        set
-        {
-            if (this.uploadStatusMessage != value)
-            {
-                this.uploadStatusMessage = value;
-                this.OnPropertyChanged();
-            }
-        }
-    }
-
-    public string StatusMessage
-    {
-        get => this.statusMessage;
-        set
-        {
-            if (this.statusMessage != value)
-            {
-                this.statusMessage = value;
-                this.OnPropertyChanged();
-            }
-        }
-    }
-
-    public RelayCommand StartNewSessionCommand { get; }
-
-    public RelayCommand RemoveAttachmentCommand { get; }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    // --- THESE ARE THE MISSING METHODS ---
-    public void SetUploadStarted()
-    {
-        this.IsUploading = true;
-        this.UploadStatusMessage = "Uploading attachment...";
-    }
-
-    public void SetUploadSucceeded()
-    {
-        this.IsUploading = false;
-        this.UploadStatusMessage = "Attachment uploaded successfully.";
-    }
-
-    public void SetUploadFailed(string errorMessage)
-    {
-        this.IsUploading = false;
-        this.UploadStatusMessage = $"Upload failed: {errorMessage}";
-    }
-
-    public void SetAttachmentSelected()
-    {
-        this.UploadStatusMessage = "Attachment selected. Ready to upload.";
-    }
-
-    public void SelectSession(ChatSession? session)
-    {
-        if (session == null)
-        {
-            return;
-        }
-
-        this.CurrentSession = session;
-        this.StatusMessage = $"Viewing {session.Title.ToLowerInvariant()}.";
-    }
-
-    public async Task AskPresetQuestionAsync(string question)
-    {
-        var response = await this.apiService.GetChatbotPresetAnswerAsync(question);
-
-        if (string.IsNullOrWhiteSpace(response))
-        {
-            return;
-        }
-
-        this.EnsureSession();
-        var session = this.CurrentSession!;
-        session.IssueCategory = this.chatCategoryService.InferCategory(question);
-
-        session.Messages.Add(
-            this.chatSessionService.CreateMessage(session, session.Messages.Count + 1, "USER", question, DateTime.Now));
-        session.Messages.Add(
-            this.chatSessionService.CreateMessage(
-                session,
-                session.Messages.Count + 1,
-                "CHATBOT ASSISTANCE",
-                response,
-                DateTime.Now.AddSeconds(1)));
-
-        this.UpdateSessionSummary(session, question, response);
-        this.StatusMessage = "Preset answer added to the chat.";
-        this.OnPropertyChanged(nameof(this.HasMessages));
-    }
-
-    public async Task<bool> SendCurrentConversationToTeamAsync(string customerMessage)
-    {
-        if (this.CurrentSession == null)
-        {
-            return false;
-        }
-
-        var trimmedMessage = customerMessage?.Trim() ?? string.Empty;
-        var transcript = this.BuildCurrentTranscript();
-        var wasSent = await this.apiService.SendChatToSupportAsync(transcript, trimmedMessage, this.SelectedAttachment);
-
-        if (!wasSent)
-        {
-            this.StatusMessage = "The chat could not be sent to the team.";
-            return false;
-        }
-
-        this.CurrentSession.TeamContactMessage = trimmedMessage;
-        this.CurrentSession.IsEscalatedToTeam = true;
-        this.CurrentSession.SessionStatus = "Escalated";
-
-        this.CurrentSession.Messages.Add(
-            this.chatSessionService.CreateMessage(
-                this.CurrentSession,
-                this.CurrentSession.Messages.Count + 1,
-                "SYSTEM",
-                "Conversation sent to the Karma Banking team.",
-                DateTime.Now));
-
-        this.UpdateSessionSummary(this.CurrentSession);
-        this.StatusMessage = "The current chat session was sent to the team.";
-        this.OnPropertyChanged(nameof(this.CurrentSessionModeLabel));
-        return true;
-    }
-
-    public string BuildCurrentTranscript()
-    {
-        return this.chatSessionService.BuildTranscript(this.CurrentSession);
-    }
-
-    /// <summary>
-    ///     Processes a selected file for attachment, validating it before adding to the session.
-    /// </summary>
-    public async Task ProcessAttachmentAsync(StorageFile file)
-    {
-        try
-        {
-            // Validate file
-            var (isValid, errorMessage) = await this.fileValidationService.ValidateFileAsync(file);
-
-            if (!isValid)
-            {
-                this.StatusMessage = errorMessage;
-                this.SetUploadFailed(errorMessage);
-                return;
-            }
-
-            // Map file to attachment model
-            this.SelectedAttachment = await this.fileValidationService.MapStorageFileToAttachmentAsync(file);
-
-            this.StatusMessage = "Attachment selected successfully.";
-            this.SetAttachmentSelected();
-            this.SetUploadStarted();
-            await Task.Delay(1000);
-            this.SetUploadSucceeded();
-        }
-        catch (Exception ex)
-        {
-            this.StatusMessage = $"Attachment processing failed: {ex.Message}";
-            this.SetUploadFailed(ex.Message);
-        }
-    }
-
-    /// <summary>
-    ///     Shows a feedback dialog for rating the chat experience.
-    /// </summary>
-    public async Task ShowFeedbackDialogAsync(XamlRoot xamlRoot)
-    {
-        if (this.CurrentSession == null)
-        {
-            return;
-        }
-
-        try
-        {
-            // Create dialog content dynamically
-            var dialogContent = new StackPanel { Spacing = 12 };
-
-            var titleText = new TextBlock
-            {
-                Text = "Rate your experience",
-                FontSize = 18,
-                FontWeight = FontWeights.SemiBold
-            };
-
-            var ratingLabel = new TextBlock { Text = "Please select a rating:" };
-            var starsPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 8
-            };
-            var selectedRatingText = new TextBlock { Text = "No rating selected." };
-            var selectedRating = 0;
-
-            for (var i = 1; i <= 5; i++)
-            {
-                var ratingValue = i;
-                var starButton = new Button
+                if (messages != value)
                 {
-                    Content = $"⭐{ratingValue}",
-                    Tag = ratingValue
-                };
-                starButton.Click += (s, args) =>
-                {
-                    selectedRating = ratingValue;
-                    selectedRatingText.Text = $"Selected rating: {ratingValue} ⭐";
-                };
-                starsPanel.Children.Add(starButton);
-            }
-
-            var feedbackTextBox = new TextBox
-            {
-                PlaceholderText = "Write your feedback here...",
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                Height = 100
-            };
-
-            dialogContent.Children.Add(titleText);
-            dialogContent.Children.Add(ratingLabel);
-            dialogContent.Children.Add(starsPanel);
-            dialogContent.Children.Add(selectedRatingText);
-            dialogContent.Children.Add(new TextBlock { Text = "Leave feedback (optional):" });
-            dialogContent.Children.Add(feedbackTextBox);
-
-            var ratingDialog = new ContentDialog
-            {
-                Title = "Post-Chat Rating",
-                PrimaryButtonText = "Submit",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = dialogContent,
-                XamlRoot = xamlRoot
-            };
-
-            var result = await ratingDialog.ShowAsync();
-
-            if (result == ContentDialogResult.Primary)
-            {
-                if (selectedRating == 0)
-                {
-                    this.StatusMessage = "Please select a rating before submitting.";
-                    return;
+                    messages = value;
+                    OnPropertyChanged();
                 }
-
-                // Submit feedback through API
-                var sessionIdentificationNumber = this.CurrentSession?.IdentificationNumber ?? 1;
-                var feedback = feedbackTextBox.Text;
-
-                await this.SubmitFeedbackAsync(sessionIdentificationNumber, selectedRating, feedback);
             }
         }
-        catch (Exception ex)
+
+        public ObservableCollection<string> PresetQuestions
         {
-            this.StatusMessage = $"Feedback dialog failed: {ex.Message}";
+            get => presetQuestions;
+            set
+            {
+                if (presetQuestions != value)
+                {
+                    presetQuestions = value;
+                    OnPropertyChanged();
+                }
+            }
         }
-    }
 
-    /// <summary>
-    ///     Submits feedback to the API.
-    /// </summary>
-    private async Task SubmitFeedbackAsync(int sessionId, int rating, string feedback)
-    {
-        try
+        public ChatSession? CurrentSession
         {
-            this.apiService.SubmitFeedback(sessionId, rating, feedback);
-            this.StatusMessage = $"Thank you! Rating submitted: {rating} ⭐";
+            get => currentSession;
+            set
+            {
+                if (currentSession != value)
+                {
+                    currentSession = value;
+                    Messages = currentSession?.Messages ?? new ObservableCollection<ChatMessage>();
+                    selectedAttachment = currentSession?.Attachment;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedAttachment));
+                    OnPropertyChanged(nameof(CurrentSessionTitle));
+                    OnPropertyChanged(nameof(CurrentSessionModeLabel));
+                    OnPropertyChanged(nameof(CanContactTeam));
+                    OnPropertyChanged(nameof(HasMessages));
+                    OnPropertyChanged(nameof(HasAttachmentPreview));
+                    OnPropertyChanged(nameof(CanAttachFile));
+                    OnPropertyChanged(nameof(CanRemoveAttachment));
+                    RemoveAttachmentCommand.RaiseCanExecuteChanged();
+                }
+            }
         }
-        catch (Exception ex)
+
+        public string CurrentSessionTitle => CurrentSession?.Title ?? "Customer Support";
+
+        public string CurrentSessionModeLabel => CurrentSession?.SessionModeLabel ?? "Chatbot assistance";
+
+        public bool HasMessages => Messages.Count > 0;
+
+        public SelectedAttachment? SelectedAttachment
         {
-            this.StatusMessage = $"Feedback submission failed: {ex.Message}";
+            get => selectedAttachment;
+            set
+            {
+                if (selectedAttachment != value)
+                {
+                    selectedAttachment = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(HasAttachmentPreview));
+                    if (CurrentSession != null)
+                    {
+                        CurrentSession.Attachment = value;
+                        UpdateSessionSummary(CurrentSession);
+                    }
+
+                    OnPropertyChanged(nameof(CanRemoveAttachment));
+                }
+            }
         }
-    }
 
-    public void EnsureSession()
-    {
-        if (this.CurrentSession == null)
+        public bool HasAttachmentPreview => SelectedAttachment != null;
+
+        public bool IsUploading
         {
-            this.CreateSession();
+            get => isUploading;
+            set
+            {
+                if (isUploading != value)
+                {
+                    isUploading = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(CanAttachFile));
+                    OnPropertyChanged(nameof(CanRemoveAttachment));
+                    RemoveAttachmentCommand.RaiseCanExecuteChanged();
+                }
+            }
         }
-    }
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
+        public bool CanAttachFile => CurrentSession != null && !IsUploading;
 
-    private Task OnStartNewSessionAsync()
-    {
-        this.CreateSession();
-        return Task.CompletedTask;
-    }
+        public bool CanRemoveAttachment => SelectedAttachment != null && !IsUploading;
 
-    private Task OnRemoveAttachmentAsync()
-    {
-        if (!this.CanRemoveAttachment)
+        public bool CanContactTeam => CurrentSession != null;
+
+        public string UploadStatusMessage
         {
+            get => uploadStatusMessage;
+            set
+            {
+                if (uploadStatusMessage != value)
+                {
+                    uploadStatusMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string StatusMessage
+        {
+            get => statusMessage;
+            set
+            {
+                if (statusMessage != value)
+                {
+                    statusMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public RelayCommand StartNewSessionCommand { get; }
+        public RelayCommand RemoveAttachmentCommand { get; }
+
+        private ChatViewModel()
+        {
+            StartNewSessionCommand = new RelayCommand(OnStartNewSessionAsync);
+            RemoveAttachmentCommand = new RelayCommand(OnRemoveAttachmentAsync, () => CanRemoveAttachment);
+            CreateSession();
+            _ = LoadPresetQuestionsAsync();
+        }
+
+        public async Task OnStartNewSessionAsync()
+        {
+            try
+            {
+                int currentUserId = CurrentUser.Id;
+
+                int newSessionId = await apiService.CreateChatSessionAsync(currentUserId, "New Inquiry");
+
+                var newSession = new ChatSession
+                {
+                    Id = newSessionId,
+                    UserId = currentUserId,
+                    IssueCategory = "New Inquiry",
+                    StartedAt = DateTime.Now,
+                    Title = "New chat",
+                    LastPreview = "No messages yet."
+                };
+
+                Sessions.Insert(0, newSession);
+
+                CurrentSession = newSession;
+
+                StatusMessage = "Ready for your question!";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Failed to create session in DB: " + ex.Message;
+            }
+        }
+
+        private Task OnRemoveAttachmentAsync()
+        {
+            if (!CanRemoveAttachment)
+            {
+                return Task.CompletedTask;
+            }
+
+            SelectedAttachment = null;
+            UploadStatusMessage = "Attachment removed.";
+            StatusMessage = "Attachment removed from the current chat session.";
+
             return Task.CompletedTask;
         }
 
-        this.SelectedAttachment = null;
-        this.UploadStatusMessage = "Attachment removed.";
-        this.StatusMessage = "Attachment removed from the current chat session.";
-
-        return Task.CompletedTask;
-    }
-
-    private async Task LoadPresetQuestionsAsync()
-    {
-        var questions = await this.apiService.GetChatbotPresetQuestionsAsync();
-        if (questions.Count > 0)
+        public void SetUploadStarted()
         {
-            this.PresetQuestions = new ObservableCollection<string>(questions);
+            IsUploading = true;
+            UploadStatusMessage = "Uploading attachment...";
         }
-    }
 
-    private void CreateSession()
-    {
-        var session = this.chatSessionService.CreateSession(this.nextSessionIdentificationNumber++);
-        this.Sessions.Insert(0, session);
-        this.CurrentSession = session;
-    }
+        public void SetUploadSucceeded()
+        {
+            IsUploading = false;
+            UploadStatusMessage = "Attachment uploaded successfully.";
+        }
 
-    private void UpdateSessionSummary(ChatSession session, string? selectedQuestion = null, string? response = null)
-    {
-        session.LastUpdatedAt = DateTime.Now;
+        public void SetUploadFailed(string errorMessage)
+        {
+            IsUploading = false;
+            UploadStatusMessage = $"Upload failed: {errorMessage}";
+        }
+
+        public void SetAttachmentSelected()
+        {
+            UploadStatusMessage = "Attachment selected. Ready to upload.";
+        }
+
+        public async Task SelectSessionAsync(ChatSession session)
+        {
+            if (session != null && CurrentSession != session)
+            {
+                CurrentSession = session;
+
+                await LoadMessagesForSessionAsync(CurrentSession);
+            }
+        }
+
+        public async Task AskPresetQuestionAsync(string question)
+        {
+            int currentUserId = CurrentUser.Id;
+
+            if (CurrentSession == null)
+            {
+                string category = InferCategory(question);
+                int newSessionId = await apiService.CreateChatSessionAsync(currentUserId, category);
+
+                CurrentSession = new ChatSession
+                {
+                    Id = newSessionId,
+                    UserId = currentUserId,
+                    IssueCategory = category,
+                    StartedAt = DateTime.Now,
+                    Title = "Chat started at " + DateTime.Now.ToString("HH:mm")
+                };
+                Sessions.Add(CurrentSession);
+            }
+
+            var userMessage = new ChatMessage
+            {
+                SessionId = CurrentSession.Id,
+                SenderType = "USER",
+                Content = question,
+                SentAt = DateTime.Now
+            };
+            await apiService.SendMessageAsync(userMessage);
+            CurrentSession.Messages.Add(userMessage);
+
+            var botMessage = new ChatMessage
+            {
+                SessionId = CurrentSession.Id,
+                SenderType = "BOT",
+                Content = "This is an automated response to: " + question,
+                SentAt = DateTime.Now.AddSeconds(1)
+            };
+            await apiService.SendMessageAsync(botMessage);
+            CurrentSession.Messages.Add(botMessage);
+
+            UpdateSessionPreview(CurrentSession);
+        }
+
+        public void UpdateSessionPreview(ChatSession session)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            var lastMessage = session.Messages.LastOrDefault();
+
+            string preferredPreview = lastMessage != null ? lastMessage.Content : "No messages yet.";
+
+            session.LastPreview = TrimForPreview(preferredPreview, 56);
+            session.LastUpdatedAt = DateTime.Now;
+        }
+
+        public async Task<bool> SendCurrentConversationToTeamAsync(string customerMessage)
+        {
+            if (CurrentSession == null)
+            {
+                return false;
+            }
+
+            string trimmedMessage = customerMessage?.Trim() ?? string.Empty;
+            string transcript = BuildCurrentTranscript();
+            bool wasSent = await apiService.SendChatToSupportAsync(transcript, trimmedMessage, SelectedAttachment);
+
+            if (!wasSent)
+            {
+                StatusMessage = "The chat could not be sent to the team.";
+                return false;
+            }
+
+            CurrentSession.TeamContactMessage = trimmedMessage;
+            CurrentSession.IsEscalatedToTeam = true;
+            CurrentSession.SessionStatus = "Escalated";
+
+            string attachmentMessage = SelectedAttachment == null
+                ? "No attachment was added."
+                : $"Attached file: {SelectedAttachment.FileName} ({SelectedAttachment.FileSizeDisplay}).";
+
+            CurrentSession.Messages.Add(new ChatMessage
+            {
+                Id = CurrentSession.Messages.Count + 1,
+                SessionId = CurrentSession.Id,
+                SenderType = "SYSTEM",
+                Content = $"Conversation sent to the Karma Banking team. {attachmentMessage}",
+                SentAt = DateTime.Now
+            });
+
+            if (!string.IsNullOrWhiteSpace(trimmedMessage))
+            {
+                CurrentSession.Messages.Add(new ChatMessage
+                {
+                    Id = CurrentSession.Messages.Count + 1,
+                    SessionId = CurrentSession.Id,
+                    SenderType = "CUSTOMER NOTE",
+                    Content = trimmedMessage,
+                    SentAt = DateTime.Now.AddSeconds(1)
+                });
+            }
+
+            UpdateSessionSummary(CurrentSession);
+            StatusMessage = "The current chat session was sent to the team.";
+            OnPropertyChanged(nameof(CurrentSessionModeLabel));
+            return true;
+        }
+
+        public string BuildCurrentTranscript()
+        {
+            if (CurrentSession == null)
+            {
+                return "No chat session selected.";
+            }
+
+            List<string> lines = CurrentSession.Messages
+                .Select(message => $"[{message.SentAt:g}] {message.SenderType}: {message.Content}")
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(CurrentSession.TeamContactMessage))
+            {
+                lines.Add(string.Empty);
+                lines.Add($"Customer note: {CurrentSession.TeamContactMessage}");
+            }
+
+            if (CurrentSession.Attachment != null)
+            {
+                lines.Add($"Attachment: {CurrentSession.Attachment.FileName} ({CurrentSession.Attachment.FileSizeDisplay})");
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        public async Task LoadSessionsAsync()
+        {
+            try
+            {
+                var databaseSessions = await apiService.GetUserChatSessionsAsync();
+
+                Sessions.Clear();
+                foreach (var s in databaseSessions)
+                {
+                    Sessions.Add(s);
+                }
+
+                if (Sessions.Count > 0)
+                {
+                    CurrentSession = Sessions.Last();
+                    await LoadMessagesForSessionAsync(CurrentSession);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Failed to load sessions: " + ex.Message;
+            }
+        }
+
+        public async Task LoadMessagesForSessionAsync(ChatSession session)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            var repo = new ChatMessageRepository();
+            var messages = await Task.Run(() => repo.GetMessagesBySessionId(session.Id));
+
+            session.Messages.Clear();
+            foreach (var msg in messages)
+            {
+                session.Messages.Add(msg);
+            }
+        }
+
+        private async Task LoadPresetQuestionsAsync()
+        {
+            List<string> questions = await apiService.GetChatbotPresetQuestionsAsync();
+
+            if (questions.Count == 0)
+            {
+                return;
+            }
+
+            PresetQuestions = new ObservableCollection<string>(questions);
+        }
+
+        private void CreateSession()
+        {
+            ChatSession session = new ChatSession
+            {
+                Id = nextSessionId++,
+                IssueCategory = "General",
+                SessionStatus = "Open",
+                StartedAt = DateTime.Now,
+                Title = $"Session {nextSessionId - 1}"
+            };
+
+            session.Messages.Add(new ChatMessage
+            {
+                Id = 1,
+                SessionId = session.Id,
+                SenderType = "CHATBOT ASSISTANCE",
+                Content = "Welcome. This support assistant uses preset questions and fixed answers only. Choose a question below or contact the real team at any time.",
+                SentAt = DateTime.Now
+            });
+
+            UpdateSessionSummary(session);
+            Sessions.Insert(0, session);
+            CurrentSession = session;
+            StatusMessage = "A new chat session is ready.";
+        }
+
+        private void UpdateSessionSummary(ChatSession session, string? selectedQuestion = null, string? response = null)
+        {
+            string preferredTitle = !string.IsNullOrWhiteSpace(selectedQuestion)
+                ? selectedQuestion
+                : session.Messages.FirstOrDefault(message => message.SenderType == "USER")?.Content ?? $"Session {session.Id}";
+
+            session.Title = TrimForPreview(preferredTitle, 32);
+
+            string preferredPreview = !string.IsNullOrWhiteSpace(response)
+                ? response
+                : session.Messages.LastOrDefault()?.Content ?? "No messages yet.";
+
+            session.LastPreview = TrimForPreview(preferredPreview, 56);
+            session.LastUpdatedAt = DateTime.Now;
+        }
+
+        private static string TrimForPreview(string content, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = content.Trim();
+            return trimmed.Length <= maxLength
+                ? trimmed
+                : $"{trimmed.Substring(0, maxLength - 3)}...";
+        }
+
+        private static string InferCategory(string question)
+        {
+            if (question.Contains("password", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Account";
+            }
+
+            if (question.Contains("card", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Cards";
+            }
+
+            if (question.Contains("transfer", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Transfers";
+            }
+
+            if (question.Contains("technical", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Technical Issue";
+            }
+
+            return "Other";
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

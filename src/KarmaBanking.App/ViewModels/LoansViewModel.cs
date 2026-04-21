@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;
 
 public partial class LoansViewModel : ObservableObject
@@ -84,7 +85,7 @@ public partial class LoansViewModel : ObservableObject
 
     public LoansViewModel()
     {
-        this.apiService = new ApiService(new LoanService(new LoanRepository()));
+        this.apiService = new ApiService(new LoanService(new LoanRepository()), new ChatRepository());
         this.calculator = new AmortizationCalculator();
         this.pdfExporter = new PdfExporter();
         this.loanDialogStateService = new LoanDialogStateService();

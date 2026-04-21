@@ -8,37 +8,36 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <utils:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <utils:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
 
     <ScrollViewer>
         <StackPanel Padding="24" Spacing="16">
             <TextBlock Text="Contact The Team"
                        FontSize="28"
-                       FontWeight="Bold" />
+                       FontWeight="Bold"/>
 
             <TextBlock x:Name="SessionTitleTextBlock"
                        FontSize="18"
                        FontWeight="SemiBold"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"/>
 
-            <TextBlock
-                Text="The full chat transcript below will be sent together with your note and any file attached in the chat."
-                TextWrapping="Wrap" />
+            <TextBlock Text="The full chat transcript below will be sent together with your note and any file attached in the chat."
+                       TextWrapping="Wrap"/>
 
             <TextBlock x:Name="AttachmentInfoTextBlock"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"/>
 
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="Attach File"
                         Click="AttachFileButton_Click"
                         Width="140"
-                        IsEnabled="{Binding CanAttachFile}" />
+                        IsEnabled="{Binding CanAttachFile}"/>
 
                 <TextBlock Text="{Binding UploadStatusMessage}"
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
-                           Foreground="DarkBlue" />
+                           Foreground="DarkBlue"/>
             </StackPanel>
 
             <Border Padding="12"
@@ -49,7 +48,7 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="Attachment Preview"
                                FontSize="18"
-                               FontWeight="SemiBold" />
+                               FontWeight="SemiBold"/>
 
                     <TextBlock Text="{Binding SelectedAttachment.FileName}" />
                     <TextBlock Text="{Binding SelectedAttachment.FileType}" />
@@ -57,46 +56,46 @@
 
                     <Button Content="Remove"
                             Command="{Binding RemoveAttachmentCommand}"
-                            Width="100" />
+                            Width="100"/>
                 </StackPanel>
             </Border>
 
             <TextBlock Text="Message for the support team"
                        FontSize="16"
-                       FontWeight="SemiBold" />
+                       FontWeight="SemiBold"/>
 
             <TextBox x:Name="TeamMessageTextBox"
                      PlaceholderText="Add any details you want the team to see..."
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
-                     Height="110" />
+                     Height="110"/>
 
             <TextBlock Text="Chat transcript"
                        FontSize="16"
-                       FontWeight="SemiBold" />
+                       FontWeight="SemiBold"/>
 
             <TextBox x:Name="TranscriptTextBox"
                      IsReadOnly="True"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
-                     Height="240" />
+                     Height="240"/>
 
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="Send To Team"
                         Click="SendToTeam_Click"
-                        Width="150" />
+                        Width="150"/>
 
                 <Button Content="Rate Assistance"
                         Click="OpenRatingDialog_Click"
-                        Width="150" />
+                        Width="150"/>
 
                 <Button Content="Back To Chat"
                         Click="BackButton_Click"
-                        Width="140" />
+                        Width="140"/>
             </StackPanel>
 
             <TextBlock x:Name="StatusText"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

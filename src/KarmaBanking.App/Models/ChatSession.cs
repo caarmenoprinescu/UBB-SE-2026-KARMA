@@ -1,117 +1,127 @@
-﻿namespace KarmaBanking.App.Models;
-
-using System;
+﻿﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
-public class ChatSession : INotifyPropertyChanged
+namespace KarmaBanking.App.Models
 {
-    private SelectedAttachment? attachment;
-    private bool isEscalatedToTeam;
-    private string lastPreview = "No messages yet.";
-    private DateTime lastUpdatedAt = DateTime.Now;
-    private string teamContactMessage = string.Empty;
-    private string title = "New chat";
-
-    public int IdentificationNumber { get; set; }
-
-    public string IssueCategory { get; set; } = string.Empty;
-
-    public string SessionStatus { get; set; } = string.Empty;
-
-    public DateTime StartedAt { get; set; }
-
-    public ObservableCollection<ChatMessage> Messages { get; set; } = [];
-
-    public string Title
+    public class ChatSession : INotifyPropertyChanged
     {
-        get => this.title;
-        set
+        public int Id { get; set; }
+
+        public int UserId { get; set; }
+
+        public string IssueCategory { get; set; } = string.Empty;
+
+        public string SessionStatus { get; set; } = string.Empty;
+
+        public int Rating { get; set; }
+
+        public string Feedback { get; set; } = string.Empty;
+
+        public DateTime StartedAt { get; set; }
+
+        public DateTime EndedAt { get; set; }
+
+        private string title = "New chat";
+        private string lastPreview = "No messages yet.";
+        private DateTime lastUpdatedAt = DateTime.Now;
+        private bool isEscalatedToTeam;
+        private string teamContactMessage = string.Empty;
+        private SelectedAttachment? attachment;
+
+        public ObservableCollection<ChatMessage> Messages { get; set; } = new ObservableCollection<ChatMessage>();
+
+        public string Title
         {
-            if (this.title != value)
+            get => $"Chat {Id}";
+            set
             {
-                this.title = value;
-                this.OnPropertyChanged();
+                if (title != value)
+                {
+                    title = value;
+                    OnPropertyChanged();
+                }
             }
         }
-    }
 
-    public string LastPreview
-    {
-        get => this.lastPreview;
-        set
+        public string LastPreview
         {
-            if (this.lastPreview != value)
+            get => Messages.Count > 0 ? Messages.Last().Content : "No messages yet.";
+            set
             {
-                this.lastPreview = value;
-                this.OnPropertyChanged();
+                if (lastPreview != value)
+                {
+                    lastPreview = value;
+                    OnPropertyChanged();
+                }
             }
         }
-    }
 
-    public DateTime LastUpdatedAt
-    {
-        get => this.lastUpdatedAt;
-        set
+        public DateTime LastUpdatedAt
         {
-            if (this.lastUpdatedAt != value)
+            get => lastUpdatedAt;
+            set
             {
-                this.lastUpdatedAt = value;
-                this.OnPropertyChanged();
-                this.OnPropertyChanged(nameof(this.LastUpdatedDisplay));
+                if (lastUpdatedAt != value)
+                {
+                    lastUpdatedAt = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(LastUpdatedDisplay));
+                }
             }
         }
-    }
 
-    public string LastUpdatedDisplay => this.LastUpdatedAt.ToString("g");
+        public string LastUpdatedDisplay => LastUpdatedAt.ToString("g");
 
-    public bool IsEscalatedToTeam
-    {
-        get => this.isEscalatedToTeam;
-        set
+        public bool IsEscalatedToTeam
         {
-            if (this.isEscalatedToTeam != value)
+            get => isEscalatedToTeam;
+            set
             {
-                this.isEscalatedToTeam = value;
-                this.OnPropertyChanged();
-                this.OnPropertyChanged(nameof(this.SessionModeLabel));
+                if (isEscalatedToTeam != value)
+                {
+                    isEscalatedToTeam = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(SessionModeLabel));
+                }
             }
         }
-    }
 
-    public string SessionModeLabel => this.IsEscalatedToTeam ? "Team contact" : "Chatbot assistance";
+        public string SessionModeLabel => IsEscalatedToTeam ? "Team contact" : "Chatbot assistance";
 
-    public string TeamContactMessage
-    {
-        get => this.teamContactMessage;
-        set
+        public string TeamContactMessage
         {
-            if (this.teamContactMessage != value)
+            get => teamContactMessage;
+            set
             {
-                this.teamContactMessage = value;
-                this.OnPropertyChanged();
+                if (teamContactMessage != value)
+                {
+                    teamContactMessage = value;
+                    OnPropertyChanged();
+                }
             }
         }
-    }
 
-    public SelectedAttachment? Attachment
-    {
-        get => this.attachment;
-        set
+        public SelectedAttachment? Attachment
         {
-            if (this.attachment != value)
+            get => attachment;
+            set
             {
-                this.attachment = value;
-                this.OnPropertyChanged();
+                if (attachment != value)
+                {
+                    attachment = value;
+                    OnPropertyChanged();
+                }
             }
         }
-    }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

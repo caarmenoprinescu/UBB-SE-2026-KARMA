@@ -6,7 +6,7 @@ public static class DatabaseConfig
 {
     // Redenumit din ConnectionString in DatabaseConnectionString (No Abbreviations)
     public static readonly string DatabaseConnectionString =
-        @"Server=PATRICKPC\SQLEXPRESS;Database=KarmaBankingDb;Trusted_Connection=True;TrustServerCertificate=True;";
+        @"Server=DESKTOP-BIG8P7V\SQLEXPRESS;Database=KarmaBankingDb;Trusted_Connection=True;TrustServerCertificate=True;";
 
     public static SqlConnection GetDatabaseConnection()
     {

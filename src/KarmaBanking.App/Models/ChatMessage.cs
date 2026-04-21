@@ -1,18 +1,19 @@
-﻿namespace KarmaBanking.App.Models;
-
-using System;
-
-public class ChatMessage
+﻿namespace KarmaBanking.App.Models
 {
-    public int IdentificationNumber { get; set; }
+    using System;
 
-    public int SessionIdentificationNumber { get; set; }
+    public class ChatMessage
+    {
+        public int Id { get; set; }
 
-    public string SenderType { get; set; } = string.Empty;
+        public int SessionId { get; set; }
 
-    public string Content { get; set; } = string.Empty;
+        public string SenderType { get; set; } = string.Empty;
 
-    public DateTime SentAt { get; set; }
+        public string Content { get; set; } = string.Empty;
 
-    public string DisplaySentAt => this.SentAt.ToString("g");
+        public DateTime SentAt { get; set; }
+
+        public string DisplaySentAt => SentAt.ToString("g");
+    }
 }

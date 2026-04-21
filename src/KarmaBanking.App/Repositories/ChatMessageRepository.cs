@@ -9,7 +9,7 @@ using Microsoft.Data.SqlClient;
 
 public class ChatMessageRepository
 {
-    public List<ChatMessage> GetMessagesBySessionIdentificationNumber(int sessionIdentificationNumber)
+    public List<ChatMessage> GetMessagesBySessionId(int sessionId)
     {
         List<ChatMessage> chatMessages = [];
 
@@ -20,7 +20,7 @@ public class ChatMessageRepository
             const string query =
                 "SELECT id, sessionId, senderType, content, sentAt FROM ChatMessage WHERE sessionId = @sessionId ORDER BY sentAt ASC";
             using var command = new SqlCommand(query, sqlConnection);
-            command.Parameters.Add("@sessionId", SqlDbType.Int).Value = sessionIdentificationNumber;
+            command.Parameters.Add("@sessionId", SqlDbType.Int).Value = sessionId;
 
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -28,8 +28,8 @@ public class ChatMessageRepository
                 chatMessages.Add(
                     new ChatMessage
                     {
-                        IdentificationNumber = (int)reader["id"],
-                        SessionIdentificationNumber = (int)reader["sessionId"],
+                        Id = (int)reader["id"],
+                        SessionId = (int)reader["sessionId"],
                         SenderType = reader["senderType"].ToString() ?? string.Empty,
                         Content = reader["content"].ToString() ?? string.Empty,
                         SentAt = (DateTime)reader["sentAt"]

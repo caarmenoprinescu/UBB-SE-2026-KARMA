@@ -21,7 +21,7 @@ public class EmailTranscriptService
     public void SendSessionTranscript(int sessionIdentificationNumber, string recipientEmailAddress)
     {
         // Syncing with the refactored repository method name
-        var messages = this.chatMessageRepository.GetMessagesBySessionIdentificationNumber(sessionIdentificationNumber);
+        var messages = this.chatMessageRepository.GetMessagesBySessionId(sessionIdentificationNumber);
 
         var emailSubject = $"Karma Banking - Chat Transcript #{sessionIdentificationNumber}";
         var emailBody = this.BuildTranscriptBody(sessionIdentificationNumber, messages);

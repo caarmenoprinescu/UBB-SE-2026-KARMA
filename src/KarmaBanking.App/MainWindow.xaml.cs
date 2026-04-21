@@ -16,6 +16,6 @@ public sealed partial class MainWindow : Window
         this.Activated -= this.OnFirstActivated;
 
         // this.MainFrame.Navigate(typeof(LoansView));
-        this.MainFrame.Navigate(typeof(CryptoTradingView));
+        this.MainFrame.Navigate(typeof(ChatView));
     }
 }

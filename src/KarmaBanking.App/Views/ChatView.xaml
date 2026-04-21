@@ -9,12 +9,13 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <utils:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
 
     <Grid Padding="24" ColumnSpacing="24">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0"
@@ -22,56 +23,68 @@
                 BorderBrush="LightGray"
                 BorderThickness="1"
                 CornerRadius="12">
-            <StackPanel Spacing="12">
-                <TextBlock Text="Previous Sessions"
-                           FontSize="22"
-                           FontWeight="Bold" />
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Margin="0,0,0,12" 
+                   Text="Previous Sessions" 
+                   FontSize="22" 
+                   FontWeight="Bold"/>
 
-                <TextBlock Text="Open an older chat or start a fresh one."
-                           TextWrapping="Wrap" />
+                <TextBlock Grid.Row="1" Margin="0,0,0,12" 
+                   Text="Open an older chat or start a fresh one." 
+                   TextWrapping="Wrap"/>
 
-                <Button Content="New Session"
-                        Command="{Binding StartNewSessionCommand}" />
+                <Button Grid.Row="2" Margin="0,0,0,12"
+                        Content="New Session"
+                        Command="{Binding StartNewSessionCommand}"
+                        HorizontalAlignment="Stretch"/>
+                <Border Grid.Row="3" BorderBrush="#FFE2E8F0" BorderThickness="1" CornerRadius="8">
+                    <ListView x:Name="SessionsListView"
+                        ItemsSource="{Binding Sessions}"
+                        SelectionChanged="SessionsListView_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ChatSession">
+                                <StackPanel Spacing="4" Margin="0,4">
+                                    <TextBlock Text="{Binding Title}"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding LastPreview}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="Gray"/>
+                                    <TextBlock Text="{Binding LastUpdatedDisplay}"
+                           FontSize="11"
+                           Foreground="DarkGray"/>
+                                    <TextBlock Text="{Binding SessionModeLabel}"
+                           FontSize="11"
+                           Foreground="DarkBlue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
 
-                <ListView x:Name="SessionsListView"
-                          ItemsSource="{Binding Sessions}"
-                          SelectionChanged="SessionsListView_SelectionChanged">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ChatSession">
-                            <StackPanel Spacing="4" Margin="0,4">
-                                <TextBlock Text="{Binding Title}"
-                                           FontWeight="SemiBold"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding LastPreview}"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Foreground="Gray" />
-                                <TextBlock Text="{Binding LastUpdatedDisplay}"
-                                           FontSize="11"
-                                           Foreground="DarkGray" />
-                                <TextBlock Text="{Binding SessionModeLabel}"
-                                           FontSize="11"
-                                           Foreground="DarkBlue" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </StackPanel>
+            </Grid>
         </Border>
 
         <ScrollViewer Grid.Column="1">
             <StackPanel Spacing="16">
                 <TextBlock Text="{Binding CurrentSessionTitle}"
                            FontSize="28"
-                           FontWeight="Bold" />
+                           FontWeight="Bold"/>
 
                 <TextBlock Text="{Binding CurrentSessionModeLabel}"
                            FontSize="14"
-                           Foreground="DarkBlue" />
+                           Foreground="DarkBlue"/>
 
                 <TextBlock Text="Choose a preset question"
                            FontSize="18"
-                           FontWeight="SemiBold" />
+                           FontWeight="SemiBold"/>
 
                 <ItemsControl ItemsSource="{Binding PresetQuestions}">
                     <ItemsControl.ItemTemplate>
@@ -79,14 +92,14 @@
                             <Button Content="{Binding}"
                                     Click="PresetQuestionButton_Click"
                                     HorizontalAlignment="Stretch"
-                                    Margin="0,0,0,8" />
+                                    Margin="0,0,0,8"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
                 <TextBlock Text="Conversation"
                            FontSize="18"
-                           FontWeight="SemiBold" />
+                           FontWeight="SemiBold"/>
 
                 <Border BorderBrush="LightGray"
                         BorderThickness="1"
@@ -105,13 +118,13 @@
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="{Binding SenderType}"
                                                    FontWeight="Bold"
-                                                   Foreground="#FF0F172A" />
+                                                   Foreground="#FF0F172A"/>
                                         <TextBlock Text="{Binding DisplaySentAt}"
                                                    FontSize="11"
-                                                   Foreground="#FF334155" />
+                                                   Foreground="#FF334155"/>
                                         <TextBlock Text="{Binding Content}"
                                                    Foreground="#FF0F172A"
-                                                   TextWrapping="Wrap" />
+                                                   TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -122,10 +135,10 @@
                 <Button Content="Contact Actual Team"
                         Click="ContactTeamButton_Click"
                         Width="180"
-                        IsEnabled="{Binding CanContactTeam}" />
+                        IsEnabled="{Binding CanContactTeam}"/>
 
                 <TextBlock Text="{Binding StatusMessage}"
-                           TextWrapping="Wrap" />
+                           TextWrapping="Wrap"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

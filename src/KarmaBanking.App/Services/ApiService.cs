@@ -1,306 +1,306 @@
-namespace KarmaBanking.App.Services;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Models.DTOs;
-using KarmaBanking.App.Repositories;
-
-public class ApiService
+namespace KarmaBanking.App.Services
 {
-    protected static readonly Dictionary<string, string> DefaultChatbotResponses = new()
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
+    using System.Text.Json;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Models.DTOs;
+    using KarmaBanking.App.Repositories;
+    using KarmaBanking.App.Repositories.Interfaces;
+    public class ApiService
     {
-        ["How do I reset my password?"] =
-            "You can reset your password from the login screen by choosing Forgot password and following the verification steps.",
-        ["Why was my card declined?"] =
-            "A card can be declined because of insufficient funds, an expired card, a blocked card, or a merchant validation issue. Please check the card status in the app first.",
-        ["How long does a transfer take?"] =
-            "Internal transfers are usually immediate, while interbank transfers can take up to one business day depending on the destination bank.",
-        ["How do I upload documents for support?"] =
-            "Use the Attach File button in this chat after contacting the team. Your selected file will be included with the support request summary.",
-        ["I found a technical problem in the app."] =
-            "Please contact the team from this chat and include a short description of what happened. Screenshots or PDFs can help the team investigate faster."
-    };
+        private readonly string baseUrl = "https://localhost:5001";
+        private readonly string authToken = string.Empty;
+        private readonly ILoanService loanService;
+        private readonly IChatRepository chatRepository;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private readonly ILoanService _loanService;
-    private readonly string authToken = "";
-    private readonly string baseUrl = "https://localhost:5001";
-
-    public ApiService()
-    {
-    }
-
-    public ApiService(ILoanService loanService)
-    {
-        this._loanService = loanService;
-    }
-
-    public async Task<List<SavingsAccount>> GetSavingsAccountsAsync(int userId, bool includesClosed = false)
-    {
-        using var client = this.BuildClient();
-        var response = await client.GetAsync($"/api/savings?userId={userId}&includesClosed={includesClosed}");
-        response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<List<SavingsAccount>>(json, JsonOptions)
-               ?? [];
-    }
-
-    public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
-    {
-        using var client = this.BuildClient();
-        var body = new StringContent(
-            JsonSerializer.Serialize(dto, JsonOptions),
-            Encoding.UTF8,
-            "application/json");
-        var response = await client.PostAsync("/api/savings", body);
-        response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<SavingsAccount>(json, JsonOptions)!;
-    }
-
-    public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
-    {
-        using var client = this.BuildClient();
-        var dto = new DepositRequestDto { AccountId = accountId, Amount = amount, Source = source };
-        var body = new StringContent(
-            JsonSerializer.Serialize(dto, JsonOptions),
-            Encoding.UTF8,
-            "application/json");
-        var response = await client.PostAsync($"/api/savings/{accountId}/deposit", body);
-        response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<DepositResponseDto>(json, JsonOptions)!;
-    }
-
-    // POST /api/savings/{id}/close
-    public async Task<ClosureResultDto> CloseAccountAsync(int accountId, int destinationAccountId)
-    {
-        using var client = this.BuildClient();
-
-        var dto = new
+        public ApiService()
         {
-            destinationAccountId,
-            confirmClosure = true
+        }
+        public ApiService(ILoanService loanService, IChatRepository chatRepository)
+        {
+            this.loanService = loanService;
+            this.chatRepository = chatRepository;
+        }
+
+        protected static readonly Dictionary<string, string> DefaultChatbotResponses = new Dictionary<string, string>
+        {
+            ["How do I reset my password?"] =
+                "You can reset your password from the login screen by choosing Forgot password and following the verification steps.",
+            ["Why was my card declined?"] =
+                "A card can be declined because of insufficient funds, an expired card, a blocked card, or a merchant validation issue. Please check the card status in the app first.",
+            ["How long does a transfer take?"] =
+                "Internal transfers are usually immediate, while interbank transfers can take up to one business day depending on the destination bank.",
+            ["How do I upload documents for support?"] =
+                "Use the Attach File button in this chat after contacting the team. Your selected file will be included with the support request summary.",
+            ["I found a technical problem in the app."] =
+                "Please contact the team from this chat and include a short description of what happened. Screenshots or PDFs can help the team investigate faster."
         };
 
-        var body = new StringContent(
-            JsonSerializer.Serialize(dto, JsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
-        var response = await client.PostAsync($"/api/savings/{accountId}/close", body);
-
-        if (!response.IsSuccessStatusCode)
+        public async Task<List<SavingsAccount>> GetSavingsAccountsAsync(int userId, bool includesClosed = false)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Close failed: {error}");
+            using var client = BuildClient();
+            var response = await client.GetAsync(
+                $"/api/savings?userId={userId}&includesClosed={includesClosed}");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<SavingsAccount>>(json, JsonOptions)
+                   ?? new List<SavingsAccount>();
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<ClosureResultDto>(json, JsonOptions)!;
-    }
-
-    public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
-    {
-        if (string.IsNullOrWhiteSpace(filePath))
+        public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
         {
-            throw new ArgumentException("File path is required.");
+            using var client = BuildClient();
+            var body = new StringContent(
+                JsonSerializer.Serialize(dto, JsonOptions),
+                Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("/api/savings", body);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<SavingsAccount>(json, JsonOptions)!;
         }
 
-        if (!File.Exists(filePath))
+        public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
         {
-            throw new FileNotFoundException("File not found.", filePath);
+            using var client = BuildClient();
+            var dto = new DepositRequestDto { AccountId = accountId, Amount = amount, Source = source };
+            var body = new StringContent(
+                JsonSerializer.Serialize(dto, JsonOptions),
+                Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"/api/savings/{accountId}/deposit", body);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<DepositResponseDto>(json, JsonOptions)!;
         }
 
-        using var client = new HttpClient { BaseAddress = new Uri(this.baseUrl) };
-
-        if (!string.IsNullOrWhiteSpace(this.authToken))
+        public async Task<ClosureResultDto> CloseAccountAsync(int accountId, int destinationAccountId)
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", this.authToken);
+            using var client = BuildClient();
+
+            var dto = new
+            {
+                destinationAccountId = destinationAccountId,
+                confirmClosure = true
+            };
+
+            var body = new StringContent(
+                JsonSerializer.Serialize(dto, JsonOptions),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PostAsync($"/api/savings/{accountId}/close", body);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Close failed: {error}");
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<ClosureResultDto>(json, JsonOptions)!;
         }
 
-        using var form = new MultipartFormDataContent();
-        form.Add(new StringContent(messageId.ToString()), "messageId");
-
-        await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-        using var fileContent = new StreamContent(fileStream);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(this.GetContentType(filePath));
-        form.Add(fileContent, "file", Path.GetFileName(filePath));
-
-        var response = await client.PostAsync("/attachments", form);
-
-        if (!response.IsSuccessStatusCode)
+        public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Upload failed: {response.StatusCode} - {error}");
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("File path is required.");
+            }
+
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException("File not found.", filePath);
+            }
+
+            using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
+
+            if (!string.IsNullOrWhiteSpace(authToken))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", authToken);
+            }
+
+            using var form = new MultipartFormDataContent();
+            form.Add(new StringContent(messageId.ToString()), "messageId");
+
+            await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using var fileContent = new StreamContent(fileStream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetContentType(filePath));
+            form.Add(fileContent, "file", Path.GetFileName(filePath));
+
+            HttpResponseMessage response = await client.PostAsync("/attachments", form);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Upload failed: {response.StatusCode} - {error}");
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<AttachmentUploadResponse>(
+                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AttachmentUploadResponse>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-    }
-
-    public async Task<int> CreateChatSessionAsync(int userId, string issueCategory)
-    {
-        var repo = new ChatSessionRepository();
-        return await repo.CreateChatSessionAsync(userId, issueCategory);
-    }
-
-    public void SubmitFeedback(int sessionId, int rating, string feedback)
-    {
-        var repo = new ChatSessionRepository();
-        repo.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
-    }
-
-    public void EmailSessionTranscript(int sessionId, string recipientEmail)
-    {
-        var emailService = new EmailTranscriptService();
-        emailService.SendSessionTranscript(sessionId, recipientEmail);
-    }
-
-    public virtual Task<List<string>> GetChatbotPresetQuestionsAsync()
-    {
-        return Task.FromResult(new List<string>(DefaultChatbotResponses.Keys));
-    }
-
-    public virtual Task<string> GetChatbotPresetAnswerAsync(string question)
-    {
-        if (DefaultChatbotResponses.TryGetValue(question, out var response))
+        public async Task<int> CreateChatSessionAsync(int userId, string issueCategory)
         {
-            return Task.FromResult(response);
+            return await chatRepository.CreateChatSessionAsync(userId, issueCategory);
+        }
+        public async Task SendMessageAsync(ChatMessage message)
+        {
+            await chatRepository.AddChatMessageAsync(message);
+        }
+        public async Task<List<ChatSession>> GetUserChatSessionsAsync()
+        {
+            return await chatRepository.GetChatSessionsAsync();
         }
 
-        return Task.FromResult("Please contact the team for more help with this topic.");
-    }
-
-    public virtual async Task<bool> SendChatToSupportAsync(
-        string transcript,
-        string customerMessage,
-        SelectedAttachment? attachment)
-    {
-        await Task.CompletedTask;
-        return !string.IsNullOrWhiteSpace(transcript) || !string.IsNullOrWhiteSpace(customerMessage) ||
-               attachment != null;
-    }
-
-    public virtual async Task<List<ChatMessage>?> GetChatHistoryAsync(int sessionId)
-    {
-        using var client = new HttpClient { BaseAddress = new Uri(this.baseUrl) };
-
-        if (!string.IsNullOrWhiteSpace(this.authToken))
+        public void SubmitFeedback(int sessionId, int rating, string feedback)
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", this.authToken);
+            chatRepository.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
         }
 
-        var response = await client.GetAsync($"/chat/{sessionId}/history");
-
-        if (!response.IsSuccessStatusCode)
+        public void EmailSessionTranscript(int sessionId, string recipientEmail)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to load chat history: {response.StatusCode} - {error}");
+            EmailTranscriptService emailService = new EmailTranscriptService();
+            emailService.SendSessionTranscript(sessionId, recipientEmail);
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<List<ChatMessage>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-    }
-
-    public async Task<bool> SaveAutoDepositSettingsAsync(int savingsAccountId, decimal amount, string frequency)
-    {
-        await Task.CompletedTask;
-        return true;
-    }
-
-    private HttpClient BuildClient()
-    {
-        var client = new HttpClient { BaseAddress = new Uri(this.baseUrl) };
-        if (!string.IsNullOrWhiteSpace(this.authToken))
+        public virtual Task<List<string>> GetChatbotPresetQuestionsAsync()
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", this.authToken);
+            return Task.FromResult(new List<string>(DefaultChatbotResponses.Keys));
         }
 
-        return client;
-    }
-
-    private string GetContentType(string filePath)
-    {
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        return ext switch
+        public virtual Task<string> GetChatbotPresetAnswerAsync(string question)
         {
-            ".pdf" => "application/pdf",
-            ".png" => "image/png",
-            ".jpg" => "image/jpeg",
-            ".jpeg" => "image/jpeg",
-            _ => "application/octet-stream"
-        };
-    }
+            if (DefaultChatbotResponses.TryGetValue(question, out string? response))
+            {
+                return Task.FromResult(response);
+            }
 
-    public async Task<List<Loan>> GetAllLoansAsync()
-    {
-        return await this._loanService.GetAllLoansAsync();
-    }
-
-    public async Task<Loan> GetLoanByIdAsync(int id)
-    {
-        return await this._loanService.GetLoanByIdAsync(id);
-    }
-
-    public async Task<List<Loan>> GetLoansByUserAsync(int userId)
-    {
-        return await this._loanService.GetLoansByUserAsync(userId);
-    }
-
-    public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
-    {
-        return await this._loanService.GetLoansByStatusAsync(loanStatus);
-    }
-
-    public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
-    {
-        return await this._loanService.GetLoansByTypeAsync(loanType);
-    }
-
-    public async Task<string?> ApplyForLoanAsync(LoanApplicationRequest request)
-    {
-        var newApplication = await this._loanService.ApplyForLoanAsync(request);
-
-        var (status, rejectionReason) = await this._loanService.ProcessApplicationStatusAsync(newApplication);
-
-        if (status == LoanApplicationStatus.Approved)
-        {
-            var loanId = await this._loanService.AddLoanAsync(newApplication);
-            await this._loanService.GenerateAmortizationAsync(loanId);
+            return Task.FromResult("Please contact the team for more help with this topic.");
         }
 
-        return rejectionReason;
-    }
+        public virtual async Task<bool> SendChatToSupportAsync(string transcript, string customerMessage, SelectedAttachment? attachment)
+        {
+            await Task.CompletedTask;
+            return !string.IsNullOrWhiteSpace(transcript) || !string.IsNullOrWhiteSpace(customerMessage) || attachment != null;
+        }
 
-    public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
-    {
-        return this._loanService.GetLoanEstimate(request);
-    }
+        public virtual async Task<List<ChatMessage>?> GetChatHistoryAsync(int sessionId)
+        {
+            using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
-    public async Task PayInstallmentAsync(int loanId, decimal? amount = null)
-    {
-        await this._loanService.PayInstallmentAsync(loanId, amount);
-    }
+            if (!string.IsNullOrWhiteSpace(authToken))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", authToken);
+            }
 
-    public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
-    {
-        return await this._loanService.GetAmortizationAsync(loanId);
+            HttpResponseMessage response = await client.GetAsync($"/chat/{sessionId}/history");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to load chat history: {response.StatusCode} - {error}");
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<ChatMessage>>(
+                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        public async Task<bool> SaveAutoDepositSettingsAsync(int savingsAccountId, decimal amount, string frequency)
+        {
+            await Task.CompletedTask;
+            return true;
+        }
+
+        private HttpClient BuildClient()
+        {
+            var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
+            if (!string.IsNullOrWhiteSpace(authToken))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", authToken);
+            }
+            return client;
+        }
+
+        private static readonly JsonSerializerOptions JsonOptions =
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        private string GetContentType(string filePath)
+        {
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext switch
+            {
+                ".pdf" => "application/pdf",
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                _ => "application/octet-stream"
+            };
+        }
+
+        public async Task<List<Loan>> GetAllLoansAsync()
+        {
+            return await loanService.GetAllLoansAsync();
+        }
+
+        public async Task<Loan> GetLoanByIdAsync(int id)
+        {
+            return await loanService.GetLoanByIdAsync(id);
+        }
+
+        public async Task<List<Loan>> GetLoansByUserAsync(int userId)
+        {
+            return await loanService.GetLoansByUserAsync(userId);
+        }
+
+        public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
+        {
+            return await loanService.GetLoansByStatusAsync(loanStatus);
+        }
+
+        public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
+        {
+            return await loanService.GetLoansByTypeAsync(loanType);
+        }
+
+        public async Task<string?> ApplyForLoanAsync(LoanApplicationRequest request)
+        {
+            var newApplication = await loanService.ApplyForLoanAsync(request);
+
+            var (status, rejectionReason) = await loanService.ProcessApplicationStatusAsync(newApplication);
+
+            if (status == LoanApplicationStatus.Approved)
+            {
+                int loanId = await loanService.AddLoanAsync(newApplication);
+                await loanService.GenerateAmortizationAsync(loanId);
+            }
+
+            return rejectionReason;
+        }
+
+        public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
+        {
+            return loanService.GetLoanEstimate(request);
+        }
+
+        public async Task PayInstallmentAsync(int loanId, decimal? amount = null)
+        {
+            await loanService.PayInstallmentAsync(loanId, amount);
+        }
+
+        public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
+        {
+            return await loanService.GetAmortizationAsync(loanId);
+        }
     }
 }

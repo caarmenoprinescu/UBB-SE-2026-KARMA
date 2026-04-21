@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
+	<PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
         <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -9,34 +9,34 @@
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <PublishProfile>win-$(Platform).pubxml</PublishProfile>
         <UseWinUI>true</UseWinUI>
-        <WinUISDKReferences>false</WinUISDKReferences>
-        <EnableMsixTooling>false</EnableMsixTooling>
+        <WinUISDKReferences>true</WinUISDKReferences>
+        <EnableMsixTooling>true</EnableMsixTooling>
         <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-        <WindowsPackageType>None</WindowsPackageType>
+        <WindowsPackageType>MSIX</WindowsPackageType>
         <Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
 
-        <None Remove="Views\CloseAccountDialog.xaml"/>
-        <None Remove="Views\Dialogs\LoanApplicationDialog.xaml"/>
-        <None Remove="Views\Dialogs\PayInstallment.xaml"/>
+        <None Remove="Views\CloseAccountDialog.xaml" />
+        <None Remove="Views\Dialogs\LoanApplicationDialog.xaml" />
+        <None Remove="Views\Dialogs\PayInstallment.xaml" />
 
-        <None Remove="Views\ApplyLoanView.xaml"/>
+        <None Remove="Views\ApplyLoanView.xaml" />
 
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="Assets\SplashScreen.scale-200.png"/>
-        <Content Include="Assets\LockScreenLogo.scale-200.png"/>
-        <Content Include="Assets\Square150x150Logo.scale-200.png"/>
-        <Content Include="Assets\Square44x44Logo.scale-200.png"/>
-        <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png"/>
-        <Content Include="Assets\StoreLogo.png"/>
-        <Content Include="Assets\Wide310x150Logo.scale-200.png"/>
+        <Content Include="Assets\SplashScreen.scale-200.png" />
+        <Content Include="Assets\LockScreenLogo.scale-200.png" />
+        <Content Include="Assets\Square150x150Logo.scale-200.png" />
+        <Content Include="Assets\Square44x44Logo.scale-200.png" />
+        <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+        <Content Include="Assets\StoreLogo.png" />
+        <Content Include="Assets\Wide310x150Logo.scale-200.png" />
     </ItemGroup>
 
     <ItemGroup>
-        <Manifest Include="$(ApplicationManifest)"/>
+        <Manifest Include="$(ApplicationManifest)" />
     </ItemGroup>
 
     <!--
@@ -45,18 +45,18 @@
       package has not yet been restored.
     -->
     <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-        <ProjectCapability Include="Msix"/>
+        <ProjectCapability Include="Msix" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2"/>
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0"/>
-        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705"/>
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
         <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="System.Data.SqlClient" Version="4.9.1"/>
+        <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
     </ItemGroup>
     <ItemGroup>
 
@@ -128,10 +128,11 @@
         <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
         <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
         <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+        <CreateMSIXPackage>False</CreateMSIXPackage>
     </PropertyGroup>
 
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
         <CodeAnalysisRuleSet>SE.ruleset</CodeAnalysisRuleSet>
     </PropertyGroup>
