@@ -5,84 +5,95 @@
     using KarmaBanking.App.Services.Interfaces;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
 
     public class InvestmentService : IInvestmentService
     {
         private readonly IInvestmentRepository investmentRepository;
 
-        // Reguli de business pentru comisioane
-        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% comision
-        private const decimal MinimumTradeFee = 0.50m; // Comision minim de $0.50
+        // Business rules for commissions
+        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% commission
+        private const decimal MinimumTradeFee = 0.50m; // Minimum commission of $0.50
 
         public InvestmentService(IInvestmentRepository investmentRepository)
         {
             this.investmentRepository = investmentRepository;
         }
 
-        public async Task<bool> ExecuteCryptoTradeAsync(int portfolioIdentificationNumber, string ticker, string actionType, decimal quantity, decimal pricePerUnit)
+        public async Task<bool> ExecuteCryptoTradeAsync(
+            int portfolioIdentificationNumber,
+            string ticker,
+            string actionType,
+            decimal quantity,
+            decimal pricePerUnit)
         {
-            // 1. Validarea datelor de intrare
-            if (string.IsNullOrWhiteSpace(ticker))
-            {
-                throw new ArgumentException("Ticker symbol cannot be empty.", nameof(ticker));
-            }
-
-            if (quantity <= 0)
-            {
-                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
-            }
-
-            if (pricePerUnit <= 0)
-            {
-                throw new ArgumentException("Price per unit must be greater than zero.", nameof(pricePerUnit));
-            }
+            // 1. Basic Input Validation
+            this.ValidateTradeInputs(ticker, quantity, pricePerUnit, actionType);
 
             const string ActionBuy = "BUY";
-            const string ActionSell = "SELL";
 
-            if (!actionType.Equals(ActionBuy, StringComparison.OrdinalIgnoreCase) &&
-                !actionType.Equals(ActionSell, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException("Action type must be either 'BUY' or 'SELL'.", nameof(actionType));
-            }
-
-            // 2. Calculul comisionului
-            decimal totalTradeValue = quantity * pricePerUnit;
-            decimal calculatedFee = Math.Round(totalTradeValue * CryptoTradeFeePercentage, 2);
+            // 2. Calculate Commission
+            decimal tradeValueAmount = quantity * pricePerUnit;
+            decimal calculatedFee = Math.Round(tradeValueAmount * CryptoTradeFeePercentage, 2);
 
             if (calculatedFee < MinimumTradeFee)
             {
                 calculatedFee = MinimumTradeFee;
             }
 
+            // 3. Fetch current state to perform business logic calculations
+            Portfolio portfolio = this.investmentRepository.GetPortfolio(portfolioIdentificationNumber);
+            InvestmentHolding? currentHolding = portfolio.Holdings.FirstOrDefault(holding =>
+                holding.Ticker.Equals(ticker, StringComparison.OrdinalIgnoreCase));
+
+            decimal currentQuantity = currentHolding?.Quantity ?? 0;
+            decimal currentAveragePrice = currentHolding?.AveragePurchasePrice ?? 0;
+
+            decimal finalQuantity;
+            decimal finalAveragePrice;
+
+            // 4. Perform Logic based on Action Type
             if (actionType.Equals(ActionBuy, StringComparison.OrdinalIgnoreCase))
             {
-                Portfolio portfolio = investmentRepository.GetPortfolio(portfolioIdentificationNumber);
-                decimal totalCost = totalTradeValue + calculatedFee;
+                decimal totalCostIncludingFee = tradeValueAmount + calculatedFee;
 
-                if (portfolio.TotalValue < totalCost)
+                if (portfolio.TotalValue < totalCostIncludingFee)
                 {
                     throw new ArgumentException("Insufficient portfolio balance for this trade.");
                 }
+
+                // Weighted Average Price Logic
+                decimal totalInvestmentCost = (currentQuantity * currentAveragePrice) + tradeValueAmount;
+                finalQuantity = currentQuantity + quantity;
+                finalAveragePrice = totalInvestmentCost / finalQuantity;
+            }
+            else
+            {
+                // Sell Logic Validation
+                if (currentHolding == null || currentQuantity < quantity)
+                {
+                    throw new InvalidOperationException("Insufficient asset quantity to execute this sell order.");
+                }
+
+                finalQuantity = currentQuantity - quantity;
+                finalAveragePrice = currentAveragePrice; // Purchase price remains unchanged when selling
             }
 
-            // 3. Execuția tranzacției
+            // 5. Execution - Pass pre-calculated final values to the Repository
             try
             {
-                await investmentRepository.RecordCryptoTradeAsync(
+                await this.investmentRepository.RecordCryptoTradeAsync(
                     portfolioIdentificationNumber,
                     ticker,
                     actionType,
                     quantity,
                     pricePerUnit,
-                    calculatedFee);
+                    calculatedFee,
+                    finalQuantity,
+                    finalAveragePrice);
 
                 return true;
-            }
-            catch (InvalidOperationException)
-            {
-                throw;
             }
             catch (Exception exception)
             {
@@ -92,10 +103,14 @@
 
         public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            return investmentRepository.GetPortfolio(userIdentificationNumber);
+            return this.investmentRepository.GetPortfolio(userIdentificationNumber);
         }
 
-        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioIdentificationNumber, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
+        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
+            int portfolioIdentificationNumber,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? ticker = null)
         {
             if (portfolioIdentificationNumber <= 0)
             {
@@ -107,13 +122,30 @@
                 throw new ArgumentException("Start date cannot be after the end date.");
             }
 
-            try
+            return await this.investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
+        }
+
+        private void ValidateTradeInputs(string ticker, decimal quantity, decimal price, string action)
+        {
+            if (string.IsNullOrWhiteSpace(ticker))
             {
-                return await investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
+                throw new ArgumentException("Ticker symbol cannot be empty.", nameof(ticker));
             }
-            catch (Exception exception)
+
+            if (quantity <= 0)
             {
-                throw new Exception($"Failed to retrieve investment logs: {exception.Message}", exception);
+                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
+            }
+
+            if (price <= 0)
+            {
+                throw new ArgumentException("Price per unit must be greater than zero.", nameof(price));
+            }
+
+            if (!action.Equals("BUY", StringComparison.OrdinalIgnoreCase) &&
+                !action.Equals("SELL", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Action type must be either 'BUY' or 'SELL'.", nameof(action));
             }
         }
     }

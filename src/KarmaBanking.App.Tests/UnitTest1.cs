@@ -1,4 +1,6 @@
-﻿namespace KarmaBanking.App.Tests
+﻿using Xunit;
+
+namespace KarmaBanking.App.Tests
 {
     public class UnitTest1
     {

@@ -15,7 +15,9 @@
             string actionType,
             decimal quantity,
             decimal pricePerUnit,
-            decimal fees);
+            decimal fees,
+            decimal finalQuantity,
+            decimal finalAveragePrice);
 
         Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
             int portfolioIdentificationNumber,
