@@ -35,5 +35,5 @@ public class LoanApplicationRequest
     /// <summary>
     /// Gets or sets the reason for applying.
     /// </summary>
-    public string Purpose { get; set; }
+    public required string Purpose { get; set; }
 }
