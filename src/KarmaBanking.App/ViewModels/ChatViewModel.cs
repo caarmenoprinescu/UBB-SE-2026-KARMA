@@ -10,12 +10,15 @@
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
+    using Windows.Storage;
 
     public class ChatViewModel : INotifyPropertyChanged
     {
         public static ChatViewModel Instance { get; } = new ChatViewModel();
 
         private readonly ApiService apiService = new MockApiService();
+        private readonly FileValidationService fileValidationService = new();
+        private readonly DialogService dialogService = new();
         private ObservableCollection<ChatSession> chatSessions = [];
         private ObservableCollection<ChatMessage> chatMessages = [];
         private ObservableCollection<string> presetQuestions = [];
@@ -299,6 +302,150 @@
                 .ToList();
 
             return string.Join(Environment.NewLine, lines);
+        }
+
+        /// <summary>
+        /// Processes a selected file for attachment, validating it before adding to the session.
+        /// </summary>
+        public async Task ProcessAttachmentAsync(StorageFile file)
+        {
+            try
+            {
+                // Validate file
+                var (isValid, errorMessage) = await fileValidationService.ValidateFileAsync(file);
+
+                if (!isValid)
+                {
+                    StatusMessage = errorMessage;
+                    SetUploadFailed(errorMessage);
+                    return;
+                }
+
+                // Map file to attachment model
+                SelectedAttachment = await fileValidationService.MapStorageFileToAttachmentAsync(file);
+
+                StatusMessage = "Attachment selected successfully.";
+                SetAttachmentSelected();
+                SetUploadStarted();
+                await Task.Delay(1000);
+                SetUploadSucceeded();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Attachment processing failed: {ex.Message}";
+                SetUploadFailed(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Shows a feedback dialog for rating the chat experience.
+        /// </summary>
+        public async Task ShowFeedbackDialogAsync(Microsoft.UI.Xaml.XamlRoot xamlRoot)
+        {
+            if (CurrentSession == null)
+            {
+                return;
+            }
+
+            try
+            {
+                // Create dialog content dynamically
+                var dialogContent = new Microsoft.UI.Xaml.Controls.StackPanel { Spacing = 12 };
+
+                var titleText = new Microsoft.UI.Xaml.Controls.TextBlock
+                {
+                    Text = "Rate your experience",
+                    FontSize = 18,
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                };
+
+                var ratingLabel = new Microsoft.UI.Xaml.Controls.TextBlock { Text = "Please select a rating:" };
+                var starsPanel = new Microsoft.UI.Xaml.Controls.StackPanel 
+                { 
+                    Orientation = Microsoft.UI.Xaml.Controls.Orientation.Horizontal, 
+                    Spacing = 8 
+                };
+                var selectedRatingText = new Microsoft.UI.Xaml.Controls.TextBlock { Text = "No rating selected." };
+                int selectedRating = 0;
+
+                for (int i = 1; i <= 5; i++)
+                {
+                    int ratingValue = i;
+                    var starButton = new Microsoft.UI.Xaml.Controls.Button 
+                    { 
+                        Content = $"⭐{ratingValue}", 
+                        Tag = ratingValue 
+                    };
+                    starButton.Click += (s, args) =>
+                    {
+                        selectedRating = ratingValue;
+                        selectedRatingText.Text = $"Selected rating: {ratingValue} ⭐";
+                    };
+                    starsPanel.Children.Add(starButton);
+                }
+
+                var feedbackTextBox = new Microsoft.UI.Xaml.Controls.TextBox
+                {
+                    PlaceholderText = "Write your feedback here...",
+                    AcceptsReturn = true,
+                    TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                    Height = 100,
+                };
+
+                dialogContent.Children.Add(titleText);
+                dialogContent.Children.Add(ratingLabel);
+                dialogContent.Children.Add(starsPanel);
+                dialogContent.Children.Add(selectedRatingText);
+                dialogContent.Children.Add(new Microsoft.UI.Xaml.Controls.TextBlock { Text = "Leave feedback (optional):" });
+                dialogContent.Children.Add(feedbackTextBox);
+
+                var ratingDialog = new Microsoft.UI.Xaml.Controls.ContentDialog
+                {
+                    Title = "Post-Chat Rating",
+                    PrimaryButtonText = "Submit",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = Microsoft.UI.Xaml.Controls.ContentDialogButton.Primary,
+                    Content = dialogContent,
+                    XamlRoot = xamlRoot,
+                };
+
+                var result = await ratingDialog.ShowAsync();
+
+                if (result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary)
+                {
+                    if (selectedRating == 0)
+                    {
+                        StatusMessage = "Please select a rating before submitting.";
+                        return;
+                    }
+
+                    // Submit feedback through API
+                    int sessionIdentificationNumber = CurrentSession?.IdentificationNumber ?? 1;
+                    string feedback = feedbackTextBox.Text;
+
+                    await SubmitFeedbackAsync(sessionIdentificationNumber, selectedRating, feedback);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Feedback dialog failed: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Submits feedback to the API.
+        /// </summary>
+        private async Task SubmitFeedbackAsync(int sessionId, int rating, string feedback)
+        {
+            try
+            {
+                apiService.SubmitFeedback(sessionId, rating, feedback);
+                StatusMessage = $"Thank you! Rating submitted: {rating} ⭐";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Feedback submission failed: {ex.Message}";
+            }
         }
 
         public void EnsureSession()

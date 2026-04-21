@@ -1,10 +1,12 @@
 namespace KarmaBanking.App.ViewModels
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories;
     using KarmaBanking.App.Repositories.Interfaces;
     using KarmaBanking.App.Services;
     using KarmaBanking.App.Services.Interfaces; // Ensure this is present
@@ -16,19 +18,55 @@ namespace KarmaBanking.App.ViewModels
         private readonly IInvestmentRepository investmentRepository;
         private readonly IMarketDataService marketDataService; // Changed to Interface
         private readonly DispatcherQueue? dispatcherQueue;
+        private readonly InvestmentFilteringService filteringService;
 
         private Portfolio userPortfolio;
         private bool isPortfolioLoading;
+        private string activeFilterType = "All";
+        private ObservableCollection<InvestmentHolding> displayedHoldings;
 
         public InvestmentsViewModel(IInvestmentRepository investmentRepository)
         {
             this.investmentRepository = investmentRepository;
             marketDataService = new MarketDataService();
+            filteringService = new InvestmentFilteringService();
             dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // Corrected: RegisterPriceUpdateHandler
             marketDataService.RegisterPriceUpdateHandler(RefreshHoldingPrices);
             userPortfolio = new Portfolio();
+            displayedHoldings = [];
+        }
+
+        public InvestmentsViewModel()
+            : this(new InvestmentRepository())
+        {
+        }
+
+        public string ActiveFilterType
+        {
+            get => activeFilterType;
+            set
+            {
+                if (activeFilterType == value)
+                {
+                    return;
+                }
+
+                activeFilterType = value;
+                RefreshDisplayedHoldings();
+                OnPropertyChanged();
+            }
+        }
+
+        public ObservableCollection<InvestmentHolding> DisplayedHoldings
+        {
+            get => displayedHoldings;
+            private set
+            {
+                displayedHoldings = value;
+                OnPropertyChanged();
+            }
         }
 
         public Portfolio UserPortfolio
@@ -58,6 +96,7 @@ namespace KarmaBanking.App.ViewModels
             try
             {
                 UserPortfolio = investmentRepository.GetPortfolio(1);
+                RefreshDisplayedHoldings();
 
                 // Corrected: StartPolling
                 marketDataService.StartPolling(UserPortfolio.Holdings.Select(holding => holding.Ticker).ToList());
@@ -104,8 +143,25 @@ namespace KarmaBanking.App.ViewModels
             decimal totalCost = UserPortfolio.Holdings.Sum(holding => holding.AveragePurchasePrice * holding.Quantity);
             UserPortfolio.GainLossPercent = totalCost > 0 ? (UserPortfolio.TotalGainLoss / totalCost) * 100 : 0;
 
+            RefreshDisplayedHoldings();
             OnPropertyChanged(nameof(UserPortfolio));
             OnPropertyChanged(RefreshPricesEventName);
+        }
+
+        public void ApplyFilter(string? filterType)
+        {
+            ActiveFilterType = string.IsNullOrWhiteSpace(filterType) ? "All" : filterType;
+        }
+
+        private void RefreshDisplayedHoldings()
+        {
+            DisplayedHoldings.Clear();
+            var holdings = UserPortfolio?.Holdings ?? Enumerable.Empty<InvestmentHolding>();
+            var filteredHoldings = filteringService.FilterHoldingsByAssetType(holdings, ActiveFilterType);
+            foreach (var holding in filteredHoldings)
+            {
+                DisplayedHoldings.Add(holding);
+            }
         }
 
         public void StopMarketDataPolling()

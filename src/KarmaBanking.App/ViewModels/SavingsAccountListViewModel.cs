@@ -1,4 +1,6 @@
 using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories;
+using KarmaBanking.App.Services;
 using KarmaBanking.App.Services.Interfaces;
 using Microsoft.UI.Xaml;
 using System;
@@ -25,6 +27,11 @@ namespace KarmaBanking.App.ViewModels
         {
             this.savingsService = savingsService;
             SavingsAccounts = new ObservableCollection<SavingsAccount>();
+        }
+
+        public SavingsAccountListViewModel()
+            : this(new SavingsService(new SavingsRepository()))
+        {
         }
 
         public ObservableCollection<SavingsAccount> SavingsAccounts { get; }
@@ -128,6 +135,22 @@ namespace KarmaBanking.App.ViewModels
             {
                 LoadErrorMessage = exception.Message;
             }
+        }
+
+        public async Task<(bool Success, string ErrorMessage)> TryDepositAsync(int accountId, string amountText)
+        {
+            if (!decimal.TryParse(amountText, out decimal amount) || amount <= 0)
+            {
+                return (false, "Please enter a valid positive number.");
+            }
+
+            await DepositAsync(accountId, amount);
+            if (!string.IsNullOrWhiteSpace(LoadErrorMessage))
+            {
+                return (false, LoadErrorMessage);
+            }
+
+            return (true, string.Empty);
         }
 
         public async Task ProcessSchedulesAsync()
