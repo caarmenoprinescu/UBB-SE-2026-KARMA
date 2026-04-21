@@ -1,4 +1,8 @@
-﻿using System;
+﻿// <copyright file="FilterMatchToBooleanConverter.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+using System;
 using Microsoft.UI.Xaml.Data;
 
 namespace KarmaBanking.App.Utils;

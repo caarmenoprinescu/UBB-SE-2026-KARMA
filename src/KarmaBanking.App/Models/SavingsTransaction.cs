@@ -1,5 +1,5 @@
-// <copyright file="SavingsTransaction.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="SavingsTransaction.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
 // </copyright>
 
 using System;

@@ -1,3 +1,7 @@
+// <copyright file="WithdrawResponseDto.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Models.DTOs;
 
 using System;

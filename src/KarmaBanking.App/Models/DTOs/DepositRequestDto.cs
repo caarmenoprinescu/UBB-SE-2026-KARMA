@@ -1,3 +1,7 @@
+// <copyright file="DepositRequestDto.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Models.DTOs;
 
 public class DepositRequestDto

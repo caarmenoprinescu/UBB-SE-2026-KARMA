@@ -1,3 +1,7 @@
+// <copyright file="LoanApplicationDialog.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Views.Dialogs;
 
 using KarmaBanking.App.ViewModels;

@@ -1,5 +1,5 @@
-// <copyright file="SavingsType.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="SavingsType.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
 // </copyright>
 
 namespace KarmaBanking.App.Models.Enums;
@@ -32,5 +32,5 @@ public enum SavingsType
     ///     Represents a high-yield savings account type that offers a higher APY compared to standard savings accounts,
     ///     usually with certain conditions or requirements.
     /// </summary>
-    HighYield
+    HighYield,
 }

@@ -1,4 +1,8 @@
-﻿//using KarmaBanking.App.Repositories;
+﻿// <copyright file="InterestService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+//using KarmaBanking.App.Repositories;
 //using KarmaBanking.App.Repositories.Interfaces;
 //using System;
 //using System.Linq;

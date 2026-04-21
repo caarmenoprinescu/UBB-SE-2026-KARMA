@@ -1,3 +1,7 @@
+// <copyright file="AutoDeposit.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.Models;
 
 using System;

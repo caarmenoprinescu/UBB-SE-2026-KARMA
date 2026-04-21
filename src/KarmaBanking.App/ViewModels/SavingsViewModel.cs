@@ -1,3 +1,7 @@
+// <copyright file="SavingsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 namespace KarmaBanking.App.ViewModels;
 
 using System;

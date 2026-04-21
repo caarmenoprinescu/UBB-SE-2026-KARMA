@@ -1,3 +1,7 @@
+// <copyright file="DecimalToTrendSymbolConverter.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System;
 using Microsoft.UI.Xaml.Data;
 

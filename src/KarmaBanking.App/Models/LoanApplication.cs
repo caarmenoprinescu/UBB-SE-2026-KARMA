@@ -1,4 +1,8 @@
-﻿public class LoanApplication
+﻿// <copyright file="LoanApplication.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+public class LoanApplication
 {
     public int Id { get; set; }
 

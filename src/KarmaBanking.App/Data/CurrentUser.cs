@@ -1,4 +1,8 @@
-﻿public static class CurrentUser
+﻿// <copyright file="CurrentUser.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+public static class CurrentUser
 {
     public static int Id { get; set; } = 1;
 

@@ -1,4 +1,8 @@
-﻿using System;
+﻿// <copyright file="LoanApplicationValidator.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+using System;
 
 public class LoanApplicationValidator
 {

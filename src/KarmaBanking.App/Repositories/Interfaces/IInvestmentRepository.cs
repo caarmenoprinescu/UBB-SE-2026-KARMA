@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Repositories.Interfaces;
+﻿// <copyright file="IInvestmentRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Repositories.Interfaces;
 
 using System;
 using System.Collections.Generic;

@@ -1,3 +1,7 @@
+// <copyright file="LoanRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.Generic;
 using System.Data;

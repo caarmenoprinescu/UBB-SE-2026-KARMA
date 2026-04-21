@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Repositories;
+﻿// <copyright file="ChatRepository.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Repositories;
 
 using System.Collections.Generic;
 using System.Threading.Tasks;

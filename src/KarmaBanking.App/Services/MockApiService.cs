@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Services;
+﻿// <copyright file="MockApiService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services;
 
 using System;
 using System.Collections.Generic;

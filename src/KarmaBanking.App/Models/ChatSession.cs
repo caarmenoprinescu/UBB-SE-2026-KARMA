@@ -1,4 +1,8 @@
-﻿namespace KarmaBanking.App.Models;
+﻿// <copyright file="ChatSession.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Models;
 
 using System;
 using System.Collections.ObjectModel;
