@@ -140,6 +140,42 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
 		<CodeAnalysisRuleSet>SE.ruleset</CodeAnalysisRuleSet>
+		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+	  <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+	  <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+	  <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+	  <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+
+
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+	  <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 </Project>
