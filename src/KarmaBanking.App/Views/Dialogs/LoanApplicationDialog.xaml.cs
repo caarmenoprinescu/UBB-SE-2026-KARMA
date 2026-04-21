@@ -5,33 +5,24 @@ namespace KarmaBanking.App.Views.Dialogs
 {
     public sealed partial class LoanApplicationDialog : ContentDialog
     {
-
         private readonly LoansViewModel _viewModel;
-        private bool _isReviewStage = false;
 
         public LoanApplicationDialog(LoansViewModel viewModel)
         {
             InitializeComponent();
             _viewModel = viewModel;
             DataContext = viewModel;
-
-
         }
 
         private async void OnSubmitClicked(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             var deferral = args.GetDeferral();
-            if (!_isReviewStage)
+            if (!_viewModel.IsReviewVisible)
             {
                 args.Cancel = true;
-
-                FormPanel.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-                ReviewPanel.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-
-                sender.Title = "Application Review"
-;
-                sender.PrimaryButtonText = "Submit";
-                _isReviewStage = true;
+                _viewModel.SwitchToReviewStage();
+                sender.Title = _viewModel.DialogTitle;
+                sender.PrimaryButtonText = _viewModel.DialogActionText;
             }
             else
             {
@@ -40,16 +31,14 @@ namespace KarmaBanking.App.Views.Dialogs
                 if (!string.IsNullOrEmpty(_viewModel.ApplicationResult))
                 {
                     ResultBar.Message = _viewModel.ApplicationResult;
-                    ResultBar.Severity = _viewModel.ApplicationResult.Contains("approved")
+                    ResultBar.Severity = _viewModel.ApplicationWasApproved
                         ? InfoBarSeverity.Success
                         : InfoBarSeverity.Error;
                     ResultBar.IsOpen = true;
                     args.Cancel = true;
-
                 }
             }
             deferral.Complete();
-
         }
     }
 }

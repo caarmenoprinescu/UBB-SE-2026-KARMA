@@ -37,7 +37,11 @@ public partial class LoansViewModel : ObservableObject
     [ObservableProperty] private int preferredTermMonths;
     [ObservableProperty] private string purpose = string.Empty;
     [ObservableProperty] private LoanEstimate currentEstimate;
-    [ObservableProperty] private string applicationResult = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ApplicationWasApproved))]
+    private string applicationResult = string.Empty;
+
+    public bool ApplicationWasApproved => ApplicationResult.Contains("approved", StringComparison.OrdinalIgnoreCase);
     [ObservableProperty] private LoanViewModel selectedLoan;
     [ObservableProperty] private double? customAmount;
 
@@ -53,6 +57,12 @@ public partial class LoansViewModel : ObservableObject
     [ObservableProperty] private bool isFormVisible = true;
     [ObservableProperty] private bool isReviewVisible = false;
     [ObservableProperty] private bool isEstimateVisible = false;
+
+    // --- Payment preview properties ---
+    [ObservableProperty] private decimal paymentPreviewBalance = 0m;
+    [ObservableProperty] private int paymentPreviewRemainingMonths = 0;
+    
+    private readonly PaymentCalculationService _paymentCalculationService = new();
 
     public IEnumerable<LoanViewModel> FilteredLoans =>
         loans.Where(l =>
@@ -171,6 +181,83 @@ public partial class LoansViewModel : ObservableObject
         {
             IsLoading = false;
         }
+    }
+
+    /// <summary>
+    /// Updates the payment preview (balance and remaining term) based on selected payment method.
+    /// </summary>
+    public void UpdatePaymentPreview(bool isStandardPayment, string customAmountText = "")
+    {
+        if (SelectedLoan == null)
+        {
+            PaymentPreviewBalance = 0m;
+            PaymentPreviewRemainingMonths = 0;
+            return;
+        }
+
+        Loan loan = SelectedLoan.Loan;
+        decimal customAmount = 0m;
+
+        if (!isStandardPayment && !string.IsNullOrWhiteSpace(customAmountText))
+        {
+            var (success, amount) = _paymentCalculationService.ParsePaymentAmount(customAmountText);
+            if (!success)
+            {
+                customAmount = 0m;
+            }
+            else
+            {
+                customAmount = amount;
+            }
+        }
+
+        var (balance, months) = _paymentCalculationService.CalculatePaymentPreview(
+            loan.MonthlyInstallment,
+            loan.OutstandingBalance,
+            loan.RemainingMonths,
+            isStandardPayment,
+            customAmount
+        );
+
+        PaymentPreviewBalance = balance;
+        PaymentPreviewRemainingMonths = months;
+    }
+
+    public void SelectStandardPayment()
+    {
+        CustomAmount = null;
+        UpdatePaymentPreview(isStandardPayment: true);
+    }
+
+    public string SelectCustomPayment()
+    {
+        if (SelectedLoan == null)
+        {
+            CustomAmount = null;
+            UpdatePaymentPreview(isStandardPayment: false, string.Empty);
+            return string.Empty;
+        }
+
+        if (!CustomAmount.HasValue)
+        {
+            CustomAmount = (double)SelectedLoan.Loan.MonthlyInstallment;
+        }
+
+        if (CustomAmount > (double)SelectedLoan.Loan.OutstandingBalance)
+        {
+            CustomAmount = (double)SelectedLoan.Loan.OutstandingBalance;
+        }
+
+        string currentText = CustomAmount?.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
+        UpdatePaymentPreview(isStandardPayment: false, currentText);
+        return currentText;
+    }
+
+    public void UpdateCustomPayment(string customAmountText)
+    {
+        var (success, amount) = _paymentCalculationService.ParsePaymentAmount(customAmountText);
+        CustomAmount = success ? (double)amount : null;
+        UpdatePaymentPreview(isStandardPayment: false, customAmountText);
     }
 
     public async Task LoadAmortizationAsync()

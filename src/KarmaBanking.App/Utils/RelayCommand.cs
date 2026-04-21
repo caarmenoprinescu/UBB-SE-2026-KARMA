@@ -43,4 +43,53 @@ namespace KarmaBanking.App.Utils
             CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    public class RelayCommand<T> : ICommand
+    {
+        private readonly Action<T?> execute;
+        private readonly Func<T?, bool>? canExecute;
+
+        public RelayCommand(Action<T?> execute, Func<T?, bool>? canExecute = null)
+        {
+            this.execute = execute;
+            this.canExecute = canExecute;
+        }
+
+        public event EventHandler? CanExecuteChanged;
+
+        public bool CanExecute(object? parameter)
+        {
+            if (canExecute == null)
+            {
+                return true;
+            }
+
+            return canExecute(ConvertParameter(parameter));
+        }
+
+        public void Execute(object? parameter)
+        {
+            execute(ConvertParameter(parameter));
+        }
+
+        public void RaiseCanExecuteChanged()
+        {
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static T? ConvertParameter(object? parameter)
+        {
+            if (parameter == null)
+            {
+                return default;
+            }
+
+            if (parameter is T value)
+            {
+                return value;
+            }
+
+            return (T?)Convert.ChangeType(parameter, typeof(T));
+        }
+    }
 }

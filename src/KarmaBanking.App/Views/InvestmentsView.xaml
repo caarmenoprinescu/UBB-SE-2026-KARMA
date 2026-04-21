@@ -11,6 +11,7 @@
 
     <Page.Resources>
         <utils:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <utils:FilterMatchToBooleanConverter x:Key="FilterMatchToBooleanConverter" />
         <utils:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
         <utils:DecimalToGainLossBrushConverter x:Key="GainLossBrushConverter" />
         <utils:DecimalToPercentConverter x:Key="DecimalToPercentConverter" />
@@ -54,12 +55,12 @@
                         <!-- Filters -->
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <ToggleButton x:Name="AllFilterButton" Content="All" Tag="All" IsChecked="True" Click="OnFilterClicked" />
-                                <ToggleButton x:Name="StocksFilterButton" Content="Stocks" Tag="Stocks" Click="OnFilterClicked" />
-                                <ToggleButton x:Name="EtfsFilterButton" Content="ETFs" Tag="ETFs" Click="OnFilterClicked" />
-                                <ToggleButton x:Name="BondsFilterButton" Content="Bonds" Tag="Bonds" Click="OnFilterClicked" />
-                                <ToggleButton x:Name="CryptoFilterButton" Content="Crypto" Tag="Crypto" Click="OnFilterClicked" />
-                                <ToggleButton x:Name="OtherFilterButton" Content="Other" Tag="Other" Click="OnFilterClicked" />
+                                <ToggleButton Content="All" Command="{Binding SelectFilterCommand}" CommandParameter="All" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=All}" />
+                                <ToggleButton Content="Stocks" Command="{Binding SelectFilterCommand}" CommandParameter="Stocks" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=Stocks}" />
+                                <ToggleButton Content="ETFs" Command="{Binding SelectFilterCommand}" CommandParameter="ETFs" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=ETFs}" />
+                                <ToggleButton Content="Bonds" Command="{Binding SelectFilterCommand}" CommandParameter="Bonds" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=Bonds}" />
+                                <ToggleButton Content="Crypto" Command="{Binding SelectFilterCommand}" CommandParameter="Crypto" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=Crypto}" />
+                                <ToggleButton Content="Other" Command="{Binding SelectFilterCommand}" CommandParameter="Other" IsChecked="{Binding ActiveFilterType, Converter={StaticResource FilterMatchToBooleanConverter}, ConverterParameter=Other}" />
                             </StackPanel>
                         </ScrollViewer>
 
@@ -80,7 +81,7 @@
                         </Grid>
 
                         <!-- Holdings List -->
-                        <ListView x:Name="HoldingsListView" SelectionMode="None" Background="Transparent" BorderThickness="0">
+                        <ListView x:Name="HoldingsListView" ItemsSource="{Binding DisplayedHoldings}" Visibility="{Binding IsHoldingsVisible, Converter={StaticResource BoolToVisibility}}" SelectionMode="None" Background="Transparent" BorderThickness="0">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="18,20" Margin="0,0,0,12" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="10">
@@ -113,7 +114,7 @@
                             </ListView.ItemTemplate>
                         </ListView>
 
-                        <TextBlock x:Name="EmptyStateTextBlock" Text="No holdings found" HorizontalAlignment="Center" FontSize="15" Opacity="0.72" Visibility="Collapsed" />
+                        <TextBlock x:Name="EmptyStateTextBlock" Text="No holdings found" HorizontalAlignment="Center" FontSize="15" Opacity="0.72" Visibility="{Binding IsEmptyStateVisible, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

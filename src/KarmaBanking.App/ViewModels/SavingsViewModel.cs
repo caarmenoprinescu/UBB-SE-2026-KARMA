@@ -24,7 +24,7 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsEmpty))]
         [NotifyPropertyChangedFor(nameof(ShowAccountsList))]
-        private ObservableCollection<SavingsAccount> savingsAccounts = [];
+        private ObservableCollection<SavingsAccount> savingsAccounts = new();
 
         [ObservableProperty] private string totalSavedAmount = "$0.00";
         [ObservableProperty] private string numberOfAccountsText = "across 0 accounts";
@@ -37,6 +37,8 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
         [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
         private SavingsAccount? selectedAccount;
 
@@ -47,6 +49,7 @@ namespace KarmaBanking.App.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsGoalSavings))]
+        [NotifyPropertyChangedFor(nameof(IsFixedDeposit))]
         private string selectedSavingsType = string.Empty;
 
         [ObservableProperty] private string accountName = string.Empty;
@@ -55,11 +58,12 @@ namespace KarmaBanking.App.ViewModels
         [ObservableProperty] private decimal? targetAmount;
         [ObservableProperty] private DateTimeOffset? targetDate;
         [ObservableProperty] private bool showCreateConfirmation;
-        [ObservableProperty] private ObservableCollection<FundingSourceOption> fundingSources = [];
+        [ObservableProperty] private ObservableCollection<FundingSourceOption> fundingSources = new();
         [ObservableProperty] private string selectedFrequency = string.Empty;
 
         public bool IsGoalSavings => SelectedSavingsType == "GoalSavings";
-        public Dictionary<string, string> FieldErrors { get; } = [];
+        public bool IsFixedDeposit => SelectedSavingsType == "FixedDeposit";
+        public Dictionary<string, string> FieldErrors { get; } = new();
 
         // ── Deposit ──────────────────────────────────────────────────────────
 
@@ -80,10 +84,7 @@ namespace KarmaBanking.App.ViewModels
                 if (decimal.TryParse(DepositAmountText, NumberStyles.Any,
                         CultureInfo.InvariantCulture, out decimal amount)
                     && amount > 0 && SelectedAccount != null)
-                {
                     return $"New balance will be: ${(SelectedAccount.Balance + amount):N2}";
-                }
-
                 return string.Empty;
             }
         }
@@ -93,6 +94,8 @@ namespace KarmaBanking.App.ViewModels
         [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
         [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
         [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+        [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+        [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
         private string withdrawAmountText = string.Empty;
 
         [ObservableProperty] private FundingSourceOption? withdrawDestination;
@@ -105,16 +108,8 @@ namespace KarmaBanking.App.ViewModels
         {
             get
             {
-                if (!WithdrawHasEarlyRisk)
-                {
-                    return 0;
-                }
-
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0)
-                {
-                    return 0;
-                }
-
+                if (!WithdrawHasEarlyRisk) return 0;
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0) return 0;
                 return savingsService.ComputeWithdrawalPenalty(withdrawAmount);
             }
         }
@@ -123,16 +118,17 @@ namespace KarmaBanking.App.ViewModels
         {
             get
             {
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0)
-                {
-                    return 0;
-                }
-
+                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal withdrawAmount) || withdrawAmount <= 0) return 0;
                 return withdrawAmount - WithdrawEstimatedPenalty;
             }
         }
 
         public bool WithdrawHasPenalty => WithdrawEstimatedPenalty > 0;
+
+        public string WithdrawPenaltyBreakdownText =>
+            $"Penalty ({savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P0}): -${WithdrawEstimatedPenalty:N2}";
+
+        public string WithdrawNetAmountText => $"Net amount received: ${WithdrawNetAmount:N2}";
 
         public string WithdrawPenaltySummary =>
             WithdrawHasEarlyRisk ? $"Early withdrawal penalty: {savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P2} of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
@@ -246,10 +242,7 @@ namespace KarmaBanking.App.ViewModels
             {
                 var accountsList = await savingsService.GetAccountsAsync(CurrentUserId);
                 SavingsAccounts.Clear();
-                foreach (var account in accountsList)
-                {
-                    SavingsAccounts.Add(account);
-                }
+                foreach (var account in accountsList) SavingsAccounts.Add(account);
 
                 OnPropertyChanged(nameof(IsEmpty));
                 OnPropertyChanged(nameof(ShowAccountsList));
@@ -280,7 +273,7 @@ namespace KarmaBanking.App.ViewModels
         }
 
         // ── Close Account Panel ──────────────────────────────────────────────
-        [ObservableProperty] private ObservableCollection<SavingsAccount> closeDestinationAccounts = [];
+        [ObservableProperty] private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
 
         private int selectedCloseDestinationId;
         public int SelectedCloseDestinationId
@@ -312,15 +305,9 @@ namespace KarmaBanking.App.ViewModels
             var openAccountsList = await savingsService.GetValidTransferDestinationsAsync(SelectedAccount!.Id);
             CloseDestinationAccounts.Clear();
             foreach (var account in openAccountsList)
-            {
                 CloseDestinationAccounts.Add(account);
-            }
-
             if (CloseDestinationAccounts.Count > 0)
-            {
                 SelectedCloseDestinationId = CloseDestinationAccounts[0].Id;
-            }
-
             OnPropertyChanged(nameof(CloseHasPenalty));
         }
 
@@ -334,11 +321,7 @@ namespace KarmaBanking.App.ViewModels
                 var result = await savingsService.CloseAccountAsync(SelectedAccount!.Id, SelectedCloseDestinationId, CurrentUserId);
                 CloseSuccess = result.Success;
                 CloseResultMessage = result.Success ? "Account closed successfully." : result.Message;
-                if (result.Success)
-                {
-                    await LoadAccountsAsync();
-                }
-
+                if (result.Success) await LoadAccountsAsync();
                 return result.Success;
             }
             catch (Exception exception) { CloseResultMessage = exception.Message; return false; }
@@ -353,17 +336,32 @@ namespace KarmaBanking.App.ViewModels
             {
                 var fundingSourcesList = await savingsService.GetFundingSourcesAsync(CurrentUserId);
                 FundingSources.Clear();
-                foreach (var fundingSource in fundingSourcesList)
-                {
-                    FundingSources.Add(fundingSource);
-                }
-
-                if (FundingSources.Count > 0)
-                {
-                    SelectedFundingSource = FundingSources[0];
-                }
+                foreach (var fundingSource in fundingSourcesList) FundingSources.Add(fundingSource);
+                if (FundingSources.Count > 0) SelectedFundingSource = FundingSources[0];
             }
             catch (Exception exception) { ErrorMessage = exception.Message; }
+        }
+
+        public void PrepareCreateAccountSubmission(
+            string accountName,
+            string initialDepositText,
+            FundingSourceOption? fundingSource,
+            string targetAmountText,
+            DateTimeOffset? targetDate,
+            DateTimeOffset? maturityDate)
+        {
+            AccountName = accountName;
+            InitialDepositText = initialDepositText;
+            SelectedFundingSource = fundingSource;
+
+            if (IsGoalSavings
+                && decimal.TryParse(targetAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsedTargetAmount))
+            {
+                TargetAmount = parsedTargetAmount;
+            }
+
+            TargetDate = IsGoalSavings ? targetDate : null;
+            MaturityDate = SelectedSavingsType == "FixedDeposit" ? maturityDate : null;
         }
 
         [RelayCommand]
@@ -374,53 +372,28 @@ namespace KarmaBanking.App.ViewModels
             ShowCreateConfirmation = false;
 
             if (string.IsNullOrWhiteSpace(SelectedSavingsType))
-            {
                 FieldErrors["SavingsType"] = "Please select an account type.";
-            }
-
             if (string.IsNullOrWhiteSpace(AccountName))
-            {
                 FieldErrors["AccountName"] = "Account name is required.";
-            }
-
             if (!decimal.TryParse(InitialDepositText, NumberStyles.Any,
                     CultureInfo.InvariantCulture, out decimal deposit) || deposit <= 0)
-            {
                 FieldErrors["InitialDeposit"] = "Initial deposit must be a positive number.";
-            }
-
             if (SelectedFundingSource == null)
-            {
                 FieldErrors["FundingSource"] = "Please select a funding source.";
-            }
-
             if (string.IsNullOrWhiteSpace(SelectedFrequency))
-            {
                 FieldErrors["Frequency"] = "Please select a deposit frequency.";
-            }
-
             if (IsGoalSavings)
             {
                 if (!TargetAmount.HasValue || TargetAmount.Value <= 0)
-                {
                     FieldErrors["TargetAmount"] = "Target amount is required.";
-                }
-
                 if (!TargetDate.HasValue)
-                {
                     FieldErrors["TargetDate"] = "Target date is required.";
-                }
                 else if (TargetDate.Value.Date <= DateTime.Today)
-                {
                     FieldErrors["TargetDate"] = "Target date must be in the future.";
-                }
             }
 
             OnPropertyChanged(nameof(FieldErrors));
-            if (FieldErrors.Count > 0)
-            {
-                return;
-            }
+            if (FieldErrors.Count > 0) return;
 
             IsLoading = true;
             try
@@ -495,7 +468,7 @@ namespace KarmaBanking.App.ViewModels
         public void CancelDeposit() => depositCancelationTokenSource?.Cancel();
 
         [ObservableProperty]
-        private ObservableCollection<SavingsTransaction> transactions = [];
+        private ObservableCollection<SavingsTransaction> transactions = new();
 
         [ObservableProperty]
         private int currentPage = 1;
@@ -519,9 +492,7 @@ namespace KarmaBanking.App.ViewModels
                 transactions.Clear();
 
                 foreach (var tx in result.Items)
-                {
                     transactions.Add(tx);
-                }
 
                 totalPages = (int)Math.Ceiling((double)result.TotalCount / 10);
             }
@@ -532,10 +503,7 @@ namespace KarmaBanking.App.ViewModels
         }
         public async Task NextPage(int accountId)
         {
-            if (currentPage >= totalPages)
-            {
-                return;
-            }
+            if (currentPage >= totalPages) return;
 
             currentPage++;
             await LoadTransactionsAsync(accountId);
@@ -543,10 +511,7 @@ namespace KarmaBanking.App.ViewModels
 
         public async Task PreviousPage(int accountId)
         {
-            if (currentPage <= 1)
-            {
-                return;
-            }
+            if (currentPage <= 1) return;
 
             currentPage--;
             await LoadTransactionsAsync(accountId);

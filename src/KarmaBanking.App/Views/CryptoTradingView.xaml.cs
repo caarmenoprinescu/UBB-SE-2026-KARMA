@@ -11,8 +11,7 @@
         public CryptoTradingView()
         {
             InitializeComponent();
-
-            // Dependency Injection manual pentru conformitate cu cerinta de separare a straturilor
+            
             var investmentRepository = new InvestmentRepository();
             var investmentService = new InvestmentService(investmentRepository);
 

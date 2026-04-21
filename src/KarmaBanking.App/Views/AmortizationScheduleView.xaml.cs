@@ -43,9 +43,9 @@ namespace KarmaBanking.App.Views
             LoanSubHeaderText.Text =
                 $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
 
-            int paid = loan.TermInMonths - loan.RemainingMonths;
+            LoanViewModel loanViewModel = new LoanViewModel(loan);
             TotalInstallmentsText.Text = loan.TermInMonths.ToString();
-            PaidInstallmentsText.Text = paid.ToString();
+            PaidInstallmentsText.Text = loanViewModel.PaidInstallments.ToString();
             RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
         }
 

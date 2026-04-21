@@ -237,7 +237,7 @@
 
                     <!-- Step 3: Goal Settings (conditional) -->
                     <StackPanel Grid.Row="3" x:Name="GoalSavingsPanel"
-                                Margin="0,0,0,20" Visibility="Collapsed">
+                                Margin="0,0,0,20" Visibility="{Binding IsGoalSavings, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock Text="STEP 3 — GOAL SETTINGS" FontSize="11" FontWeight="Bold"
                                    Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
                                    Margin="0,0,0,8"/>
@@ -258,7 +258,7 @@
 
                     <!-- Step 3: Fixed Deposit Settings -->
                     <StackPanel Grid.Row="3" x:Name="FixedDepositPanel"
-                                Margin="0,0,0,20" Visibility="Collapsed">
+                                Margin="0,0,0,20" Visibility="{Binding IsFixedDeposit, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock Text="STEP 3 — FIXED DEPOSIT SETTINGS"
                                    FontSize="11" FontWeight="Bold"
                                    Margin="0,0,0,8"/>
@@ -327,9 +327,10 @@
                             <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="DepositAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"
-                                     TextChanged="OnDepositAmountChanged"/>
+                                      Text="{Binding DepositAmountText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             <TextBlock x:Name="DepositLivePreview" FontSize="12"
-                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       Text="{Binding LivePreview}"/>
                         </StackPanel>
 
                         <StackPanel Spacing="4">
@@ -358,10 +359,10 @@
                         <!-- Early withdrawal penalty warning -->
                         <Border x:Name="WithdrawPenaltyWarning"
                                 Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                                CornerRadius="4" Padding="12,8" Visibility="Collapsed">
+                                CornerRadius="4" Padding="12,8" Visibility="{Binding WithdrawHasEarlyRisk, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="Early Withdrawal Warning" FontWeight="SemiBold" FontSize="13"/>
-                                <TextBlock x:Name="WithdrawPenaltySummaryText" FontSize="12" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="WithdrawPenaltySummaryText" FontSize="12" TextWrapping="Wrap" Text="{Binding WithdrawPenaltySummary}"/>
                             </StackPanel>
                         </Border>
 
@@ -369,14 +370,15 @@
                             <TextBlock Text="Amount ($)" FontSize="13"/>
                             <TextBox x:Name="WithdrawAmountTextBox"
                                      PlaceholderText="0.00" InputScope="Number"
-                                     TextChanged="OnWithdrawAmountChanged"/>
+                                      Text="{Binding WithdrawAmountText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
                         <!-- Penalty breakdown (shown only when applicable) -->
-                        <StackPanel x:Name="WithdrawPenaltyBreakdown" Spacing="2" Visibility="Collapsed">
+                        <StackPanel x:Name="WithdrawPenaltyBreakdown" Spacing="2" Visibility="{Binding WithdrawHasPenalty, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock x:Name="WithdrawPenaltyAmountText" FontSize="12"
-                                       Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
-                            <TextBlock x:Name="WithdrawNetAmountText" FontSize="12" FontWeight="SemiBold"/>
+                                       Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                       Text="{Binding WithdrawPenaltyBreakdownText}"/>
+                            <TextBlock x:Name="WithdrawNetAmountText" FontSize="12" FontWeight="SemiBold" Text="{Binding WithdrawNetAmountText}"/>
                         </StackPanel>
 
                         <StackPanel Spacing="4">
@@ -450,7 +452,7 @@
                         <!-- Early closure penalty warning -->
                         <Border x:Name="ClosePenaltyWarning"
                                 Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                                CornerRadius="4" Padding="12,8" Visibility="Collapsed">
+                                CornerRadius="4" Padding="12,8" Visibility="{Binding CloseHasPenalty, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="Early Closure Penalty" FontWeight="SemiBold" FontSize="13"/>
                                 <TextBlock Text="This is a Fixed Deposit account that has not yet reached maturity. An early closure penalty may apply."
