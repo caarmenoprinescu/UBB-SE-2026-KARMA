@@ -98,11 +98,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\CreateSavingsAccountView.xaml">
-	  <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
 	<Page Update="Views\InvestmentLogsView.xaml">
 	  <Generator>MSBuild:Compile</Generator>
 	</Page>
