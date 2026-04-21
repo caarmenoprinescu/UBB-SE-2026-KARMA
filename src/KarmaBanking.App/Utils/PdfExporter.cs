@@ -15,7 +15,7 @@ public class PdfExporter
 
     public byte[] exportAmortization(IEnumerable<AmortizationRow> rows)
     {
-        List<AmortizationRow> amortizationRows = rows?.ToList() ?? new List<AmortizationRow>();
+        List<AmortizationRow> amortizationRows = rows?.ToList() ?? [];
         List<string> pageContents = BuildAmortizationPages(amortizationRows);
 
         return BuildPdfDocument(pageContents);
@@ -28,7 +28,7 @@ public class PdfExporter
 
     private static List<string> BuildAmortizationPages(IReadOnlyList<AmortizationRow> rows)
     {
-        List<string> pages = new List<string>();
+        List<string> pages = [];
         StringBuilder currentPage = new StringBuilder();
 
         WriteTitle(currentPage, "Amortisation schedule", PageHeight - TopMargin);
@@ -102,7 +102,7 @@ public class PdfExporter
 
     private static byte[] BuildPdfDocument(IReadOnlyList<string> pageContents)
     {
-        List<byte[]> objects = new List<byte[]>();
+        List<byte[]> objects = [];
         int pageCount = pageContents.Count;
         int fontObjectId = 3 + pageCount * 2;
         StringBuilder pageReferences = new StringBuilder();
@@ -142,7 +142,7 @@ public class PdfExporter
         writer.Write("%PDF-1.4\n");
         writer.Flush();
 
-        List<long> offsets = new List<long> { 0 };
+        List<long> offsets = [0];
 
         for (int i = 0; i < objects.Count; i++)
         {

@@ -12,10 +12,14 @@
             get
             {
                 if (FileSizeBytes < 1024)
+                {
                     return $"{FileSizeBytes} B";
+                }
 
                 if (FileSizeBytes < 1024 * 1024)
+                {
                     return $"{FileSizeBytes / 1024.0:F2} KB";
+                }
 
                 return $"{FileSizeBytes / 1024.0 / 1024.0:F2} MB";
             }

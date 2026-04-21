@@ -62,10 +62,14 @@ namespace KarmaBanking.App.Views.Dialogs
             if (_viewModel.SelectedLoan != null)
             {
                 if (!_viewModel.CustomAmount.HasValue)
+                {
                     _viewModel.CustomAmount = (double)_viewModel.SelectedLoan.Loan.MonthlyInstallment;
+                }
 
                 if (_viewModel.CustomAmount > (double)_viewModel.SelectedLoan.Loan.OutstandingBalance)
+                {
                     _viewModel.CustomAmount = (double)_viewModel.SelectedLoan.Loan.OutstandingBalance;
+                }
 
                 CustomAmountBox.Text = _viewModel.CustomAmount?.ToString("0.##", CultureInfo.CurrentCulture) ?? string.Empty;
             }

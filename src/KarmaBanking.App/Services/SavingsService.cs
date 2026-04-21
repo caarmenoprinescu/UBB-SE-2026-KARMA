@@ -35,19 +35,27 @@ namespace KarmaBanking.App.Services
             // BA-9: max 5 active accounts per user
             var activeAccountsList = await savingsRepository.GetSavingsAccountsByUserIdAsync(dto.UserId, includesClosedAccounts: false);
             if (activeAccountsList.Count >= MAX_ACTIVE_ACCOUNTS)
+            {
                 throw new InvalidOperationException("You cannot have more than 5 active savings accounts.");
+            }
 
             // BA-9: GoalSavings requires a future target date
             if (dto.SavingsType == "GoalSavings")
             {
                 if (!dto.TargetDate.HasValue)
+                {
                     throw new ArgumentException("GoalSavings accounts require a target date.");
+                }
 
                 if (dto.TargetDate.Value <= DateTime.Today)
+                {
                     throw new ArgumentException("Target date must be in the future.");
+                }
 
                 if (!dto.TargetAmount.HasValue || dto.TargetAmount.Value <= 0)
+                {
                     throw new ArgumentException("GoalSavings accounts require a positive target amount.");
+                }
             }
 
             decimal apy = dto.SavingsType switch
@@ -72,7 +80,9 @@ namespace KarmaBanking.App.Services
         public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source, int userId)
         {
             if (amount <= 0)
+            {
                 throw new ArgumentException("Deposit amount must be positive.");
+            }
 
             // BA-14: get the account and validate ownership + status
             var userAccountsList = await savingsRepository.GetSavingsAccountsByUserIdAsync(userId, includesClosedAccounts: true);
@@ -81,10 +91,14 @@ namespace KarmaBanking.App.Services
 
             // BA-14: 422 for closed or locked
             if (destinationAccount.AccountStatus == "Closed")
+            {
                 throw new InvalidOperationException("Cannot deposit into a closed account.");
+            }
 
             if (destinationAccount.DisplayStatus == "Matured")
+            {
                 throw new InvalidOperationException("Cannot deposit into a matured account.");
+            }
 
             return await savingsRepository.DepositAsync(accountId, amount, source);
         }
@@ -98,14 +112,17 @@ namespace KarmaBanking.App.Services
                 ?? throw new InvalidOperationException("Account not found.");
 
             if (closingAccount.AccountStatus == "Closed")
+            {
                 throw new InvalidOperationException("Account already closed.");
-
+            }
 
             var destinationAccount = userAccountsList.FirstOrDefault(account => account.Id == destinationAccountId)
                 ?? throw new InvalidOperationException("Destination account not found.");
 
             if (destinationAccount.AccountStatus == "Closed")
+            {
                 throw new InvalidOperationException("Cannot transfer to a closed account.");
+            }
 
             decimal earlyClosurePenalty = 0;
             if (closingAccount.SavingsType == "FixedDeposit" &&
@@ -124,17 +141,23 @@ namespace KarmaBanking.App.Services
         public async Task<WithdrawResponseDto> WithdrawAsync(int accountId, decimal amount, string destinationLabel, int userId)
         {
             if (amount <= 0)
+            {
                 throw new ArgumentException("Withdrawal amount must be positive.");
+            }
 
             var userAccountsList = await savingsRepository.GetSavingsAccountsByUserIdAsync(userId, includesClosedAccounts: true);
             var destinationAccount = userAccountsList.Find(account => account.Id == accountId)
                 ?? throw new InvalidOperationException("Account not found or does not belong to you.");
 
             if (destinationAccount.AccountStatus == "Closed")
+            {
                 throw new InvalidOperationException("Cannot withdraw from a closed account.");
+            }
 
             if (destinationAccount.Balance < amount)
+            {
                 throw new InvalidOperationException("Insufficient balance.");
+            }
 
             decimal earlyWithdrawalPenalty = 0;
             if (destinationAccount.SavingsType == "FixedDeposit" &&
@@ -146,7 +169,9 @@ namespace KarmaBanking.App.Services
 
             decimal totalSumToWithdraw = amount + earlyWithdrawalPenalty;
             if (totalSumToWithdraw > destinationAccount.Balance)
+            {
                 throw new InvalidOperationException("Insufficient balance after penalty.");
+            }
 
             return await savingsRepository.WithdrawAsync(accountId, totalSumToWithdraw, destinationLabel, earlyWithdrawalPenalty);
         }
@@ -173,10 +198,14 @@ namespace KarmaBanking.App.Services
         int pageSize)
         {
             if (page <= 0)
+            {
                 throw new ArgumentException("Page must be >= 1");
+            }
 
             if (pageSize <= 0 || pageSize > 100)
+            {
                 pageSize = 20;
+            }
 
             return await savingsRepository.GetTransactionsPagedAsync(
                 accountId,
@@ -203,7 +232,7 @@ namespace KarmaBanking.App.Services
             savingsAccount.MaturityDate.Value > DateTime.UtcNow;
         }
 
-        public decimal GetPenaltyDecimalFor(string penaltyCase) 
+        public decimal GetPenaltyDecimalFor(string penaltyCase)
         {
             return penaltyCase switch
             {

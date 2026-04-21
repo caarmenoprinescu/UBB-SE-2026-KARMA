@@ -22,8 +22,7 @@ namespace KarmaBanking.App.Repositories
                     "FROM ChatMessage " +
                     "WHERE sessionId = @chatId " +
                     "ORDER BY sentAt",
-                    conn
-                );
+                    conn);
 
                 cmd.Parameters.AddWithValue("@chatId", chatSessionId);
 

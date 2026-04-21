@@ -107,7 +107,11 @@ public class AmortizationCalculator
 
     public static decimal ComputeRepaymentProgress(decimal principal, decimal outstandingBalance)
     {
-        if (principal == 0) return 0;
+        if (principal == 0)
+        {
+            return 0;
+        }
+
         return ((principal - outstandingBalance) / principal) * 100;
     }
 }

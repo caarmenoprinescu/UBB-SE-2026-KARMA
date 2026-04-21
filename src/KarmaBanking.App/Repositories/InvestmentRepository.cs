@@ -74,7 +74,8 @@
                         insertCommand.Parameters.AddWithValue("@Quantity", quantity);
                         insertCommand.Parameters.AddWithValue("@AveragePrice", pricePerUnit);
 
-                        holdingIdentificationNumber = (int)await insertCommand.ExecuteScalarAsync();
+                        object? scalarResult = await insertCommand.ExecuteScalarAsync();
+                        holdingIdentificationNumber = scalarResult != null ? Convert.ToInt32(scalarResult) : null;
                     }
                 }
                 else if (actionType.Equals(ActionTypeSell, StringComparison.OrdinalIgnoreCase))
@@ -100,7 +101,7 @@
 
                 using (SqlCommand transactionLogCommand = new SqlCommand(insertTransactionSqlQuery, sqlConnection, sqlTransaction))
                 {
-                    transactionLogCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber.Value);
+                    transactionLogCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber ?? throw new InvalidOperationException("Holding ID not found."));
                     transactionLogCommand.Parameters.AddWithValue("@Ticker", ticker);
                     transactionLogCommand.Parameters.AddWithValue("@ActionType", actionType.ToUpper());
                     transactionLogCommand.Parameters.AddWithValue("@Quantity", quantity);

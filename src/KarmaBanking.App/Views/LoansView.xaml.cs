@@ -33,7 +33,7 @@ namespace KarmaBanking.App.Views
             {
                 var dialog = new LoanApplicationDialog(_viewModel)
                 {
-                    XamlRoot = this.XamlRoot
+                    XamlRoot = XamlRoot
                 };
                 await dialog.ShowAsync();
             }
@@ -52,7 +52,7 @@ namespace KarmaBanking.App.Views
                     _viewModel.SelectedLoan = loan;
                     var dialog = new PayInstallmentDialog(_viewModel)
                     {
-                        XamlRoot = this.XamlRoot
+                        XamlRoot = XamlRoot
                     };
                     await dialog.ShowAsync();
                 }
