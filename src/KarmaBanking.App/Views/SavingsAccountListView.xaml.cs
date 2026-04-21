@@ -29,14 +29,19 @@ namespace KarmaBanking.App.Views
             await savingsAccountListViewModel.ProcessSchedulesAsync();
             await savingsAccountListViewModel.LoadSavingsAccountsAsync(userId: 1);
             if (!string.IsNullOrEmpty(savingsAccountListViewModel.LoadErrorMessage))
+            {
                 System.IO.File.AppendAllText(
                     System.IO.Path.Combine(System.IO.Path.GetTempPath(), "karma_error.txt"),
                     $"{DateTime.Now}: {savingsAccountListViewModel.LoadErrorMessage}\n");
+            }
         }
 
         private void OnTabSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            if (args.SelectedItem is not NavigationViewItem selectedTab) return;
+            if (args.SelectedItem is not NavigationViewItem selectedTab)
+            {
+                return;
+            }
 
             bool isOpenNew = selectedTab == OpenNewTab;
             bool isManage = selectedTab.Content?.ToString() == "Manage";
@@ -46,9 +51,10 @@ namespace KarmaBanking.App.Views
             ManageActionButtons.Visibility = isManage ? Visibility.Visible : Visibility.Collapsed;
 
             if (isOpenNew)
+            {
                 OpenNewFrame.Navigate(typeof(CreateSavingsAccountView),
                     new Action(async () => await SwitchToMyAccountsTabAsync()));
-
+            }
         }
 
         private async Task SwitchToMyAccountsTabAsync()
@@ -66,7 +72,7 @@ namespace KarmaBanking.App.Views
                     Title = "No account selected",
                     Content = "Please select an account first.",
                     CloseButtonText = "OK",
-                    XamlRoot = this.Content.XamlRoot
+                    XamlRoot = Content.XamlRoot
                 };
 
                 await errorDialog.ShowAsync();
@@ -79,7 +85,7 @@ namespace KarmaBanking.App.Views
                 Content = "Are you sure you want to close this account?\n\n⚠ Early closure may result in penalties.",
                 PrimaryButtonText = "Close Account",
                 CloseButtonText = "Cancel",
-                XamlRoot = this.Content.XamlRoot
+                XamlRoot = Content.XamlRoot
             };
 
             var result = await dialog.ShowAsync();
@@ -99,7 +105,7 @@ namespace KarmaBanking.App.Views
                     Title = "No account selected",
                     Content = "Please select an account first.",
                     CloseButtonText = "OK",
-                    XamlRoot = this.Content.XamlRoot
+                    XamlRoot = Content.XamlRoot
                 };
 
                 await errorDialog.ShowAsync();
@@ -117,7 +123,7 @@ namespace KarmaBanking.App.Views
                 Content = amountTextBox,
                 PrimaryButtonText = "Deposit",
                 CloseButtonText = "Cancel",
-                XamlRoot = this.Content.XamlRoot
+                XamlRoot = Content.XamlRoot
             };
 
             var result = await dialog.ShowAsync();
@@ -131,7 +137,7 @@ namespace KarmaBanking.App.Views
                         Title = "Invalid amount",
                         Content = "Please enter a valid positive number.",
                         CloseButtonText = "OK",
-                        XamlRoot = this.Content.XamlRoot
+                        XamlRoot = Content.XamlRoot
                     };
 
                     await errorDialog.ShowAsync();

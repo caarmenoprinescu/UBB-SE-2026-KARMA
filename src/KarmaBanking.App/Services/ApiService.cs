@@ -47,7 +47,7 @@ namespace KarmaBanking.App.Services
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<List<SavingsAccount>>(json, JsonOptions)
-                   ?? new List<SavingsAccount>();
+                   ?? [];
         }
 
 
@@ -109,16 +109,22 @@ namespace KarmaBanking.App.Services
         public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
+            {
                 throw new ArgumentException("File path is required.");
+            }
 
             if (!File.Exists(filePath))
+            {
                 throw new FileNotFoundException("File not found.", filePath);
+            }
 
             using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
 
             using var form = new MultipartFormDataContent();
             form.Add(new StringContent(messageId.ToString()), "messageId");
@@ -185,8 +191,10 @@ namespace KarmaBanking.App.Services
             using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
 
             HttpResponseMessage response = await client.GetAsync($"/chat/{sessionId}/history");
 
@@ -211,8 +219,11 @@ namespace KarmaBanking.App.Services
         {
             var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
+
             return client;
         }
 

@@ -23,9 +23,9 @@ public partial class LoansViewModel : ObservableObject
     // --- Aici e fix-ul pentru lista care nu apărea la deschidere ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredLoans))]
-    private ObservableCollection<LoanViewModel> loans = new();
+    private ObservableCollection<LoanViewModel> loans = [];
 
-    [ObservableProperty] private ObservableCollection<AmortizationRow> amortizationRows = new();
+    [ObservableProperty] private ObservableCollection<AmortizationRow> amortizationRows = [];
     [ObservableProperty] private bool isLoading;
 
     [ObservableProperty]
@@ -175,7 +175,11 @@ public partial class LoansViewModel : ObservableObject
 
     public async Task LoadAmortizationAsync()
     {
-        if (SelectedLoan == null) return;
+        if (SelectedLoan == null)
+        {
+            return;
+        }
+
         IsLoading = true;
         ErrorMessage = string.Empty;
         try

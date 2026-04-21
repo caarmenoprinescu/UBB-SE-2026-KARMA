@@ -29,25 +29,44 @@ namespace KarmaBanking.App.ViewModels
         public string SelectedSavingsType
         {
             get => selectedSavingsType;
-            set { selectedSavingsType = value; OnPropertyChanged(); }
+            set
+            {
+                selectedSavingsType = value;
+                OnPropertyChanged();
+            }
         }
 
         public string AccountNickname
         {
             get => accountNickname;
-            set { accountNickname = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
+            set
+            {
+                accountNickname = value;
+                OnPropertyChanged();
+                CreateAccountCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public string InitialDepositAmountText
         {
             get => initialDepositAmountText;
-            set { initialDepositAmountText = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
+            set
+            {
+                initialDepositAmountText = value;
+                OnPropertyChanged();
+                CreateAccountCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public int? SelectedFundingAccountId
         {
             get => selectedFundingAccountId;
-            set { selectedFundingAccountId = value; OnPropertyChanged(); CreateAccountCommand.RaiseCanExecuteChanged(); }
+            set
+            {
+                selectedFundingAccountId = value;
+                OnPropertyChanged();
+                CreateAccountCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public string ErrorMessage
@@ -81,7 +100,12 @@ namespace KarmaBanking.App.ViewModels
         public bool IsSubmitting
         {
             get => isSubmitting;
-            set { isSubmitting = value; OnPropertyChanged(); }
+            set
+            {
+                isSubmitting = value;
+                OnPropertyChanged();
+                CreateAccountCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public RelayCommand CreateAccountCommand { get; }
@@ -120,9 +144,13 @@ namespace KarmaBanking.App.ViewModels
             IsSubmitting = false;
 
             if (createdAccount != null)
+            {
                 IsAccountCreated = true;
+            }
             else
+            {
                 ErrorMessage = "Failed to create account. Please check your details and try again.";
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

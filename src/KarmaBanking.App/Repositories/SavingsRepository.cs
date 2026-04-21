@@ -14,7 +14,7 @@ namespace KarmaBanking.App.Repositories
     public class SavingsRepository : ISavingsRepository
     {
         public SavingsRepository() { }
-        
+
         public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(int userId, bool includesClosedAccounts = false)
         {
             string selectAccountsQuery = @"
@@ -27,7 +27,7 @@ namespace KarmaBanking.App.Repositories
                 " ORDER BY balance DESC";
 
             var accountsList = new List<SavingsAccount>();
-                
+
             using SqlConnection dbConnection = DatabaseConfig.GetDatabaseConnection();
             await dbConnection.OpenAsync();
 
@@ -36,7 +36,9 @@ namespace KarmaBanking.App.Repositories
 
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
+            {
                 accountsList.Add(MapReaderToAccount(reader));
+            }
 
             return accountsList;
         }
@@ -69,7 +71,7 @@ namespace KarmaBanking.App.Repositories
             sqlCommand.Parameters.AddWithValue("@FundingAccountId", dto.FundingAccountId == 0 ? (object)DBNull.Value : dto.FundingAccountId);
             sqlCommand.Parameters.AddWithValue("@TargetAmount", (object?)dto.TargetAmount ?? DBNull.Value);
             sqlCommand.Parameters.AddWithValue("@TargetDate", (object?)dto.TargetDate ?? DBNull.Value);
-            
+
             int newSavingsAccountId = (int)await sqlCommand.ExecuteScalarAsync();
 
             return new SavingsAccount
@@ -263,7 +265,7 @@ namespace KarmaBanking.App.Repositories
                 {
                     selectAccountDataCommand.Parameters.AddWithValue("@Id", accountId);
                     using var reader = await selectAccountDataCommand.ExecuteReaderAsync();
-                    
+
                     oldBalance = (decimal)reader["balance"];
                     savingsAccountType = reader["savingsType"].ToString();
                     maturityDate = reader["maturityDate"] as DateTime?;
@@ -339,7 +341,10 @@ namespace KarmaBanking.App.Repositories
             selectAutoDepositByAccountIdCommand.Parameters.AddWithValue("@AccountId", accountId);
             using var reader = await selectAutoDepositByAccountIdCommand.ExecuteReaderAsync();
 
-            if (!await reader.ReadAsync()) return null;
+            if (!await reader.ReadAsync())
+            {
+                return null;
+            }
 
             return new AutoDeposit
             {
@@ -422,136 +427,6 @@ namespace KarmaBanking.App.Repositories
         }
 
 
-
-        // UNUSED METHOD
-        public async Task<List<SavingsTransaction>> GetTransactionsAsync(int accountId)
-        {
-            const string query = @"
-        SELECT id, accountId, transactionType, amount, balanceAfter, source, description, createdAt
-        FROM SavingsTransaction
-        WHERE accountId = @AccountId
-        ORDER BY createdAt DESC";
-
-            var list = new List<SavingsTransaction>();
-
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-
-            using var cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@AccountId", accountId);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                list.Add(new SavingsTransaction
-                {
-                    Id = (int)reader["id"],
-                    AccountId = (int)reader["accountId"],
-                    Type = Enum.Parse<TransactionType>(reader["transactionType"].ToString()),
-                    Amount = (decimal)reader["amount"],
-                    BalanceAfter = (decimal)reader["balanceAfter"],
-                    Source = reader["source"].ToString(),
-                    Description = reader["description"] as string,
-                    CreatedAt = (DateTime)reader["createdAt"]
-                });
-            }
-
-            return list;
-        }
-
-
-        // UNUSED METHOD
-        public async Task<bool> HasInterestTransactionThisMonthAsync(int accountId)
-        {
-            const string query = @"
-        SELECT COUNT(1)
-        FROM SavingsTransaction
-        WHERE accountId = @AccountId
-        AND transactionType = 'Interest'
-        AND MONTH(createdAt) = MONTH(GETUTCDATE())
-        AND YEAR(createdAt) = YEAR(GETUTCDATE())";
-
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-
-            using var cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@AccountId", accountId);
-
-            int count = (int)await cmd.ExecuteScalarAsync();
-            return count > 0;
-        }
-
-
-        // UNUSED METHOD
-        public async Task<bool> DepositWithTransactionAsync(int accountId, decimal amount)
-        {
-            using var conn = DatabaseConfig.GetDatabaseConnection();
-            await conn.OpenAsync();
-
-            using var transaction = conn.BeginTransaction();
-
-            try
-            {
-                // 1. Get current balance
-                decimal currentBalance;
-
-                using (var getCmd = new SqlCommand(
-                    "SELECT balance FROM SavingsAccount WHERE id = @Id",
-                    conn, transaction))
-                {
-                    getCmd.Parameters.AddWithValue("@Id", accountId);
-
-                    var result = await getCmd.ExecuteScalarAsync();
-
-                    if (result == null)
-                        return false;
-
-                    currentBalance = (decimal)result;
-                }
-
-                decimal newBalance = currentBalance + amount;
-
-                // 2. Update balance
-                using (var updateCmd = new SqlCommand(
-                    "UPDATE SavingsAccount SET balance = @Balance, updatedAt = GETUTCDATE() WHERE id = @Id",
-                    conn, transaction))
-                {
-                    updateCmd.Parameters.AddWithValue("@Balance", newBalance);
-                    updateCmd.Parameters.AddWithValue("@Id", accountId);
-
-                    await updateCmd.ExecuteNonQueryAsync();
-                }
-
-                // 3. Insert sqlTransaction
-                using (var insertCmd = new SqlCommand(@"
-                INSERT INTO SavingsTransaction
-                (accountId, transactionType, amount, balanceAfter, source, description, createdAt)
-                VALUES
-                (@AccountId, @TransactionType, @Amount, @BalanceAfter, @Source, @Description, GETUTCDATE())",
-                    conn, transaction))
-                {
-                    insertCmd.Parameters.AddWithValue("@AccountId", accountId);
-                    insertCmd.Parameters.AddWithValue("@TransactionType", "Deposit");
-                    insertCmd.Parameters.AddWithValue("@Amount", amount);
-                    insertCmd.Parameters.AddWithValue("@BalanceAfter", newBalance);
-                    insertCmd.Parameters.AddWithValue("@Source", "Manual");
-
-                    await insertCmd.ExecuteNonQueryAsync();
-                }
-
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-
-
         public async Task<(List<SavingsTransaction> Items, int TotalCount)> GetTransactionsPagedAsync(
         int accountId,
         string typeFilter,
@@ -576,7 +451,9 @@ namespace KarmaBanking.App.Repositories
             countAccountTransactionsCommand.Parameters.AddWithValue("@AccountId", accountId);
 
             if (baseQuery.Contains("@Type"))
+            {
                 countAccountTransactionsCommand.Parameters.AddWithValue("@Type", typeFilter);
+            }
 
             int numberOfAccountTransactions = (int)await countAccountTransactionsCommand.ExecuteScalarAsync();
 
@@ -593,7 +470,9 @@ namespace KarmaBanking.App.Repositories
             paginatedSelectAccountsCommand.Parameters.AddWithValue("@PageSize", pageSize);
 
             if (baseQuery.Contains("@Type"))
+            {
                 paginatedSelectAccountsCommand.Parameters.AddWithValue("@Type", typeFilter);
+            }
 
             var transactionsList = new List<SavingsTransaction>();
 

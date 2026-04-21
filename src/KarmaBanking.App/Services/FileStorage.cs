@@ -49,7 +49,9 @@ namespace KarmaBanking.App.Services
         public void DeleteUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
+            {
                 return;
+            }
 
             if (File.Exists(url))
             {

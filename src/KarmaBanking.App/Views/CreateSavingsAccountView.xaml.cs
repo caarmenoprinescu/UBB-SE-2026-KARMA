@@ -26,7 +26,9 @@ namespace KarmaBanking.App.Views
         {
             base.OnNavigatedTo(args);
             if (args.Parameter is Action callback)
+            {
                 onAccountCreatedCallback = callback;
+            }
         }
 
         private async void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
@@ -41,9 +43,15 @@ namespace KarmaBanking.App.Views
 
         private void OnSavingsTypeChecked(object sender, RoutedEventArgs args)
         {
-            if (createSavingsAccountViewModel == null) return;
+            if (createSavingsAccountViewModel == null)
+            {
+                return;
+            }
+
             if (sender is RadioButton checkedRadioButton)
+            {
                 createSavingsAccountViewModel.SelectedSavingsType = checkedRadioButton.Content.ToString() ?? "Flexible";
+            }
         }
 
         private void OnFundingSourceSelected(object sender, SelectionChangedEventArgs args)
@@ -62,9 +70,13 @@ namespace KarmaBanking.App.Views
 
             if (FundingSourceComboBox.SelectedItem is ComboBoxItem selectedFundingSource
                 && int.TryParse(selectedFundingSource.Tag?.ToString(), out int fundingAccountId))
+            {
                 createSavingsAccountViewModel.SelectedFundingAccountId = fundingAccountId;
+            }
             else
+            {
                 createSavingsAccountViewModel.SelectedFundingAccountId = 1;
+            }
 
             await createSavingsAccountViewModel.SubmitCreateAccountFormAsync();
         }

@@ -24,7 +24,7 @@ namespace KarmaBanking.App.ViewModels
         public SavingsAccountListViewModel(ISavingsService savingsService)
         {
             this.savingsService = savingsService;
-            SavingsAccounts = new ObservableCollection<SavingsAccount>();
+            SavingsAccounts = [];
         }
 
         public ObservableCollection<SavingsAccount> SavingsAccounts { get; }
@@ -76,7 +76,9 @@ namespace KarmaBanking.App.ViewModels
 
             SavingsAccounts.Clear();
             foreach (var account in openedSavingsAccountsList)
+            {
                 SavingsAccounts.Add(account);
+            }
 
             EmptyStateVisibility = SavingsAccounts.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             AccountsListVisibility = SavingsAccounts.Count == 0 ? Visibility.Collapsed : Visibility.Visible;

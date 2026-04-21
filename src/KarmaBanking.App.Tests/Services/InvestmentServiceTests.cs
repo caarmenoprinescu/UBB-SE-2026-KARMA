@@ -1,92 +1,116 @@
-﻿using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories.Interfaces;
-using KarmaBanking.App.Services;
-using KarmaBanking.App.Services.Interfaces;
-using Moq;
-using Xunit;
-
-namespace KarmaBanking.App.Tests.Services
+﻿namespace KarmaBanking.App.Tests.Services
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories.Interfaces;
+    using KarmaBanking.App.Services;
+    using Moq;
+    using Xunit;
+
     public class InvestmentServiceTests
     {
-        [Fact]
-        public async Task ExecuteCryptoTradeAsync_InsufficientBalance_ThrowsArgumentException()
-        {
-            // 1. ARRANGE
-            var mockRepository = new Mock<IInvestmentRepository>();
+        private readonly Mock<IInvestmentRepository> mockRepository;
+        private readonly InvestmentService investmentService;
 
-            // We mock a portfolio that has only $100.00
-            var fakePortfolio = new Portfolio
+        public InvestmentServiceTests()
+        {
+            this.mockRepository = new Mock<IInvestmentRepository>();
+            this.investmentService = new InvestmentService(this.mockRepository.Object);
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_CalculatesPercentageFeeCorrectly()
+        {
+            //$1000 trade at 1.5% should be a $15.00 fee
+            int portfolioId = 1;
+            decimal quantity = 10m;
+            decimal price = 100m; // Total value $1000
+            this.mockRepository.Setup(repo => repo.GetPortfolio(portfolioId))
+                .Returns(new Portfolio { TotalValue = 2000m });
+
+            await this.investmentService.ExecuteCryptoTradeAsync(portfolioId, "BTC", "BUY", quantity, price);
+
+            //Verify RecordCryptoTradeAsync was called with a $15.00 fee
+            this.mockRepository.Verify(repo => repo.RecordCryptoTradeAsync(
+                portfolioId, "BTC", "BUY", quantity, price, 15.00m), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_AppliesMinimumFee_WhenTradeIsSmall()
+        {
+            //$10 trade at 1.5% is $0.15, which is below the $0.50 minimum
+            int portfolioId = 1;
+            this.mockRepository.Setup(repo => repo.GetPortfolio(portfolioId))
+                .Returns(new Portfolio { TotalValue = 100m });
+
+            await this.investmentService.ExecuteCryptoTradeAsync(portfolioId, "BTC", "BUY", 1m, 10m);
+
+            //Verify the fee was bumped up to the $0.50 minimum
+            this.mockRepository.Verify(repo => repo.RecordCryptoTradeAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<decimal>(), 0.50m), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_ThrowsException_WhenFundsAreInsufficient()
+        {
+            //User has $10, but trade + fee costs more
+            int portfolioId = 1;
+            this.mockRepository.Setup(repo => repo.GetPortfolio(portfolioId))
+                .Returns(new Portfolio { TotalValue = 10m });
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                this.investmentService.ExecuteCryptoTradeAsync(portfolioId, "BTC", "BUY", 1m, 20m));
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_ValidatesInputs_ThrowsOnZeroQuantity()
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                this.investmentService.ExecuteCryptoTradeAsync(1, "BTC", "BUY", 0, 100));
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_ThrowsException_WhenPriceIsNegative()
+        {
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                this.investmentService.ExecuteCryptoTradeAsync(1, "BTC", "BUY", 1m, -100m));
+        }
+
+        [Fact]
+        public async Task ExecuteCryptoTradeAsync_SellOrder_DoesNotCheckPortfolioBalance()
+        {
+            //User has $0, but they are SELLING, so it should still proceed
+            int portfolioId = 1;
+            this.mockRepository.Setup(repo => repo.GetPortfolio(portfolioId))
+                .Returns(new Portfolio { TotalValue = 0m });
+
+
+            var result = await this.investmentService.ExecuteCryptoTradeAsync(portfolioId, "BTC", "SELL", 1m, 50000m);
+
+            Assert.True(result);
+            this.mockRepository.Verify(repo => repo.RecordCryptoTradeAsync(
+                portfolioId, "BTC", "SELL", 1m, 50000m, It.IsAny<decimal>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetInvestmentLogsAsync_ReturnsDataFromRepository()
+        {
+            int portfolioId = 1;
+            var expectedLogs = new List<InvestmentTransaction>
             {
-                IdentificationNumber = 1,
-                TotalValue = 100.00m
+                new InvestmentTransaction { Ticker = "BTC", Quantity = 1.0m, PricePerUnit = 45000m }
             };
 
-            mockRepository.Setup(repo => repo.GetPortfolio(It.IsAny<int>()))
-                          .Returns(fakePortfolio);
+            this.mockRepository.Setup(repo => repo.GetInvestmentLogsAsync(portfolioId, null, null, null))
+                .ReturnsAsync(expectedLogs);
 
-            var service = new InvestmentService(mockRepository.Object);
+            var result = await this.investmentService.GetInvestmentLogsAsync(portfolioId);
 
-            // 2. ACT & 3. ASSERT
-            // We attempt to buy $1,000 worth of BTC when we only have $100
-            await Assert.ThrowsAsync<ArgumentException>(async () =>
-            {
-                await service.ExecuteCryptoTradeAsync(
-                    portfolioIdentificationNumber: 1,
-                    ticker: "BTC",
-                    actionType: "BUY",
-                    quantity: 1.0m,
-                    pricePerUnit: 1000.0m);
-            });
-        }
-
-        [Fact]
-        public async Task ExecuteCryptoTradeAsync_SufficientBalance_ReturnsTrue()
-        {
-            // 1. ARRANGE
-            var mockRepository = new Mock<IInvestmentRepository>();
-
-            // User has $10,000
-            var fakePortfolio = new Portfolio { IdentificationNumber = 1, TotalValue = 10000.00m };
-
-            mockRepository.Setup(repo => repo.GetPortfolio(It.IsAny<int>()))
-                          .Returns(fakePortfolio);
-
-            var service = new InvestmentService(mockRepository.Object);
-
-            // 2. ACT
-            // Buying $100 worth of BTC
-            bool result = await service.ExecuteCryptoTradeAsync(1, "BTC", "BUY", 1.0m, 100.0m);
-
-            // 3. ASSERT
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task ExecuteCryptoTradeAsync_VerifyFeeCalculation_CallsRepositoryWithCorrectFee()
-        {
-            // 1. ARRANGE
-            var mockRepository = new Mock<IInvestmentRepository>();
-            var fakePortfolio = new Portfolio { IdentificationNumber = 1, TotalValue = 1000.00m };
-            mockRepository.Setup(repo => repo.GetPortfolio(It.IsAny<int>())).Returns(fakePortfolio);
-
-            var service = new InvestmentService(mockRepository.Object);
-
-            // $100 trade * 1.5% fee = $1.50 fee
-            decimal expectedFee = 1.50m;
-
-            // 2. ACT
-            await service.ExecuteCryptoTradeAsync(1, "BTC", "BUY", 1.0m, 100.0m);
-
-            // 3. ASSERT
-            // We verify that the repository's RecordCryptoTradeAsync was called with exactly $1.50 as the fee
-            mockRepository.Verify(repo => repo.RecordCryptoTradeAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                expectedFee), Times.Once);
+            Assert.Single(result);
+            Assert.Equal("BTC", result[0].Ticker);
         }
     }
 }

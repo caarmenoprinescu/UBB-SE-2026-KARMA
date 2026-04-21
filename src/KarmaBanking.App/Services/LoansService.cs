@@ -24,14 +24,20 @@ public class LoanService : ILoanService
     public async Task<Loan> GetLoanByIdAsync(int id)
     {
         if (id <= 0)
+        {
             return new Loan();
+        }
+
         return await _loanRepository.GetLoanByIdAsync(id);
     }
 
     public async Task<List<Loan>> GetLoansByUserAsync(int userId)
     {
         if (userId <= 0)
-            return new List<Loan>();
+        {
+            return [];
+        }
+
         return await _loanRepository.GetLoansByUserAsync(userId);
     }
 
@@ -54,10 +60,14 @@ public class LoanService : ILoanService
         int activeLoansCount = currentLoans.Count(l => l.LoanStatus == LoanStatus.Active);
 
         if (activeLoansCount >= 5)
+        {
             return (LoanApplicationStatus.Rejected, "Maximum number of active loans reached.");
+        }
 
         if (totalOutstanding + application.DesiredAmount >= 200000)
+        {
             return (LoanApplicationStatus.Rejected, "Total debt limit exceeded.");
+        }
 
         return (LoanApplicationStatus.Approved, null);
     }
@@ -145,24 +155,36 @@ public class LoanService : ILoanService
         var loan = await _loanRepository.GetLoanByIdAsync(loanId);
 
         if (loan == null)
+        {
             throw new InvalidOperationException("Loan not found.");
+        }
 
         if (loan.RemainingMonths <= 0)
+        {
             throw new InvalidOperationException("This loan is already closed.");
+        }
 
         if (loan.LoanStatus == LoanStatus.Passed)
+        {
             throw new InvalidOperationException("This loan is already closed.");
+        }
 
         decimal payment = customAmount ?? loan.MonthlyInstallment;
 
         if (payment <= 0)
+        {
             throw new ArgumentException("Payment amount must be greater than zero.");
+        }
 
         if (customAmount.HasValue && payment < loan.MonthlyInstallment)
+        {
             throw new InvalidOperationException("Payment amount must be at least the minimum installment.");
+        }
 
         if (payment > loan.OutstandingBalance)
+        {
             throw new InvalidOperationException("Payment amount exceeds the outstanding balance.");
+        }
 
         decimal newBalance;
 
@@ -176,7 +198,9 @@ public class LoanService : ILoanService
         LoanStatus newStatus = loan.LoanStatus;
 
         if (newBalance <= 0 || newRemainingMonths == 0)
+        {
             newStatus = LoanStatus.Passed;
+        }
 
         await _loanRepository.UpdateLoanAfterPaymentAsync(loan.Id, newBalance, newRemainingMonths, newStatus);
     }
