@@ -1177,5 +1177,109 @@ namespace KarmaBanking.App.Tests.Services
             Assert.Equal(expectedDestinations, result);
             await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId);
         }
+
+        [Fact]
+        public async Task ComputeWithdrawalPenalty_ValidInput_ReturnsResult()
+        {
+            var amount = 100m;
+            var expectedResult = 2m;
+
+            var result = service.ComputeWithdrawalPenalty(amount);
+            Assert.Equal(expectedResult, result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_FixedDepositNotMatured_ReturnsTrue()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "FixedDeposit",
+                MaturityDate = DateTime.UtcNow.AddDays(30),
+            };
+
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_FixedDepositMatured_ReturnsFalse()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "FixedDeposit",
+                MaturityDate = DateTime.UtcNow.AddDays(-1),
+            };
+
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_FixedDepositWithoutMaturityDate_ReturnsFalse()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "FixedDeposit",
+            };
+
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_StandardSavingsAccount_ReturnsFalse()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "Standard",
+            };
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_GoalSavingsAccount_ReturnsFalse()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "GoalSavings",
+            };
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task HasRiskEarlyWithdrawal_HighYield_ReturnsFalse()
+        {
+            var account = new SavingsAccount
+            {
+                SavingsType = "HighYield",
+            };
+            var result = service.HasRiskEarlyWithdrawal(account);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task GetPenaltyDecimalFor_EarlyWithdrawal_ReturnsExpectedValue()
+        {
+            var expectedPenalty = DECIMAL_EARLY_WITHDRAWAL_PENALTY;
+            var result = service.GetPenaltyDecimalFor("EarlyWithdrawal");
+            Assert.Equal(expectedPenalty, result);
+        }
+
+        [Fact]
+        public async Task GetPenaltyDecimalFor_EarlyClosure_ReturnsExpectedValue()
+        {
+            var expectedPenalty = DECIMAL_EARLY_CLOSURE_PENALTY;
+            var result = service.GetPenaltyDecimalFor("EarlyClosure");
+            Assert.Equal(expectedPenalty, result);
+        }
+
+        [Fact]
+        public async Task GetPenaltyDecimalFor_InvalidPenaltyCase_ThrowsArgumentException()
+        {
+            var ex = Assert.Throws<ArgumentException>(() => service.GetPenaltyDecimalFor("Invalid penalty case"));
+            Assert.Equal("Invalid penalty case.", ex.Message);
+        }
     }
 }
