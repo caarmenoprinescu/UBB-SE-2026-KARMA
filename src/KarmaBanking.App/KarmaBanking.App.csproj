@@ -2,6 +2,7 @@
 	<PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
         <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
         <RootNamespace>KarmaBanking.App</RootNamespace>
         <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -10,18 +11,12 @@
         <PublishProfile>win-$(Platform).pubxml</PublishProfile>
         <WinUISDKReferences>true</WinUISDKReferences>
         <EnableMsixTooling>true</EnableMsixTooling>
-        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
         <WindowsPackageType>MSIX</WindowsPackageType>
         <Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
-
-        <None Remove="Views\CloseAccountDialog.xaml" />
         <None Remove="Views\Dialogs\LoanApplicationDialog.xaml" />
         <None Remove="Views\Dialogs\PayInstallment.xaml" />
-
-        <None Remove="Views\ApplyLoanView.xaml" />
-
     </ItemGroup>
     <ItemGroup>
         <AdditionalFiles Include="stylecop.json" />
@@ -57,7 +52,6 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
     </ItemGroup>
     <ItemGroup>
 
@@ -66,12 +60,6 @@
         </Page>
     </ItemGroup>
     <ItemGroup>
-        <Page Update="Views\CloseAccountDialog.xaml"></Page>
-
-        <Page Update="Views\ApplyLoanView.xaml">
-
-            <Generator>MSBuild:Compile</Generator>
-        </Page>
     </ItemGroup>
     <ItemGroup>
         <Page Update="Views\CryptoTradingView.xaml">
@@ -134,7 +122,7 @@
 
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
         <CodeAnalysisRuleSet>SE.ruleset</CodeAnalysisRuleSet>
     </PropertyGroup>
 
