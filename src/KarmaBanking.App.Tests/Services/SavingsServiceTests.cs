@@ -780,7 +780,7 @@ namespace KarmaBanking.App.Tests.Services
             var inexistentDestinationAccountId = 999;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString() } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Active.ToString() } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.WithdrawAsync(inexistentDestinationAccountId, 100m, "Destination label", userId));
             Assert.Equal("Account not found or does not belong to you.", ex.Message);
@@ -801,8 +801,8 @@ namespace KarmaBanking.App.Tests.Services
                 {
                     new SavingsAccount
                     {
-                        Id = accountId,
-                        UserId = userId,
+                        IdentificationNumber = accountId,
+                        UserIdentificationNumber = userId,
                         AccountStatus = AccountStatus.Closed.ToString(),
                     }
                 }));
@@ -826,8 +826,8 @@ namespace KarmaBanking.App.Tests.Services
                 {
                     new SavingsAccount
                     {
-                        Id = accountId,
-                        UserId = userId,
+                        IdentificationNumber = accountId,
+                        UserIdentificationNumber = userId,
                         AccountStatus = AccountStatus.Active.ToString(),
                         Balance = 50m,
                     }
