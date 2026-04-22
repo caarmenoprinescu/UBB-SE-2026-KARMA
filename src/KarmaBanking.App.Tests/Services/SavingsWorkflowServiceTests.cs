@@ -44,8 +44,8 @@ public class SavingsWorkflowServiceTests
     {
         var accounts = new List<SavingsAccount>
         {
-            new SavingsAccount { Id = 42 },
-            new SavingsAccount { Id = 99 }
+            new SavingsAccount { IdentificationNumber = 42 },
+            new SavingsAccount { IdentificationNumber = 99 }
         };
 
         var result = this.service.GetDefaultCloseDestinationId(accounts);
