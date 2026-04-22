@@ -11,12 +11,12 @@ using Microsoft.UI.Xaml.Controls;
 
 public sealed partial class PayInstallmentDialog : ContentDialog
 {
-    private readonly LoansViewModel _viewModel;
+    private readonly LoansViewModel viewModel;
 
     public PayInstallmentDialog(LoansViewModel viewModel)
     {
         this.InitializeComponent();
-        this._viewModel = viewModel;
+        this.viewModel = viewModel;
         this.DataContext = viewModel;
         this.UpdatePreview();
     }
@@ -26,7 +26,7 @@ public sealed partial class PayInstallmentDialog : ContentDialog
         var deferral = args.GetDeferral();
         try
         {
-            await this._viewModel.PayInstallmentAsync();
+            await this.viewModel.PayInstallmentAsync();
         }
         catch (Exception)
         {
@@ -40,7 +40,7 @@ public sealed partial class PayInstallmentDialog : ContentDialog
 
     private void OnStandardChecked(object sender, RoutedEventArgs e)
     {
-        if (this._viewModel == null)
+        if (this.viewModel == null)
         {
             return;
         }
@@ -50,21 +50,21 @@ public sealed partial class PayInstallmentDialog : ContentDialog
             this.CustomAmountPanel.Visibility = Visibility.Collapsed;
         }
 
-        this._viewModel.SelectStandardPayment();
+        this.viewModel.SelectStandardPayment();
         this.UpdatePreview();
     }
 
     private void OnCustomChecked(object sender, RoutedEventArgs e)
     {
-        if (this._viewModel == null)
+        if (this.viewModel == null)
         {
             return;
         }
 
         this.CustomAmountPanel.Visibility = Visibility.Visible;
-        if (this._viewModel.SelectedLoan != null)
+        if (this.viewModel.SelectedLoan != null)
         {
-            this.CustomAmountBox.Text = this._viewModel.SelectCustomPayment();
+            this.CustomAmountBox.Text = this.viewModel.SelectCustomPayment();
         }
 
         this.UpdatePreview();
@@ -82,12 +82,12 @@ public sealed partial class PayInstallmentDialog : ContentDialog
 
     private void UpdatePreview()
     {
-        if (this._viewModel == null)
+        if (this.viewModel == null)
         {
             return;
         }
 
-        if (this._viewModel.SelectedLoan == null)
+        if (this.viewModel.SelectedLoan == null)
         {
             this.BalanceAfterPaymentText.Text = string.Empty;
             this.RemainingTermAfterPaymentText.Text = string.Empty;
@@ -96,14 +96,14 @@ public sealed partial class PayInstallmentDialog : ContentDialog
 
         if (this.StandardRadio.IsChecked == true)
         {
-            this._viewModel.SelectStandardPayment();
+            this.viewModel.SelectStandardPayment();
         }
         else
         {
-            this._viewModel.UpdateCustomPayment(this.CustomAmountBox?.Text ?? string.Empty);
+            this.viewModel.UpdateCustomPayment(this.CustomAmountBox?.Text ?? string.Empty);
         }
 
-        this.BalanceAfterPaymentText.Text = this._viewModel.PaymentPreviewBalance.ToString("C2");
-        this.RemainingTermAfterPaymentText.Text = $"{this._viewModel.PaymentPreviewRemainingMonths} mo";
+        this.BalanceAfterPaymentText.Text = this.viewModel.PaymentPreviewBalance.ToString("C2");
+        this.RemainingTermAfterPaymentText.Text = $"{this.viewModel.PaymentPreviewRemainingMonths} mo";
     }
 }

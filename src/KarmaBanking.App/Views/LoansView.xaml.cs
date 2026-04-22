@@ -14,26 +14,26 @@ using Microsoft.UI.Xaml.Navigation;
 
 public sealed partial class LoansView : Page
 {
-    private readonly LoansViewModel _viewModel;
+    private readonly LoansViewModel viewModel;
 
     public LoansView()
     {
         this.InitializeComponent();
-        this._viewModel = new LoansViewModel();
-        this.DataContext = this._viewModel;
+        this.viewModel = new LoansViewModel();
+        this.DataContext = this.viewModel;
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        await this._viewModel.LoadLoansAsync();
+        await this.viewModel.LoadLoansAsync();
     }
 
     private async void OnApplyClick(object sender, RoutedEventArgs e)
     {
         try
         {
-            var dialog = new LoanApplicationDialog(this._viewModel)
+            var dialog = new LoanApplicationDialog(this.viewModel)
             {
                 XamlRoot = this.XamlRoot,
             };
@@ -51,8 +51,8 @@ public sealed partial class LoansView : Page
         {
             if (sender is Button btn && btn.Tag is LoanViewModel loan)
             {
-                this._viewModel.SelectedLoan = loan;
-                var dialog = new PayInstallmentDialog(this._viewModel)
+                this.viewModel.SelectedLoan = loan;
+                var dialog = new PayInstallmentDialog(this.viewModel)
                 {
                     XamlRoot = this.XamlRoot,
                 };
@@ -71,8 +71,8 @@ public sealed partial class LoansView : Page
         {
             if (sender is Button btn && btn.Tag is LoanViewModel loan)
             {
-                this._viewModel.SelectedLoan = loan;
-                await this._viewModel.LoadAmortizationAsync();
+                this.viewModel.SelectedLoan = loan;
+                await this.viewModel.LoadAmortizationAsync();
                 this.Frame.Navigate(typeof(AmortizationScheduleView), loan.Loan);
             }
         }
@@ -84,41 +84,41 @@ public sealed partial class LoansView : Page
 
     private void OnFilterAll(object sender, RoutedEventArgs e)
     {
-        this._viewModel.StatusFilter = null;
+        this.viewModel.StatusFilter = null;
     }
 
     private void OnFilterActive(object sender, RoutedEventArgs e)
     {
-        this._viewModel.StatusFilter = LoanStatus.Active;
+        this.viewModel.StatusFilter = LoanStatus.Active;
     }
 
     private void OnFilterClosed(object sender, RoutedEventArgs e)
     {
-        this._viewModel.StatusFilter = LoanStatus.Passed;
+        this.viewModel.StatusFilter = LoanStatus.Passed;
     }
 
     private void OnTypeFilterAll(object sender, RoutedEventArgs e)
     {
-        this._viewModel.TypeFilter = null;
+        this.viewModel.TypeFilter = null;
     }
 
     private void OnTypeFilterPersonal(object sender, RoutedEventArgs e)
     {
-        this._viewModel.TypeFilter = LoanType.Personal;
+        this.viewModel.TypeFilter = LoanType.Personal;
     }
 
     private void OnTypeFilterMortgage(object sender, RoutedEventArgs e)
     {
-        this._viewModel.TypeFilter = LoanType.Mortgage;
+        this.viewModel.TypeFilter = LoanType.Mortgage;
     }
 
     private void OnTypeFilterStudent(object sender, RoutedEventArgs e)
     {
-        this._viewModel.TypeFilter = LoanType.Student;
+        this.viewModel.TypeFilter = LoanType.Student;
     }
 
     private void OnTypeFilterAuto(object sender, RoutedEventArgs e)
     {
-        this._viewModel.TypeFilter = LoanType.Auto;
+        this.viewModel.TypeFilter = LoanType.Auto;
     }
 }

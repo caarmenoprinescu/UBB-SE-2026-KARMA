@@ -17,7 +17,7 @@ public class PdfExporter
     private const float TopMargin = 54f;
     private const float RowHeight = 18f;
 
-    public byte[] exportAmortization(IEnumerable<AmortizationRow> rows)
+    public byte[] ExportAmortization(IEnumerable<AmortizationRow> rows)
     {
         var amortizationRows = rows?.ToList() ?? [];
         var pageContents = BuildAmortizationPages(amortizationRows);
@@ -25,7 +25,7 @@ public class PdfExporter
         return BuildPdfDocument(pageContents);
     }
 
-    public byte[] exportTransactions(IEnumerable<object> rows)
+    public byte[] ExportTransactions(IEnumerable<object> rows)
     {
         throw new NotImplementedException("Transaction PDF export is not implemented yet.");
     }

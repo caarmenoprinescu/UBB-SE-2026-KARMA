@@ -8,7 +8,7 @@ using Microsoft.UI.Xaml;
 
 public partial class App : Application
 {
-    private Window? _window;
+    private Window? window;
 
     public App()
     {
@@ -19,8 +19,8 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        this._window = new MainWindow();
-        MainAppWindow = this._window;
-        this._window.Activate();
+        this.window = new MainWindow();
+        MainAppWindow = this.window;
+        this.window.Activate();
     }
 }

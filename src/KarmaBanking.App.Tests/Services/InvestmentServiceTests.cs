@@ -23,7 +23,7 @@
         [Fact]
         public async Task ExecuteCryptoTradeAsync_CalculatesPercentageFeeCorrectly()
         {
-            // Arrange: $1000 trade at 1.5% should be a $15.00 fee. 
+            // Arrange: $1000 trade at 1.5% should be a $15.00 fee.
             // Starting with 0 holdings, final average price should be $100.
             int portfolioId = 1;
             decimal quantity = 10m;

@@ -9,33 +9,33 @@ using Microsoft.UI.Xaml.Controls;
 
 public sealed partial class LoanApplicationDialog : ContentDialog
 {
-    private readonly LoansViewModel _viewModel;
+    private readonly LoansViewModel viewModel;
 
     public LoanApplicationDialog(LoansViewModel viewModel)
     {
         this.InitializeComponent();
-        this._viewModel = viewModel;
+        this.viewModel = viewModel;
         this.DataContext = viewModel;
     }
 
     private async void OnSubmitClicked(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var deferral = args.GetDeferral();
-        if (!this._viewModel.IsReviewVisible)
+        if (!this.viewModel.IsReviewVisible)
         {
             args.Cancel = true;
-            this._viewModel.SwitchToReviewStage();
-            sender.Title = this._viewModel.DialogTitle;
-            sender.PrimaryButtonText = this._viewModel.DialogActionText;
+            this.viewModel.SwitchToReviewStage();
+            sender.Title = this.viewModel.DialogTitle;
+            sender.PrimaryButtonText = this.viewModel.DialogActionText;
         }
         else
         {
-            await this._viewModel.ApplyForLoanAsync();
+            await this.viewModel.ApplyForLoanAsync();
 
-            if (!string.IsNullOrEmpty(this._viewModel.ApplicationResult))
+            if (!string.IsNullOrEmpty(this.viewModel.ApplicationResult))
             {
-                this.ResultBar.Message = this._viewModel.ApplicationResult;
-                this.ResultBar.Severity = this._viewModel.ApplicationWasApproved
+                this.ResultBar.Message = this.viewModel.ApplicationResult;
+                this.ResultBar.Severity = this.viewModel.ApplicationWasApproved
                     ? InfoBarSeverity.Success
                     : InfoBarSeverity.Error;
                 this.ResultBar.IsOpen = true;

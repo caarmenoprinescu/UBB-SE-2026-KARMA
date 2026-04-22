@@ -35,7 +35,7 @@ public class SavingsRepository : ISavingsRepository
                        accountName, fundingAccountId, targetAmount, targetDate
                 FROM SavingsAccount
                 WHERE userId = @UserId"
-                                  + (includesClosedAccounts ? "" : " AND accountStatus != 'Closed'") +
+                                  + (includesClosedAccounts ? string.Empty : " AND accountStatus != 'Closed'") +
                                   " ORDER BY balance DESC";
 
         var accountsList = new List<SavingsAccount>();

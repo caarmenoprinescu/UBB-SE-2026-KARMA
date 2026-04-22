@@ -176,17 +176,35 @@
                     INNER JOIN InvestmentHolding h ON t.holdingId = h.id
                     WHERE h.portfolioId = @PortfolioId";
 
-            if (startDate.HasValue) filterLogsSqlQuery += " AND t.executedAt >= @StartDate";
-            if (endDate.HasValue) filterLogsSqlQuery += " AND t.executedAt <= @EndDate";
-            if (!string.IsNullOrWhiteSpace(ticker)) filterLogsSqlQuery += " AND t.ticker = @Ticker";
+            if (startDate.HasValue)
+            {
+                filterLogsSqlQuery += " AND t.executedAt >= @StartDate";
+            }
+            if (endDate.HasValue)
+            {
+                filterLogsSqlQuery += " AND t.executedAt <= @EndDate";
+            }
+            if (!string.IsNullOrWhiteSpace(ticker))
+            {
+                filterLogsSqlQuery += " AND t.ticker = @Ticker";
+            }
 
             filterLogsSqlQuery += " ORDER BY t.executedAt DESC";
 
             using var filterCommand = new SqlCommand(filterLogsSqlQuery, sqlConnection);
             filterCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
-            if (startDate.HasValue) filterCommand.Parameters.AddWithValue("@StartDate", startDate.Value);
-            if (endDate.HasValue) filterCommand.Parameters.AddWithValue("@EndDate", endDate.Value);
-            if (!string.IsNullOrWhiteSpace(ticker)) filterCommand.Parameters.AddWithValue("@Ticker", ticker);
+            if (startDate.HasValue)
+            {
+                filterCommand.Parameters.AddWithValue("@StartDate", startDate.Value);
+            }
+            if (endDate.HasValue)
+            {
+                filterCommand.Parameters.AddWithValue("@EndDate", endDate.Value);
+            }
+            if (!string.IsNullOrWhiteSpace(ticker))
+            {
+                filterCommand.Parameters.AddWithValue("@Ticker", ticker);
+            }
 
             using var transactionLogDataReader = await filterCommand.ExecuteReaderAsync();
             while (await transactionLogDataReader.ReadAsync())

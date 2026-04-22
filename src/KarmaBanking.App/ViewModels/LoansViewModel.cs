@@ -326,7 +326,7 @@ public partial class LoansViewModel : ObservableObject
         try
         {
             var rows = await this.apiService.GetAmortizationAsync(this.SelectedLoan.Loan.Id);
-            var pdfBytes = this.pdfExporter.exportAmortization(rows);
+            var pdfBytes = this.pdfExporter.ExportAmortization(rows);
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             var fileName = $"amortization_schedule_{this.SelectedLoan.Loan.Id}.pdf";
             var filePath = Path.Combine(desktopPath, fileName);

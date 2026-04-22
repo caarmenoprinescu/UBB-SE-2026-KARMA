@@ -13,7 +13,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 public sealed partial class AmortizationScheduleView : Page
 {
-    private Loan? _loan;
+    private Loan? loan;
 
     public AmortizationScheduleView()
     {
@@ -35,7 +35,7 @@ public sealed partial class AmortizationScheduleView : Page
 
         if (e.Parameter is Loan loan)
         {
-            this._loan = loan;
+            this.loan = loan;
             this.PopulateStaticLabels(loan);
 
             this.ViewModel.SelectedLoan = new LoanViewModel(loan);
@@ -76,7 +76,7 @@ public sealed partial class AmortizationScheduleView : Page
 
     private async void OnDownloadPdfClicked(object sender, RoutedEventArgs e)
     {
-        if (this._loan != null)
+        if (this.loan != null)
         {
             await this.ViewModel.DownloadSchedulePdfAsync();
         }

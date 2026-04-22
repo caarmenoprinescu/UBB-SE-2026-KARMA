@@ -8,7 +8,7 @@ using KarmaBanking.App.Models;
 
 public class AmortizationCalculator
 {
-    public LoanEstimate computeEstimate(decimal amount, decimal annualRate, int termMonths)
+    public LoanEstimate ComputeEstimate(decimal amount, decimal annualRate, int termMonths)
     {
         var monthlyRate = annualRate / 12m / 100m;
         decimal monthlyInstallment;
@@ -34,7 +34,7 @@ public class AmortizationCalculator
         };
     }
 
-    public List<AmortizationRow> generate(Loan loan)
+    public List<AmortizationRow> Generate(Loan loan)
     {
         var rows = new List<AmortizationRow>();
 
@@ -105,7 +105,7 @@ public class AmortizationCalculator
         return rows;
     }
 
-    public decimal computePenalty(SavingsAccount acc)
+    public decimal ComputePenalty(SavingsAccount acc)
     {
         return 0;
     }

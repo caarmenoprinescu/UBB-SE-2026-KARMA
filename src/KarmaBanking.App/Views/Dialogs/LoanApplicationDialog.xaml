@@ -2,8 +2,8 @@
     x:Class="KarmaBanking.App.Views.Dialogs.LoanApplicationDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="{x:Bind _viewModel.DialogTitle, Mode=OneWay}"
-    PrimaryButtonText="{x:Bind _viewModel.DialogActionText, Mode=OneWay}"
+    Title="{x:Bind viewModel.DialogTitle, Mode=OneWay}"
+    PrimaryButtonText="{x:Bind viewModel.DialogActionText, Mode=OneWay}"
     CloseButtonText="Cancel"
     PrimaryButtonClick="OnSubmitClicked">
 
@@ -11,7 +11,7 @@
         <StackPanel Spacing="16" Width="400">
 
             <StackPanel x:Name="FormPanel" Spacing="16"
-                        Visibility="{x:Bind _viewModel.IsFormVisible, Mode=OneWay}">
+                        Visibility="{x:Bind viewModel.IsFormVisible, Mode=OneWay}">
 
                 <StackPanel Spacing="4">
                     <TextBlock Text="Loan Type" />
@@ -39,7 +39,7 @@
 
                 <Border Padding="12" CornerRadius="8"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        Visibility="{x:Bind _viewModel.IsEstimateVisible, Mode=OneWay}">
+                        Visibility="{x:Bind viewModel.IsEstimateVisible, Mode=OneWay}">
                     <StackPanel Spacing="8">
                         <TextBlock Text="INDICATIVE ESTIMATE" FontSize="11" FontWeight="Bold"
                                    Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -65,7 +65,7 @@
             </StackPanel>
 
             <StackPanel x:Name="ReviewPanel" Spacing="16"
-                        Visibility="{x:Bind _viewModel.IsReviewVisible, Mode=OneWay}">
+                        Visibility="{x:Bind viewModel.IsReviewVisible, Mode=OneWay}">
                 <TextBlock Text="Please review your application details:" FontWeight="Bold" FontSize="16"
                            Margin="0,0,0,8" />
 

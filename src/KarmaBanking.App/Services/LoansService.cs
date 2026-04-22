@@ -9,20 +9,20 @@ using System.Threading.Tasks;
 
 public class LoanService : ILoanService
 {
-    private readonly AmortizationCalculator _calculator;
-    private readonly ILoanRepository _loanRepository;
-    private readonly LoanApplicationValidator _validator;
+    private readonly AmortizationCalculator calculator;
+    private readonly ILoanRepository loadRepository;
+    private readonly LoanApplicationValidator validator;
 
     public LoanService(ILoanRepository loanRepository)
     {
-        this._loanRepository = loanRepository;
-        this._validator = new LoanApplicationValidator();
-        this._calculator = new AmortizationCalculator();
+        this.loadRepository = loanRepository;
+        this.validator = new LoanApplicationValidator();
+        this.calculator = new AmortizationCalculator();
     }
 
     public async Task<List<Loan>> GetAllLoansAsync()
     {
-        return await this._loanRepository.GetAllLoansAsync();
+        return await this.loadRepository.GetAllLoansAsync();
     }
 
     public async Task<Loan> GetLoanByIdAsync(int id)
@@ -32,7 +32,7 @@ public class LoanService : ILoanService
             return new Loan();
         }
 
-        return await this._loanRepository.GetLoanByIdAsync(id);
+        return await this.loadRepository.GetLoanByIdAsync(id);
     }
 
     public async Task<List<Loan>> GetLoansByUserAsync(int userId)
@@ -42,22 +42,22 @@ public class LoanService : ILoanService
             return [];
         }
 
-        return await this._loanRepository.GetLoansByUserAsync(userId);
+        return await this.loadRepository.GetLoansByUserAsync(userId);
     }
 
     public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
     {
-        return await this._loanRepository.GetLoansByStatusAsync(loanStatus);
+        return await this.loadRepository.GetLoansByStatusAsync(loanStatus);
     }
 
     public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
     {
-        return await this._loanRepository.GetLoansByTypeAsync(loanType);
+        return await this.loadRepository.GetLoansByTypeAsync(loanType);
     }
 
     public async Task<LoanApplication> ApplyForLoanAsync(LoanApplicationRequest request)
     {
-        this._validator.Validate(request);
+        this.validator.Validate(request);
         var application = new LoanApplication
         {
             UserId = request.UserId,
@@ -66,9 +66,9 @@ public class LoanService : ILoanService
             PreferredTermMonths = request.PreferredTermMonths,
             Purpose = request.Purpose,
             ApplicationStatus = LoanApplicationStatus.Pending,
-            RejectionReason = ""
+            RejectionReason = string.Empty
         };
-        var appId = await this._loanRepository.CreateLoanApplicationAsync(request);
+        var appId = await this.loadRepository.CreateLoanApplicationAsync(request);
         application.Id = appId;
         return application;
     }
@@ -78,7 +78,7 @@ public class LoanService : ILoanService
     {
         var (status, reason) = await this.EvaluateApplicationAsync(application);
 
-        await this._loanRepository.UpdateLoanApplicationStatusAsync(application.Id, status, reason);
+        await this.loadRepository.UpdateLoanApplicationStatusAsync(application.Id, status, reason);
 
         return (status, reason);
     }
@@ -86,7 +86,7 @@ public class LoanService : ILoanService
     public async Task<int> AddLoanAsync(LoanApplication application)
     {
         var rate = this.GetInterestRateForType(application.LoanType);
-        var estimate = this._calculator.computeEstimate(
+        var estimate = this.calculator.ComputeEstimate(
             application.DesiredAmount,
             rate,
             application.PreferredTermMonths);
@@ -104,16 +104,16 @@ public class LoanService : ILoanService
             TermInMonths = application.PreferredTermMonths,
             StartDate = DateTime.Now
         };
-        return await this._loanRepository.CreateLoanAsync(loan);
+        return await this.loadRepository.CreateLoanAsync(loan);
     }
 
     public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
     {
-        this._validator.Validate(request);
+        this.validator.Validate(request);
 
         var rate = this.GetInterestRateForType(request.LoanType);
 
-        return this._calculator.computeEstimate(
+        return this.calculator.ComputeEstimate(
             request.DesiredAmount,
             rate,
             request.PreferredTermMonths);
@@ -121,7 +121,7 @@ public class LoanService : ILoanService
 
     public async Task PayInstallmentAsync(int loanId, decimal? customAmount)
     {
-        var loan = await this._loanRepository.GetLoanByIdAsync(loanId);
+        var loan = await this.loadRepository.GetLoanByIdAsync(loanId);
 
         if (loan == null)
         {
@@ -172,17 +172,17 @@ public class LoanService : ILoanService
             newStatus = LoanStatus.Passed;
         }
 
-        await this._loanRepository.UpdateLoanAfterPaymentAsync(loan.Id, newBalance, newRemainingMonths, newStatus);
+        await this.loadRepository.UpdateLoanAfterPaymentAsync(loan.Id, newBalance, newRemainingMonths, newStatus);
     }
 
     public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
     {
-        var rows = await this._loanRepository.GetAmortizationAsync(loanId);
+        var rows = await this.loadRepository.GetAmortizationAsync(loanId);
 
         if (rows == null || rows.Count == 0)
         {
             await this.GenerateAmortizationAsync(loanId);
-            rows = await this._loanRepository.GetAmortizationAsync(loanId);
+            rows = await this.loadRepository.GetAmortizationAsync(loanId);
         }
 
         var isCurrentSet = false;
@@ -204,20 +204,20 @@ public class LoanService : ILoanService
 
     public async Task SaveAmortizationAsync(List<AmortizationRow> rows)
     {
-        await this._loanRepository.SaveAmortizationAsync(rows);
+        await this.loadRepository.SaveAmortizationAsync(rows);
     }
 
     public async Task GenerateAmortizationAsync(int loanId)
     {
-        var loan = await this._loanRepository.GetLoanByIdAsync(loanId);
-        var rows = this._calculator.generate(loan);
-        await this._loanRepository.SaveAmortizationAsync(rows);
+        var loan = await this.loadRepository.GetLoanByIdAsync(loanId);
+        var rows = this.calculator.Generate(loan);
+        await this.loadRepository.SaveAmortizationAsync(rows);
     }
 
     private async Task<(LoanApplicationStatus approved, string? reason)> EvaluateApplicationAsync(
         LoanApplication application)
     {
-        var currentLoans = await this._loanRepository.GetLoansByUserAsync(application.UserId);
+        var currentLoans = await this.loadRepository.GetLoansByUserAsync(application.UserId);
 
         var totalOutstanding = currentLoans.Sum(l => l.OutstandingBalance);
         var activeLoansCount = currentLoans.Count(l => l.LoanStatus == LoanStatus.Active);

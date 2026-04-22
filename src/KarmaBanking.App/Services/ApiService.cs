@@ -165,12 +165,11 @@ namespace KarmaBanking.App.Services
             chatRepository.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
         }
 
-        public void EmailSessionTranscript(int sessionId, string recipientEmail)
-        {
-            EmailTranscriptService emailService = new EmailTranscriptService();
-            emailService.SendSessionTranscript(sessionId, recipientEmail);
-        }
-
+        // public void EmailSessionTranscript(int sessionId, string recipientEmail)
+        // {
+        //    EmailTranscriptService emailService = new EmailTranscriptService();
+        //    emailService.SendSessionTranscript(sessionId, recipientEmail);
+        // }
         public virtual Task<List<string>> GetChatbotPresetQuestionsAsync()
         {
             return Task.FromResult(new List<string>(DefaultChatbotResponses.Keys));
