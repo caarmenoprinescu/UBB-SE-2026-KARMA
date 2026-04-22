@@ -185,11 +185,8 @@
         [Fact]
         public async Task GetInvestmentLogsAsync_ThrowsWhenStartDateAfterEndDate()
         {
-            // Arrange
             DateTime start = DateTime.Now;
             DateTime end = start.AddDays(-1);
-
-            // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 this.investmentService.GetInvestmentLogsAsync(1, start, end));
         }
