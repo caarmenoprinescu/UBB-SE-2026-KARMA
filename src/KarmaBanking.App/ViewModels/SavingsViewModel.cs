@@ -251,7 +251,7 @@ public partial class SavingsViewModel : BaseViewModel
         try
         {
             var withdrawResponseDto = await this.savingsService.WithdrawAsync(
-                this.SelectedAccount!.Id,
+                this.SelectedAccount!.IdentificationNumber,
                 amount,
                 this.WithdrawDestination.DisplayName,
                 CurrentUserId);
@@ -324,7 +324,7 @@ public partial class SavingsViewModel : BaseViewModel
         var autoDeposit = new AutoDeposit
         {
             Id = this.currentAutoDeposit?.Id ?? 0,
-            SavingsAccountId = this.SelectedAccount!.Id,
+            SavingsAccountId = this.SelectedAccount!.IdentificationNumber,
             Amount = amount,
             Frequency = freq,
             NextRunDate = this.AutoDepositStartDate?.DateTime ?? DateTime.Now.AddDays(1),
@@ -333,7 +333,7 @@ public partial class SavingsViewModel : BaseViewModel
 
         await this.savingsService.SaveAutoDepositAsync(autoDeposit);
         this.AutoDepositSaveMessage = "Auto deposit saved successfully.";
-        await this.LoadAutoDepositAsync(this.SelectedAccount.Id);
+        await this.LoadAutoDepositAsync(this.SelectedAccount.IdentificationNumber);
     }
 
     // ── Commands: My Accounts ────────────────────────────────────────────
@@ -376,7 +376,7 @@ public partial class SavingsViewModel : BaseViewModel
         this.ErrorMessage = string.Empty;
         try
         {
-            var closureResultDto = await this.savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
+            var closureResultDto = await this.savingsService.CloseAccountAsync(account.IdentificationNumber, CurrentUserId, 1);
             var ok = closureResultDto.Success;
             if (!ok)
             {
@@ -401,7 +401,7 @@ public partial class SavingsViewModel : BaseViewModel
         this.CloseUserConfirmed = false;
         this.CloseResultMessage = string.Empty;
         this.CloseSuccess = false;
-        var openAccountsList = await this.savingsService.GetValidTransferDestinationsAsync(this.SelectedAccount!.Id);
+        var openAccountsList = await this.savingsService.GetValidTransferDestinationsAsync(this.SelectedAccount!.IdentificationNumber);
         this.CloseDestinationAccounts.Clear();
         foreach (var account in openAccountsList)
         {
@@ -428,7 +428,7 @@ public partial class SavingsViewModel : BaseViewModel
         try
         {
             var result = await this.savingsService.CloseAccountAsync(
-                this.SelectedAccount!.Id,
+                this.SelectedAccount!.IdentificationNumber,
                 this.SelectedCloseDestinationId,
                 CurrentUserId);
             this.CloseSuccess = result.Success;
@@ -529,7 +529,7 @@ public partial class SavingsViewModel : BaseViewModel
         {
             var createSavingsAccountDto = new CreateSavingsAccountDto
             {
-                UserId = CurrentUserId,
+                UserIdentificationNumber = CurrentUserId,
                 SavingsType = this.SelectedSavingsType,
                 AccountName = this.AccountName.Trim(),
                 InitialDeposit = deposit,
@@ -595,7 +595,7 @@ public partial class SavingsViewModel : BaseViewModel
         try
         {
             var depositResponseDto = await this.savingsService.DepositAsync(
-                this.SelectedAccount.Id,
+                this.SelectedAccount.IdentificationNumber,
                 amount,
                 this.DepositSource,
                 CurrentUserId);

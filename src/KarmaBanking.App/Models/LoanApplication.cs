@@ -35,7 +35,7 @@ public class LoanApplication
     /// <summary>
     /// Gets or sets the business or personal purpose for the request.
     /// </summary>
-    public string Purpose { get; set; }
+    public required string Purpose { get; set; }
 
     /// <summary>
     /// Gets or sets the current review status of the application.

@@ -31,7 +31,7 @@ namespace KarmaBanking.App.Tests.Services
 
             var inputDto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "Standard",
                 AccountName = "My Savings",
                 InitialDeposit = 1000m,
@@ -40,8 +40,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var outputDto = new SavingsAccount
             {
-                Id = 1,
-                UserId = inputDto.UserId,
+                IdentificationNumber = 1,
+                UserIdentificationNumber = inputDto.UserIdentificationNumber,
                 AccountName = inputDto.AccountName,
                 Balance = inputDto.InitialDeposit,
                 SavingsType = inputDto.SavingsType,
@@ -49,7 +49,7 @@ namespace KarmaBanking.App.Tests.Services
             };
 
             repository.CreateSavingsAccountAsync(inputDto, DEFAULT_APY).Returns(Task.FromResult(outputDto));
-            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, DEFAULT_APY);
@@ -63,7 +63,7 @@ namespace KarmaBanking.App.Tests.Services
 
             var inputDto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "GoalSavings",
                 AccountName = "My Savings",
                 InitialDeposit = 1000m,
@@ -74,8 +74,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var outputDto = new SavingsAccount
             {
-                Id = 1,
-                UserId = inputDto.UserId,
+                IdentificationNumber = 1,
+                UserIdentificationNumber = inputDto.UserIdentificationNumber,
                 AccountName = inputDto.AccountName,
                 Balance = inputDto.InitialDeposit,
                 SavingsType = inputDto.SavingsType,
@@ -85,7 +85,7 @@ namespace KarmaBanking.App.Tests.Services
             };
 
             repository.CreateSavingsAccountAsync(inputDto, GOAL_SAVINGS_APY).Returns(Task.FromResult(outputDto));
-            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, GOAL_SAVINGS_APY);
@@ -99,7 +99,7 @@ namespace KarmaBanking.App.Tests.Services
 
             var inputDto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "FixedDeposit",
                 AccountName = "My Savings",
                 InitialDeposit = 1000m,
@@ -108,8 +108,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var outputDto = new SavingsAccount
             {
-                Id = 1,
-                UserId = inputDto.UserId,
+                IdentificationNumber = 1,
+                UserIdentificationNumber = inputDto.UserIdentificationNumber,
                 AccountName = inputDto.AccountName,
                 Balance = inputDto.InitialDeposit,
                 SavingsType = inputDto.SavingsType,
@@ -117,7 +117,7 @@ namespace KarmaBanking.App.Tests.Services
             };
 
             repository.CreateSavingsAccountAsync(inputDto, FIXED_DEPOSIT_APY).Returns(Task.FromResult(outputDto));
-            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, FIXED_DEPOSIT_APY);
@@ -131,7 +131,7 @@ namespace KarmaBanking.App.Tests.Services
 
             var inputDto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "HighYield",
                 AccountName = "My Savings",
                 InitialDeposit = 1000m,
@@ -140,8 +140,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var outputDto = new SavingsAccount
             {
-                Id = 1,
-                UserId = inputDto.UserId,
+                IdentificationNumber = 1,
+                UserIdentificationNumber = inputDto.UserIdentificationNumber,
                 AccountName = inputDto.AccountName,
                 Balance = inputDto.InitialDeposit,
                 SavingsType = inputDto.SavingsType,
@@ -149,7 +149,7 @@ namespace KarmaBanking.App.Tests.Services
             };
 
             repository.CreateSavingsAccountAsync(inputDto, HIGH_YIELD_APY).Returns(Task.FromResult(outputDto));
-            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(inputDto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             Assert.Equal(outputDto, await service.CreateAccountAsync(inputDto));
             await repository.Received(1).CreateSavingsAccountAsync(inputDto, HIGH_YIELD_APY);
@@ -164,15 +164,15 @@ namespace KarmaBanking.App.Tests.Services
 
             var activeAccounts = new List<SavingsAccount>
             {
-                new SavingsAccount { Id = 1, UserId = userId, AccountStatus = "Active" },
-                new SavingsAccount { Id = 2, UserId = userId, AccountStatus = "Active" },
-                new SavingsAccount { Id = 3, UserId = userId, AccountStatus = "Active" },
-                new SavingsAccount { Id = 4, UserId = userId, AccountStatus = "Active" },
-                new SavingsAccount { Id = 5, UserId = userId, AccountStatus = "Active" }
+                new SavingsAccount { IdentificationNumber = 1, UserIdentificationNumber = userId, AccountStatus = "Active" },
+                new SavingsAccount { IdentificationNumber = 2, UserIdentificationNumber = userId, AccountStatus = "Active" },
+                new SavingsAccount { IdentificationNumber = 3, UserIdentificationNumber = userId, AccountStatus = "Active" },
+                new SavingsAccount { IdentificationNumber = 4, UserIdentificationNumber = userId, AccountStatus = "Active" },
+                new SavingsAccount { IdentificationNumber = 5, UserIdentificationNumber = userId, AccountStatus = "Active" }
             };
             repository.GetSavingsAccountsByUserIdAsync(userId, false).Returns(Task.FromResult(activeAccounts));
 
-            var dto = new CreateSavingsAccountDto { UserId = userId, SavingsType = "Standard" };
+            var dto = new CreateSavingsAccountDto { UserIdentificationNumber = userId, SavingsType = "Standard" };
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("You cannot have more than 5 active savings accounts.", ex.Message);
@@ -186,7 +186,7 @@ namespace KarmaBanking.App.Tests.Services
             var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "GoalSavings",
                 AccountName = "My Goal Savings",
                 InitialDeposit = 1000m,
@@ -194,7 +194,7 @@ namespace KarmaBanking.App.Tests.Services
                 TargetAmount = 5000m
             };
 
-            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("GoalSavings accounts require a target date.", ex.Message);
@@ -208,7 +208,7 @@ namespace KarmaBanking.App.Tests.Services
             var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "GoalSavings",
                 AccountName = "My Goal Savings",
                 InitialDeposit = 1000m,
@@ -217,7 +217,7 @@ namespace KarmaBanking.App.Tests.Services
                 TargetDate = DateTime.UtcNow.AddDays(-1)
             };
 
-            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("Target date must be in the future.", ex.Message);
@@ -231,7 +231,7 @@ namespace KarmaBanking.App.Tests.Services
             var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "GoalSavings",
                 AccountName = "My Goal Savings",
                 InitialDeposit = 1000m,
@@ -239,7 +239,7 @@ namespace KarmaBanking.App.Tests.Services
                 TargetDate = DateTime.UtcNow.AddDays(30)
             };
 
-            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("GoalSavings accounts require a positive target amount.", ex.Message);
@@ -253,7 +253,7 @@ namespace KarmaBanking.App.Tests.Services
             var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
-                UserId = 1,
+                UserIdentificationNumber = 1,
                 SavingsType = "GoalSavings",
                 AccountName = "My Goal Savings",
                 InitialDeposit = 1000m,
@@ -262,7 +262,7 @@ namespace KarmaBanking.App.Tests.Services
                 TargetAmount = -5000m
             };
 
-            repository.GetSavingsAccountsByUserIdAsync(dto.UserId, false).Returns(Task.FromResult(new List<SavingsAccount>()));
+            repository.GetSavingsAccountsByUserIdAsync(dto.UserIdentificationNumber, false).Returns(Task.FromResult(new List<SavingsAccount>()));
 
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.CreateAccountAsync(dto));
             Assert.Equal("GoalSavings accounts require a positive target amount.", ex.Message);
@@ -289,8 +289,8 @@ namespace KarmaBanking.App.Tests.Services
             var userId = 1;
             var accounts = new List<SavingsAccount>
             {
-                new SavingsAccount { Id = 1, UserId = userId, AccountName = "Savings 1" },
-                new SavingsAccount { Id = 2, UserId = userId, AccountName = "Savings 2" },
+                new SavingsAccount { IdentificationNumber = 1, UserIdentificationNumber = userId, AccountName = "Savings 1" },
+                new SavingsAccount { IdentificationNumber = 2, UserIdentificationNumber = userId, AccountName = "Savings 2" },
             };
 
             repository.GetSavingsAccountsByUserIdAsync(userId, false).Returns(Task.FromResult(accounts));
@@ -323,7 +323,7 @@ namespace KarmaBanking.App.Tests.Services
             var inexistentAccountId = 999;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = 1, UserId = userId } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = 1, UserIdentificationNumber = userId } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(inexistentAccountId, 100m, "Source", userId));
             Assert.Equal("Account not found or does not belong to you.", ex.Message);
@@ -340,7 +340,7 @@ namespace KarmaBanking.App.Tests.Services
             var accountId = 1;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(accountId, 100m, "Source", userId));
             Assert.Equal("Cannot deposit into a closed account.", ex.Message);
@@ -357,7 +357,7 @@ namespace KarmaBanking.App.Tests.Services
             var accountId = 1;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Matured.ToString() } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Matured.ToString() } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.DepositAsync(accountId, 100m, "Source", userId));
             Assert.Equal("Cannot deposit into a matured account.", ex.Message);
@@ -375,7 +375,7 @@ namespace KarmaBanking.App.Tests.Services
             var amount = 100m;
             var source = "Source";
 
-            var account = new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString(), Balance = 0m };
+            var account = new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Active.ToString(), Balance = 0m };
             var expectedResponse = new DepositResponseDto { NewBalance = 100m, TransactionId = 1, Timestamp = DateTime.UtcNow };
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true).Returns(Task.FromResult(new List<SavingsAccount> { account }));
@@ -399,7 +399,7 @@ namespace KarmaBanking.App.Tests.Services
             var destinationAccountId = 2;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(inexistentAccountId, destinationAccountId, userId));
             Assert.Equal("Account not found.", ex.Message);
@@ -418,7 +418,7 @@ namespace KarmaBanking.App.Tests.Services
             var destinationAccountId = 2;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, destinationAccountId, userId));
             Assert.Equal("Account already closed.", ex.Message);
@@ -437,7 +437,7 @@ namespace KarmaBanking.App.Tests.Services
             var inexistentDestinationAccountId = 999;
 
             repository.GetSavingsAccountsByUserIdAsync(userId, true)
-                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString() } }));
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Active.ToString() } }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, inexistentDestinationAccountId, userId));
             Assert.Equal("Destination account not found.", ex.Message);
@@ -460,9 +460,9 @@ namespace KarmaBanking.App.Tests.Services
                 {
                     new SavingsAccount
                     {
-                        Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString()
+                        IdentificationNumber = accountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Active.ToString()
                     },
-                                                         new SavingsAccount { Id = destinationAccountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() },
+                                                         new SavingsAccount { IdentificationNumber = destinationAccountId, UserIdentificationNumber = userId, AccountStatus = AccountStatus.Closed.ToString() },
                 }));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, destinationAccountId, userId));
@@ -484,8 +484,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "FixedDeposit",
@@ -494,8 +494,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };
@@ -532,8 +532,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "FixedDeposit",
@@ -541,8 +541,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };
@@ -579,8 +579,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "FixedDeposit",
@@ -589,8 +589,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };
@@ -627,8 +627,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "Standard",
@@ -636,8 +636,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };
@@ -674,8 +674,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "GoalSavings",
@@ -683,8 +683,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };
@@ -721,8 +721,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var sourceAccount = new SavingsAccount
             {
-                Id = accountId,
-                UserId = userId,
+                IdentificationNumber = accountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
                 SavingsType = "HighYield",
@@ -730,8 +730,8 @@ namespace KarmaBanking.App.Tests.Services
 
             var destinationAccount = new SavingsAccount
             {
-                Id = destinationAccountId,
-                UserId = userId,
+                IdentificationNumber = destinationAccountId,
+                UserIdentificationNumber = userId,
                 AccountStatus = AccountStatus.Active.ToString(),
                 Balance = 100m,
             };

@@ -39,7 +39,7 @@ namespace KarmaBanking.App.Tests.Services
         {
             var loan = new Loan
             {
-                Id = 7,
+                IdentificationNumber = 7,
                 Principal = 1200m,
                 OutstandingBalance = 1200m,
                 InterestRate = 0m,
@@ -63,7 +63,7 @@ namespace KarmaBanking.App.Tests.Services
         {
             var loan = new Loan
             {
-                Id = 8,
+                IdentificationNumber = 8,
                 Principal = 10000m,
                 OutstandingBalance = 10000m,
                 InterestRate = 8m,

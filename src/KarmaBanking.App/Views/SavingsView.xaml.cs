@@ -255,7 +255,7 @@ public sealed partial class SavingsView : Page
             return;
         }
 
-        await this.viewModel.LoadAutoDepositAsync(this.viewModel.SelectedAccount.Id);
+        await this.viewModel.LoadAutoDepositAsync(this.viewModel.SelectedAccount.IdentificationNumber);
 
         this.AutoDepositTitle.Text = this.viewModel.ExistingLabel + " Auto Deposit";
         this.AutoDepositAmountTextBox.Text = this.viewModel.AutoDepositAmountText;
@@ -440,7 +440,7 @@ public sealed partial class SavingsView : Page
     {
         if (this.CloseDestComboBox.SelectedItem is SavingsAccount savingsAccount)
         {
-            this.viewModel.SelectedCloseDestinationId = savingsAccount.Id;
+            this.viewModel.SelectedCloseDestinationId = savingsAccount.IdentificationNumber;
         }
     }
 
