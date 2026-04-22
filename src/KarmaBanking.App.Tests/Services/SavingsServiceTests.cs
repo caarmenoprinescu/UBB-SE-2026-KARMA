@@ -754,5 +754,88 @@ namespace KarmaBanking.App.Tests.Services
             await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
             await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
         }
+
+        [Fact]
+        public async Task WithdrawAsync_NegativeAmount_ThrowsArgumentException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var accountId = 1;
+            var userId = 1;
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.WithdrawAsync(accountId, -100m, "Destination", userId));
+            Assert.Equal("Withdrawal amount must be positive.", ex.Message);
+            await repository.DidNotReceive().WithdrawAsync(Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task WithdrawAsync_DestinationAccountNotFound_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var accountId = 1;
+            var userId = 1;
+            var inexistentDestinationAccountId = 999;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString() } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.WithdrawAsync(inexistentDestinationAccountId, 100m, "Destination label", userId));
+            Assert.Equal("Account not found or does not belong to you.", ex.Message);
+            await repository.DidNotReceive().WithdrawAsync(Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task WithdrawAsync_DestinationAccountClosed_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var accountId = 1;
+            var userId = 1;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount>
+                {
+                    new SavingsAccount
+                    {
+                        Id = accountId,
+                        UserId = userId,
+                        AccountStatus = AccountStatus.Closed.ToString(),
+                    }
+                }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.WithdrawAsync(accountId, 100m, "Destination label", userId));
+            Assert.Equal("Cannot withdraw from a closed account.", ex.Message);
+            await repository.DidNotReceive().WithdrawAsync(Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task WithdrawAsync_InsufficientBalance_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var accountId = 1;
+            var userId = 1;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount>
+                {
+                    new SavingsAccount
+                    {
+                        Id = accountId,
+                        UserId = userId,
+                        AccountStatus = AccountStatus.Active.ToString(),
+                        Balance = 50m,
+                    }
+                }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.WithdrawAsync(accountId, 100m, "Destination label", userId));
+            Assert.Equal("Insufficient balance.", ex.Message);
+            await repository.DidNotReceive().WithdrawAsync(Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<decimal>());
+        }
     }
 }
