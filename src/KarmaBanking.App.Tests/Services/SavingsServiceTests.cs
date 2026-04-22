@@ -386,5 +386,367 @@ namespace KarmaBanking.App.Tests.Services
             await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
             await repository.Received(1).DepositAsync(accountId, amount, source);
         }
+
+        [Fact]
+        public async Task CloseAccountAsync_AccountIdNotFound_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var inexistentAccountId = 999;
+            var destinationAccountId = 2;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(inexistentAccountId, destinationAccountId, userId));
+            Assert.Equal("Account not found.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.DidNotReceive().CloseSavingsAccountAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_AccountAlreadyClosed_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, destinationAccountId, userId));
+            Assert.Equal("Account already closed.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.DidNotReceive().CloseSavingsAccountAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_DestinationAccountNotFound_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var inexistentDestinationAccountId = 999;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString() } }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, inexistentDestinationAccountId, userId));
+            Assert.Equal("Destination account not found.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.DidNotReceive().CloseSavingsAccountAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_DestinationAccountAlreadyClosed_ThrowsInvalidOperationException()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { new SavingsAccount { Id = accountId, UserId = userId, AccountStatus = AccountStatus.Active.ToString() },
+                                                         new SavingsAccount { Id = destinationAccountId, UserId = userId, AccountStatus = AccountStatus.Closed.ToString() }, }));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.CloseAccountAsync(accountId, destinationAccountId, userId));
+            Assert.Equal("Cannot transfer to a closed account.", ex.Message);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.DidNotReceive().CloseSavingsAccountAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal>());
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseFixedDepositWithPenalty_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 98m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "FixedDeposit",
+                MaturityDate = DateTime.UtcNow.AddDays(30),
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed with penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 2,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 2).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 2);
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseFixedDepositWithoutMaturityDate_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 100m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "FixedDeposit",
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed without penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 0,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseMaturedFixedDepositWithoutPenalty_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 100m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "FixedDeposit",
+                MaturityDate = DateTime.UtcNow.AddDays(-1),
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed without penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 0,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseStandardAccountWithoutPenalty_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 100m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "Standard",
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed without penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 0,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseGoalSavingsAccountWithoutPenalty_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 100m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "GoalSavings",
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed without penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 0,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
+        }
+
+        [Fact]
+        public async Task CloseAccountAsync_CloseHighYieldAccountWithoutPenalty_ReturnsCloseAccountResponse()
+        {
+            var repository = Substitute.For<ISavingsRepository>();
+            var service = new SavingsService(repository);
+
+            var userId = 1;
+            var accountId = 1;
+            var destinationAccountId = 2;
+            var transferedAmount = 100m;
+
+            var sourceAccount = new SavingsAccount
+            {
+                Id = accountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+                SavingsType = "HighYield",
+            };
+
+            var destinationAccount = new SavingsAccount
+            {
+                Id = destinationAccountId,
+                UserId = userId,
+                AccountStatus = AccountStatus.Active.ToString(),
+                Balance = 100m,
+            };
+
+            var expectedResponse = new ClosureResultDto
+            {
+                Success = true,
+                TransferredAmount = transferedAmount,
+                Message = "Account closed without penalty.",
+                ClosedAt = DateTime.UtcNow,
+                PenaltyApplied = 0,
+            };
+
+            repository.GetSavingsAccountsByUserIdAsync(userId, true)
+                .Returns(Task.FromResult(new List<SavingsAccount> { sourceAccount, destinationAccount }));
+            repository.CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0).Returns(Task.FromResult(expectedResponse));
+
+            var result = await service.CloseAccountAsync(accountId, destinationAccountId, userId);
+            Assert.Equal(expectedResponse, result);
+            await repository.Received(1).GetSavingsAccountsByUserIdAsync(userId, true);
+            await repository.Received(1).CloseSavingsAccountAsync(accountId, destinationAccountId, transferedAmount, 0);
+        }
     }
 }
