@@ -13,7 +13,7 @@ using KarmaBanking.App.Models.Enums;
 public class CreateSavingsAccountDto
 {
     /// <summary>Gets or sets the user identifier.</summary>
-    public int UserId { get; set; }
+    public int UserIdentificationNumber { get; set; }
 
     /// <summary>Gets or sets the selected savings type.</summary>
     public string SavingsType { get; set; } = string.Empty;

@@ -109,6 +109,7 @@
                 command.Parameters.AddWithValue("@sentAt", message.SentAt);
 
                 await command.ExecuteNonQueryAsync();
+                await command.ExecuteScalarAsync();
             }
         }
 

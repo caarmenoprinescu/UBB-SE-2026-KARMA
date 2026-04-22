@@ -44,9 +44,9 @@
                     checkCommand.Parameters.AddWithValue("@Ticker", ticker);
 
                     var result = await checkCommand.ExecuteScalarAsync();
-                    if (result != null)
+                    if (result != null && result != DBNull.Value)
                     {
-                        holdingIdentificationNumber = (int)result;
+                        holdingIdentificationNumber = (int)result!;
                     }
                 }
 
@@ -75,7 +75,7 @@
                     insertCommand.Parameters.AddWithValue("@Quantity", finalQuantity);
                     insertCommand.Parameters.AddWithValue("@AveragePrice", finalAveragePrice);
 
-                    holdingIdentificationNumber = (int)await insertCommand.ExecuteScalarAsync();
+                    holdingIdentificationNumber = (int)(await insertCommand.ExecuteScalarAsync())!;
                 }
 
                 // 3. Log the transaction details

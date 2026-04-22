@@ -12,12 +12,12 @@ public class Loan
     /// <summary>
     /// Gets or sets the unique loan identifier.
     /// </summary>
-    public int Id { get; set; }
+    public int IdentificationNumber { get; set; }
 
     /// <summary>
     /// Gets or sets the owning user identifier.
     /// </summary>
-    public int UserId { get; set; }
+    public int UserIdentificationNumber { get; set; }
 
     /// <summary>
     /// Gets or sets the loan product type.

@@ -22,11 +22,11 @@ public class SavingsRepository : ISavingsRepository
     /// <summary>
     /// Gets savings accounts for a user with optional inclusion of closed accounts.
     /// </summary>
-    /// <param name="userId">The user identifier.</param>
+    /// <param name="userIdentificationNumber">The user identifier.</param>
     /// <param name="includesClosedAccounts">Whether closed accounts should be included.</param>
     /// <returns>The user's matching savings accounts.</returns>
     public async Task<List<SavingsAccount>> GetSavingsAccountsByUserIdAsync(
-        int userId,
+        int userIdentificationNumber,
         bool includesClosedAccounts = false)
     {
         var selectAccountsQuery = @"
@@ -44,7 +44,7 @@ public class SavingsRepository : ISavingsRepository
         await dbConnection.OpenAsync();
 
         using var sqlCommand = new SqlCommand(selectAccountsQuery, dbConnection);
-        sqlCommand.Parameters.AddWithValue("@UserId", userId);
+        sqlCommand.Parameters.AddWithValue("@UserId", userIdentificationNumber);
 
         using var reader = await sqlCommand.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -78,7 +78,7 @@ public class SavingsRepository : ISavingsRepository
         await dbConnection.OpenAsync();
 
         using var sqlCommand = new SqlCommand(insertAccountQuery, dbConnection);
-        sqlCommand.Parameters.AddWithValue("@UserId", dto.UserId);
+        sqlCommand.Parameters.AddWithValue("@UserId", dto.UserIdentificationNumber);
         sqlCommand.Parameters.AddWithValue("@SavingsType", dto.SavingsType);
         sqlCommand.Parameters.AddWithValue("@Balance", dto.InitialDeposit);
         sqlCommand.Parameters.AddWithValue("@Apy", apy);
@@ -91,12 +91,12 @@ public class SavingsRepository : ISavingsRepository
         sqlCommand.Parameters.AddWithValue("@TargetAmount", (object?)dto.TargetAmount ?? DBNull.Value);
         sqlCommand.Parameters.AddWithValue("@TargetDate", (object?)dto.TargetDate ?? DBNull.Value);
 
-        var newSavingsAccountId = (int)await sqlCommand.ExecuteScalarAsync();
+        var newSavingsAccountIdentificationNumber = (int)(await sqlCommand.ExecuteScalarAsync())!;
 
         return new SavingsAccount
         {
-            Id = newSavingsAccountId,
-            UserId = dto.UserId,
+            IdentificationNumber = newSavingsAccountIdentificationNumber,
+            UserIdentificationNumber = dto.UserIdentificationNumber,
             SavingsType = dto.SavingsType,
             AccountName = dto.AccountName,
             Balance = dto.InitialDeposit,
@@ -104,7 +104,7 @@ public class SavingsRepository : ISavingsRepository
             Apy = apy,
             AccountStatus = "Active",
             CreatedAt = DateTime.Now,
-            FundingAccountId = dto.FundingAccountId == 0 ? null : dto.FundingAccountId,
+            FundingAccountIdentificationNumber = dto.FundingAccountId == 0 ? null : dto.FundingAccountId,
             TargetAmount = dto.TargetAmount,
             TargetDate = dto.TargetDate,
         };
@@ -113,11 +113,11 @@ public class SavingsRepository : ISavingsRepository
     /// <summary>
     /// Deposits funds into a savings account and records a transaction row.
     /// </summary>
-    /// <param name="accountId">The target account identifier.</param>
+    /// <param name="accountIdentificationNumber">The target account identifier.</param>
     /// <param name="amount">The amount to deposit.</param>
     /// <param name="source">The source label for the deposit.</param>
     /// <returns>The resulting deposit response.</returns>
-    public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
+    public async Task<DepositResponseDto> DepositAsync(int accountIdentificationNumber, decimal amount, string source)
     {
         using var dbConnection = DatabaseConfig.GetDatabaseConnection();
         await dbConnection.OpenAsync();
@@ -135,7 +135,7 @@ public class SavingsRepository : ISavingsRepository
                 dbConnection,
                 sqlTransaction);
             sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@Amount", amount);
-            sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountId);
+            sqlUpdateAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountIdentificationNumber);
             await sqlUpdateAccountBalanceCommand.ExecuteNonQueryAsync();
 
             decimal newAccountBalance;
@@ -146,8 +146,8 @@ public class SavingsRepository : ISavingsRepository
                        dbConnection,
                        sqlTransaction))
             {
-                sqlSelectAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountId);
-                newAccountBalance = (decimal)await sqlSelectAccountBalanceCommand.ExecuteScalarAsync();
+                sqlSelectAccountBalanceCommand.Parameters.AddWithValue("@AccountId", accountIdentificationNumber);
+                newAccountBalance = (decimal)(await sqlSelectAccountBalanceCommand.ExecuteScalarAsync())!;
             }
 
             const string insertTransactionQuery = @"
@@ -159,21 +159,21 @@ public class SavingsRepository : ISavingsRepository
             using var sqlInsertTransactionCommand =
                 new SqlCommand(insertTransactionQuery, dbConnection, sqlTransaction);
 
-            sqlInsertTransactionCommand.Parameters.AddWithValue("@AccountId", accountId);
+            sqlInsertTransactionCommand.Parameters.AddWithValue("@AccountId", accountIdentificationNumber);
             sqlInsertTransactionCommand.Parameters.AddWithValue("@TransactionType", "Deposit");
             sqlInsertTransactionCommand.Parameters.AddWithValue("@Amount", amount);
             sqlInsertTransactionCommand.Parameters.AddWithValue("@BalanceAfter", newAccountBalance);
             sqlInsertTransactionCommand.Parameters.AddWithValue("@Source", source ?? "Manual");
             sqlInsertTransactionCommand.Parameters.AddWithValue("@Description", DBNull.Value);
 
-            var newTransactionId = (int)await sqlInsertTransactionCommand.ExecuteScalarAsync();
+            var newTransactionIdentificationNumber = (int)(await sqlInsertTransactionCommand.ExecuteScalarAsync())!;
 
             await sqlTransaction.CommitAsync();
 
             return new DepositResponseDto
             {
                 NewBalance = newAccountBalance,
-                TransactionId = newTransactionId,
+                TransactionId = newTransactionIdentificationNumber,
                 Timestamp = DateTime.Now,
             };
         }
@@ -187,14 +187,14 @@ public class SavingsRepository : ISavingsRepository
     /// <summary>
     /// Closes a savings account and transfers the specified amount to another account.
     /// </summary>
-    /// <param name="accountId">The source account identifier to close.</param>
-    /// <param name="destinationAccountId">The destination account identifier.</param>
+    /// <param name="accountIdentificationNumber">The source account identifier to close.</param>
+    /// <param name="destinationAccountIdentificationNumber">The destination account identifier.</param>
     /// <param name="transferAmount">The amount to transfer out during closure.</param>
     /// <param name="earlyClosurePenalty">The penalty applied on closure, if any.</param>
     /// <returns>The closure operation result.</returns>
     public async Task<ClosureResultDto> CloseSavingsAccountAsync(
-        int accountId,
-        int destinationAccountId,
+        int accountIdentificationNumber,
+        int destinationAccountIdentificationNumber,
         decimal transferAmount,
         decimal earlyClosurePenalty)
     {
@@ -218,12 +218,12 @@ public class SavingsRepository : ISavingsRepository
                        dbConnection,
                        dbTransaction))
             {
-                selectSourceAccountDataCommand.Parameters.AddWithValue("@Id", accountId);
+                selectSourceAccountDataCommand.Parameters.AddWithValue("@Id", accountIdentificationNumber);
 
                 using var reader = await selectSourceAccountDataCommand.ExecuteReaderAsync();
 
                 oldAccountBalance = (decimal)reader["balance"];
-                oldAccountType = reader["savingsType"].ToString();
+                oldAccountType = reader["savingsType"].ToString()!;
                 oldAccountMaturityDate = reader["maturityDate"] as DateTime?;
             }
 
@@ -237,7 +237,7 @@ public class SavingsRepository : ISavingsRepository
                        dbTransaction))
             {
                 transferAmountToDestinationCommand.Parameters.AddWithValue("@Amount", transferAmount);
-                transferAmountToDestinationCommand.Parameters.AddWithValue("@DestId", destinationAccountId);
+                transferAmountToDestinationCommand.Parameters.AddWithValue("@DestId", destinationAccountIdentificationNumber);
 
                 await transferAmountToDestinationCommand.ExecuteNonQueryAsync();
             }
@@ -253,7 +253,7 @@ public class SavingsRepository : ISavingsRepository
                        dbConnection,
                        dbTransaction))
             {
-                closeAccountCommand.Parameters.AddWithValue("@Id", accountId);
+                closeAccountCommand.Parameters.AddWithValue("@Id", accountIdentificationNumber);
                 await closeAccountCommand.ExecuteNonQueryAsync();
             }
 
@@ -267,7 +267,7 @@ public class SavingsRepository : ISavingsRepository
                        dbConnection,
                        dbTransaction))
             {
-                insertClosureTransactionCommand.Parameters.AddWithValue("@AccountId", accountId);
+                insertClosureTransactionCommand.Parameters.AddWithValue("@AccountId", accountIdentificationNumber);
                 insertClosureTransactionCommand.Parameters.AddWithValue("@Amount", transferAmount);
 
                 await insertClosureTransactionCommand.ExecuteNonQueryAsync();
@@ -335,7 +335,7 @@ public class SavingsRepository : ISavingsRepository
                 using var reader = await selectAccountDataCommand.ExecuteReaderAsync();
 
                 oldBalance = (decimal)reader["balance"];
-                savingsAccountType = reader["savingsType"].ToString();
+                savingsAccountType = reader["savingsType"].ToString()!;
                 maturityDate = reader["maturityDate"] as DateTime?;
             }
 
@@ -527,7 +527,7 @@ public class SavingsRepository : ISavingsRepository
             countAccountTransactionsCommand.Parameters.AddWithValue("@Type", typeFilter);
         }
 
-        var numberOfAccountTransactions = (int)await countAccountTransactionsCommand.ExecuteScalarAsync();
+        var numberOfAccountTransactions = (int)(await countAccountTransactionsCommand.ExecuteScalarAsync())!;
 
         // paginated selectAccountsQuery
         var paginatedSelectAccountsQuery = @"
@@ -555,9 +555,9 @@ public class SavingsRepository : ISavingsRepository
             transactionsList.Add(
                 new SavingsTransaction
                 {
-                    Id = (int)reader["id"],
-                    AccountId = (int)reader["accountId"],
-                    Type = Enum.Parse<TransactionType>(reader["transactionType"].ToString()),
+                    IdentificationNumber = (int)reader["id"],
+                    AccountIdentificationNumber = (int)reader["accountId"],
+                    Type = Enum.Parse<TransactionType>(reader["transactionType"].ToString()!),
                     Amount = (decimal)reader["amount"],
                     BalanceAfter = (decimal)reader["balanceAfter"],
                     Source = reader["source"].ToString(),
@@ -573,8 +573,8 @@ public class SavingsRepository : ISavingsRepository
     {
         return new SavingsAccount
         {
-            Id = r.GetInt32(r.GetOrdinal("id")),
-            UserId = r.GetInt32(r.GetOrdinal("userId")),
+            IdentificationNumber = r.GetInt32(r.GetOrdinal("id")),
+            UserIdentificationNumber = r.GetInt32(r.GetOrdinal("userId")),
             SavingsType = r["savingsType"]?.ToString() ?? string.Empty,
             Balance = r.GetDecimal(r.GetOrdinal("balance")),
             AccruedInterest = r.GetDecimal(r.GetOrdinal("accruedInterest")),
@@ -583,7 +583,7 @@ public class SavingsRepository : ISavingsRepository
             AccountStatus = r["accountStatus"]?.ToString() ?? string.Empty,
             CreatedAt = r.GetDateTime(r.GetOrdinal("createdAt")),
             AccountName = r["accountName"] as string,
-            FundingAccountId = r["fundingAccountId"] as int?,
+            FundingAccountIdentificationNumber = r["fundingAccountId"] as int?,
             TargetAmount = r["targetAmount"] as decimal?,
             TargetDate = r["targetDate"] as DateTime?,
         };

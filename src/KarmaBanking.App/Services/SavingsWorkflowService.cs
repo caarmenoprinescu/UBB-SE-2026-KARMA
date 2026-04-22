@@ -18,7 +18,7 @@ public class SavingsWorkflowService
 
     public int GetDefaultCloseDestinationId(IEnumerable<SavingsAccount> destinationAccounts)
     {
-        return destinationAccounts.FirstOrDefault()?.Id ?? 0;
+        return destinationAccounts.FirstOrDefault()?.IdentificationNumber ?? 0;
     }
 
     public (bool IsValid, string ErrorMessage) ValidateWithdrawRequest(decimal amount, FundingSourceOption? destination)

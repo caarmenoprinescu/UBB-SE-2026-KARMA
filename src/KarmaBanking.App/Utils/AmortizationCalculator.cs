@@ -117,7 +117,7 @@ public static class AmortizationCalculator
 
             var row = new AmortizationRow
             {
-                LoanId = loan.Id,
+                LoanId = loan.IdentificationNumber,
                 InstallmentNumber = i,
                 DueDate = dueDate,
                 PrincipalPortion = principalPortion,

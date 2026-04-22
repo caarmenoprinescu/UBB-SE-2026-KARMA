@@ -105,7 +105,7 @@ namespace KarmaBanking.App.Tests.Services
             var repository = new Mock<ILoanRepository>();
             repository.Setup(r => r.GetLoanByIdAsync(20)).ReturnsAsync(new Loan
             {
-                Id = 20,
+                IdentificationNumber = 20,
                 OutstandingBalance = 1000m,
                 MonthlyInstallment = 200m,
                 RemainingMonths = 5,
@@ -125,7 +125,7 @@ namespace KarmaBanking.App.Tests.Services
             var repository = new Mock<ILoanRepository>();
             repository.Setup(r => r.GetLoanByIdAsync(21)).ReturnsAsync(new Loan
             {
-                Id = 21,
+                IdentificationNumber = 21,
                 OutstandingBalance = 1000m,
                 MonthlyInstallment = 200m,
                 RemainingMonths = 5,
@@ -144,7 +144,7 @@ namespace KarmaBanking.App.Tests.Services
             var repository = new Mock<ILoanRepository>();
             repository.Setup(r => r.GetLoanByIdAsync(22)).ReturnsAsync(new Loan
             {
-                Id = 22,
+                IdentificationNumber = 22,
                 OutstandingBalance = 600m,
                 MonthlyInstallment = 200m,
                 RemainingMonths = 3,
@@ -196,8 +196,8 @@ namespace KarmaBanking.App.Tests.Services
             repository.Setup(r => r.CreateLoanAsync(It.IsAny<Loan>())).ReturnsAsync(40);
             repository.Setup(r => r.GetLoanByIdAsync(40)).ReturnsAsync(new Loan
             {
-                Id = 40,
-                UserId = 1,
+                IdentificationNumber = 40,
+                UserIdentificationNumber = 1,
                 LoanType = LoanType.Personal,
                 Principal = 12000m,
                 OutstandingBalance = 12000m,
@@ -263,7 +263,7 @@ namespace KarmaBanking.App.Tests.Services
             var repository = new Mock<ILoanRepository>();
             repository.Setup(r => r.GetLoanByIdAsync(23)).ReturnsAsync(new Loan
             {
-                Id = 23,
+                IdentificationNumber = 23,
                 OutstandingBalance = 500m,
                 MonthlyInstallment = 100m,
                 RemainingMonths = 5,
@@ -282,7 +282,7 @@ namespace KarmaBanking.App.Tests.Services
             var repository = new Mock<ILoanRepository>();
             repository.Setup(r => r.GetLoanByIdAsync(24)).ReturnsAsync(new Loan
             {
-                Id = 24,
+                IdentificationNumber = 24,
                 OutstandingBalance = 0m,
                 MonthlyInstallment = 100m,
                 RemainingMonths = 0,

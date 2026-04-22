@@ -34,7 +34,7 @@ public class SavingsService : ISavingsService
     public async Task<SavingsAccount> CreateAccountAsync(CreateSavingsAccountDto dto)
     {
         // BA-9: max 5 active accounts per user
-        var activeAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(dto.UserId, false);
+        var activeAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(dto.UserIdentificationNumber, false);
         if (activeAccountsList.Count >= MAX_ACTIVE_ACCOUNTS)
         {
             throw new InvalidOperationException("You cannot have more than 5 active savings accounts.");
@@ -89,7 +89,7 @@ public class SavingsService : ISavingsService
 
         // BA-14: get the account and validate ownership + status
         var userAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(userId, true);
-        var destinationAccount = userAccountsList.Find(account => account.Id == accountId)
+        var destinationAccount = userAccountsList.Find(account => account.IdentificationNumber == accountId)
                                  ?? throw new InvalidOperationException("Account not found or does not belong to you.");
 
         // BA-14: 422 for closed or locked
@@ -110,7 +110,7 @@ public class SavingsService : ISavingsService
     {
         var userAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(userId, true);
 
-        var closingAccount = userAccountsList.FirstOrDefault(account => account.Id == accountId)
+        var closingAccount = userAccountsList.FirstOrDefault(account => account.IdentificationNumber == accountId)
                              ?? throw new InvalidOperationException("Account not found.");
 
         if (closingAccount.AccountStatus == "Closed")
@@ -118,7 +118,7 @@ public class SavingsService : ISavingsService
             throw new InvalidOperationException("Account already closed.");
         }
 
-        var destinationAccount = userAccountsList.FirstOrDefault(account => account.Id == destinationAccountId)
+        var destinationAccount = userAccountsList.FirstOrDefault(account => account.IdentificationNumber == destinationAccountId)
                                  ?? throw new InvalidOperationException("Destination account not found.");
 
         if (destinationAccount.AccountStatus == "Closed")
@@ -155,7 +155,7 @@ public class SavingsService : ISavingsService
         }
 
         var userAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(userId, true);
-        var destinationAccount = userAccountsList.Find(account => account.Id == accountId)
+        var destinationAccount = userAccountsList.Find(account => account.IdentificationNumber == accountId)
                                  ?? throw new InvalidOperationException("Account not found or does not belong to you.");
 
         if (destinationAccount.AccountStatus == "Closed")
@@ -230,7 +230,7 @@ public class SavingsService : ISavingsService
     public async Task<List<SavingsAccount>> GetValidTransferDestinationsAsync(int currentAccountId)
     {
         var openAccountsList = await this.savingsRepository.GetSavingsAccountsByUserIdAsync(currentAccountId);
-        return openAccountsList.Where(account => account.Id != currentAccountId).ToList();
+        return openAccountsList.Where(account => account.IdentificationNumber != currentAccountId).ToList();
     }
 
     public decimal ComputeWithdrawalPenalty(decimal amount)

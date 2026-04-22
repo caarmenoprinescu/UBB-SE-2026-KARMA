@@ -296,8 +296,8 @@ public class LoanRepository : ILoanRepository
         command.Parameters.AddWithValue("@reason", DBNull.Value);
         command.Parameters.AddWithValue("@userId", application.UserId);
 
-        var newId = (int)await command.ExecuteScalarAsync();
-        return newId;
+        var newIdentificationNumber = (int)(await command.ExecuteScalarAsync())!;
+        return newIdentificationNumber;
     }
 
     /// <summary>
@@ -352,7 +352,7 @@ public class LoanRepository : ILoanRepository
         using var command = new SqlCommand(query, connection);
         command.CommandTimeout = CommandTimeoutSeconds;
 
-        command.Parameters.Add("@userId", SqlDbType.Int).Value = loan.UserId;
+        command.Parameters.Add("@userId", SqlDbType.Int).Value = loan.UserIdentificationNumber;
         command.Parameters.AddWithValue("@loanType", loan.LoanType.ToString());
         command.Parameters.AddWithValue("@principal", loan.Principal);
         command.Parameters.AddWithValue("@outstandingBalance", loan.OutstandingBalance);
@@ -363,8 +363,8 @@ public class LoanRepository : ILoanRepository
         command.Parameters.AddWithValue("@termInMonths", loan.TermInMonths);
         command.Parameters.AddWithValue("@startDate", loan.StartDate);
 
-        var newId = (int)await command.ExecuteScalarAsync();
-        return newId;
+        var newIdentificationNumber = (int)(await command.ExecuteScalarAsync())!;
+        return newIdentificationNumber;
     }
 
     /// <summary>
@@ -406,15 +406,15 @@ public class LoanRepository : ILoanRepository
     {
         return new Loan
         {
-            Id = (int)reader["id"],
-            UserId = (int)reader["userId"],
-            LoanType = Enum.Parse<LoanType>(reader["loanType"].ToString(), true),
+            IdentificationNumber = (int)reader["id"],
+            UserIdentificationNumber = (int)reader["userId"],
+            LoanType = Enum.Parse<LoanType>(reader["loanType"].ToString()!, true),
             Principal = (decimal)reader["principal"],
             OutstandingBalance = (decimal)reader["outstandingBalance"],
             InterestRate = (decimal)reader["interestRate"],
             MonthlyInstallment = (decimal)reader["monthlyInstallment"],
             RemainingMonths = (int)reader["remainingMonths"],
-            LoanStatus = Enum.Parse<LoanStatus>(reader["loanStatus"].ToString(), true),
+            LoanStatus = Enum.Parse<LoanStatus>(reader["loanStatus"].ToString()!, true),
             TermInMonths = (int)reader["termInMonths"],
             StartDate = (DateTime)reader["startDate"],
         };

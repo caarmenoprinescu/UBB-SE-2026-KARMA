@@ -14,12 +14,12 @@ public class SavingsAccount
     /// <summary>
     ///     Gets or sets the unique identifier for the savings account.
     /// </summary>
-    public int Id { get; set; }
+    public int IdentificationNumber { get; set; }
 
     /// <summary>
     ///     Gets or sets the unique identifier for the user who owns the savings account.
     /// </summary>
-    public int UserId { get; set; }
+    public int UserIdentificationNumber { get; set; }
 
     /// <summary>
     ///     Gets or sets the type of savings account, which can be "Standard", "GoalSavings", "FixedDeposit", or "HighYield".
@@ -73,7 +73,7 @@ public class SavingsAccount
     /// <summary>
     ///     Gets or sets the unique identifier for the funding account associated with this savings account, if any.
     /// </summary>
-    public int? FundingAccountId { get; set; }
+    public int? FundingAccountIdentificationNumber { get; set; }
 
     /// <summary>
     ///     Gets or sets the target amount for goal savings accounts, which the user aims to achieve.
