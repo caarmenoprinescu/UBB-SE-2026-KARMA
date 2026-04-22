@@ -5,6 +5,7 @@
 namespace KarmaBanking.App.Services;
 
 using System;
+using System.Globalization;
 
 public class CryptoTradeCalculationService
 {
@@ -12,15 +13,16 @@ public class CryptoTradeCalculationService
     private const decimal MinimumFee = 0.50m;
 
     public bool TryParsePositiveQuantity(string quantityText, out decimal quantity)
+{
+    // Adding NumberStyles.Any and InvariantCulture ensures the dot is treated as a decimal
+    if (decimal.TryParse(quantityText, NumberStyles.Any, CultureInfo.InvariantCulture, out quantity) && quantity > 0)
     {
-        if (decimal.TryParse(quantityText, out quantity) && quantity > 0)
-        {
-            return true;
-        }
-
-        quantity = 0m;
-        return false;
+        return true;
     }
+
+    quantity = 0m;
+    return false;
+}
 
     public decimal GetMockMarketPrice(string ticker)
     {

@@ -5,6 +5,7 @@
 namespace KarmaBanking.App.Services;
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using KarmaBanking.App.Models;
@@ -32,12 +33,14 @@ public class FileValidationService
 
         if (sizeInBytes >= mb)
         {
-            return $"{sizeInBytes / (double)mb:0.##} MB";
+            // 2. Use .ToString with InvariantCulture
+            return (sizeInBytes / (double)mb).ToString("0.##", CultureInfo.InvariantCulture) + " MB";
         }
 
         if (sizeInBytes >= kb)
         {
-            return $"{sizeInBytes / (double)kb:0.##} KB";
+            // 3. Use .ToString with InvariantCulture
+            return (sizeInBytes / (double)kb).ToString("0.##", CultureInfo.InvariantCulture) + " KB";
         }
 
         return $"{sizeInBytes} B";

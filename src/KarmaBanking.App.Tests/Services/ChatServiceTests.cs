@@ -43,7 +43,7 @@
         {
             var message = new ChatMessage
             {
-                SessionId = 100,
+                SessionId = 100, // You defined it as 100 here
                 Content = "Test message",
                 SenderType = "User",
                 SentAt = DateTime.Now
@@ -52,7 +52,7 @@
             await this.apiService.SendMessageAsync(message);
 
             this.mockChatRepository.Verify(repo => repo.AddChatMessageAsync(It.Is<ChatMessage>(m =>
-                m.SessionId == 101 &&
+                m.SessionId == 100 &&
                 m.Content == "Test message" &&
                 m.SenderType == "User")), Times.Once);
         }
