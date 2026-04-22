@@ -1,93 +1,107 @@
+// <copyright file="MarketDataService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using KarmaBanking.App.Services.Interfaces;
 
-namespace KarmaBanking.App.Services
+public class MarketDataService : IMarketDataService
 {
-    public class MarketDataService
+    private const int DefaultPollingIntervalInMilliseconds = 5000;
+    private const double MaximumPriceFluctuationPercentage = 0.04;
+    private const double PriceFluctuationOffset = 0.02;
+
+    private readonly Dictionary<string, decimal> currentPrices = new(StringComparer.OrdinalIgnoreCase)
     {
-        private readonly Dictionary<string, decimal> _prices = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
+        ["BTC"] = 68000m,
+        ["ETH"] = 3400m,
+        ["AAPL"] = 185m,
+        ["MSFT"] = 420m,
+        ["GOOGL"] = 155m,
+        ["TSLA"] = 650m,
+        ["SPY"] = 520m
+    };
+
+    private readonly Random randomNumberGenerator = new();
+
+    private readonly object synchronizationRoot = new();
+
+    private Timer? pollingTimer;
+    private Action? priceUpdateHandler;
+    private List<string> trackedTickerSymbols = new();
+
+    public void StartPolling(List<string> tickerSymbols)
+    {
+        lock (this.synchronizationRoot)
         {
-            ["BTC"] = 68000m,
-            ["ETH"] = 3400m,
-            ["AAPL"] = 185m,
-            ["MSFT"] = 420m,
-            ["GOOGL"] = 155m,
-            ["TSLA"] = 650m,
-            ["SPY"] = 520m
-        };
+            this.trackedTickerSymbols = tickerSymbols
+                .Where(ticker => !string.IsNullOrWhiteSpace(ticker))
+                .Select(ticker => ticker.Trim().ToUpperInvariant())
+                .Distinct()
+                .ToList();
 
-        private readonly object _syncRoot = new object();
-        private readonly Random _random = new Random();
-        private readonly int _pollIntervalMs = 5000;
-
-        private Timer? _timer;
-        private List<string> _trackedTickers = new List<string>();
-        private Action? _priceUpdateHandler;
-
-        public void startPolling(List<string> tickers)
-        {
-            lock (_syncRoot)
+            if (this.pollingTimer != null)
             {
-                _trackedTickers = tickers
-                    .Where(ticker => !string.IsNullOrWhiteSpace(ticker))
-                    .Select(ticker => ticker.Trim().ToUpperInvariant())
-                    .Distinct()
-                    .ToList();
+                return;
+            }
 
-                if (_timer != null)
+            this.pollingTimer = new Timer(
+                timerState =>
                 {
-                    return;
-                }
-
-                _timer = new Timer(_ =>
-                {
-                    lock (_syncRoot)
+                    lock (this.synchronizationRoot)
                     {
-                        foreach (string ticker in _trackedTickers)
+                        foreach (var ticker in this.trackedTickerSymbols)
                         {
-                            if (!_prices.TryGetValue(ticker, out decimal currentPrice))
+                            if (!this.currentPrices.TryGetValue(ticker, out var currentPrice))
                             {
                                 continue;
                             }
 
-                            decimal changePercent = (decimal)(_random.NextDouble() * 0.04 - 0.02);
-                            decimal updatedPrice = currentPrice * (1 + changePercent);
-                            _prices[ticker] = decimal.Round(updatedPrice, 2);
+                            var changePercentage =
+                                (decimal)((this.randomNumberGenerator.NextDouble() *
+                                           MaximumPriceFluctuationPercentage) - PriceFluctuationOffset);
+                            var updatedPrice = currentPrice * (1 + changePercentage);
+                            this.currentPrices[ticker] = decimal.Round(updatedPrice, 2);
                         }
                     }
 
-                    _priceUpdateHandler?.Invoke();
-                }, null, _pollIntervalMs, _pollIntervalMs);
-            }
+                    this.priceUpdateHandler?.Invoke();
+                },
+                null,
+                DefaultPollingIntervalInMilliseconds,
+                DefaultPollingIntervalInMilliseconds);
         }
+    }
 
-        public void stopPolling()
+    public void StopPolling()
+    {
+        lock (this.synchronizationRoot)
         {
-            lock (_syncRoot)
-            {
-                _timer?.Dispose();
-                _timer = null;
-            }
+            this.pollingTimer?.Dispose();
+            this.pollingTimer = null;
         }
+    }
 
-        public decimal getPrice(string ticker)
+    public decimal GetPrice(string tickerSymbol)
+    {
+        if (string.IsNullOrWhiteSpace(tickerSymbol))
         {
-            if (string.IsNullOrWhiteSpace(ticker))
-            {
-                return 0m;
-            }
-
-            lock (_syncRoot)
-            {
-                return _prices.TryGetValue(ticker.Trim().ToUpperInvariant(), out decimal price) ? price : 0m;
-            }
+            return 0m;
         }
 
-        public void onPriceUpdate(Action handler)
+        lock (this.synchronizationRoot)
         {
-            _priceUpdateHandler = handler;
+            return this.currentPrices.TryGetValue(tickerSymbol.Trim().ToUpperInvariant(), out var price) ? price : 0m;
         }
+    }
+
+    public void RegisterPriceUpdateHandler(Action updateHandler)
+    {
+        this.priceUpdateHandler = updateHandler;
     }
 }

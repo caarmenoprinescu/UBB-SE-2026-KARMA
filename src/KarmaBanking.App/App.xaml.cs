@@ -1,24 +1,26 @@
-﻿using Microsoft.UI.Xaml;
-using Windows.ApplicationModel.Activation;
+﻿// <copyright file="App.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
 
-namespace KarmaBanking.App
+namespace KarmaBanking.App;
+
+using Microsoft.UI.Xaml;
+
+public partial class App : Application
 {
-    public partial class App : Application
+    private Window? window;
+
+    public App()
     {
-        private Window? _window;
+        this.InitializeComponent();
+    }
 
-        public static Window MainAppWindow { get; private set; } = null!;
+    public static Window MainAppWindow { get; private set; } = null!;
 
-        public App()
-        {
-            InitializeComponent();
-        }
-
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
-        {
-            _window = new MainWindow();
-            MainAppWindow = _window;
-            _window.Activate();
-        }
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        this.window = new MainWindow();
+        MainAppWindow = this.window;
+        this.window.Activate();
     }
 }

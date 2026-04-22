@@ -1,14 +1,43 @@
+// <copyright file="Portfolio.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Models;
+
 using System.Collections.Generic;
 
-namespace KarmaBanking.App.Models
+/// <summary>
+/// Represents an aggregated view of a user's investment holdings.
+/// </summary>
+public class Portfolio
 {
-    public class Portfolio
-    {
-        public int Id { get; set; }
-        public int UserId { get; set; }
-        public decimal TotalValue { get; set; }
-        public decimal TotalGainLoss { get; set; }
-        public decimal GainLossPercent { get; set; }
-        public List<InvestmentHolding> Holdings { get; set; } = new List<InvestmentHolding>();
-    }
+    /// <summary>
+    /// Gets or sets the portfolio identifier.
+    /// </summary>
+    public int IdentificationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the owning user identifier.
+    /// </summary>
+    public int UserIdentificationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total market value of all holdings.
+    /// </summary>
+    public decimal TotalValue { get; set; }
+
+    /// <summary>
+    /// Gets or sets the absolute gain or loss amount.
+    /// </summary>
+    public decimal TotalGainLoss { get; set; }
+
+    /// <summary>
+    /// Gets or sets the gain or loss percentage.
+    /// </summary>
+    public decimal GainLossPercent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the collection of constituent holdings.
+    /// </summary>
+    public List<InvestmentHolding> Holdings { get; set; } = new();
 }

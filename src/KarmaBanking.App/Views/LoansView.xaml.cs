@@ -1,112 +1,124 @@
+// <copyright file="LoansView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Views;
+
+using System;
+using System.Diagnostics;
+using KarmaBanking.App.ViewModels;
+using KarmaBanking.App.Views.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml.Navigation;
-using System.Threading.Tasks;
-using KarmaBanking.App.Views.Dialogs;
-using System;
 
-namespace KarmaBanking.App.Views
+public sealed partial class LoansView : Page
 {
-    public sealed partial class LoansView : Page
+    private readonly LoansViewModel viewModel;
+
+    public LoansView()
     {
-        private readonly LoansViewModel _viewModel;
+        this.InitializeComponent();
+        this.viewModel = new LoansViewModel();
+        this.DataContext = this.viewModel;
+    }
 
-        public LoansView()
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        await this.viewModel.LoadLoansAsync();
+    }
+
+    private async void OnApplyClick(object sender, RoutedEventArgs e)
+    {
+        try
         {
-
-            InitializeComponent();
-            _viewModel = new LoansViewModel();
-            DataContext = _viewModel;
-
-        }
-
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-            await _viewModel.LoadLoansAsync();
-        }
-
-
-        private async void OnApplyClick(object sender, RoutedEventArgs e)
-        {
-            try
+            var dialog = new LoanApplicationDialog(this.viewModel)
             {
-                var dialog = new LoanApplicationDialog(_viewModel)
+                XamlRoot = this.XamlRoot,
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async void OnPayClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button btn && btn.Tag is LoanViewModel loan)
+            {
+                this.viewModel.SelectedLoan = loan;
+                var dialog = new PayInstallmentDialog(this.viewModel)
                 {
-                    XamlRoot = this.XamlRoot
+                    XamlRoot = this.XamlRoot,
                 };
                 await dialog.ShowAsync();
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-            }
         }
-
-        private async void OnPayClick(object sender, RoutedEventArgs e)
+        catch (Exception ex)
         {
-            try
-            {
-                if (sender is Button btn && btn.Tag is LoanViewModel loan)
-                {
-                    _viewModel.SelectedLoan = loan;
-                    var dialog = new PayInstallmentDialog(_viewModel)
-                    {
-                        XamlRoot = this.XamlRoot
-                    };
-                    await dialog.ShowAsync();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-            }
-
+            Debug.WriteLine(ex.Message);
         }
+    }
 
-        private async void OnScheduleClick(object sender, RoutedEventArgs e)
+    private async void OnScheduleClick(object sender, RoutedEventArgs e)
+    {
+        try
         {
-            try
+            if (sender is Button btn && btn.Tag is LoanViewModel loan)
             {
-                if (sender is Button btn && btn.Tag is LoanViewModel loan)
-                {
-                    _viewModel.SelectedLoan = loan;
-                    await _viewModel.LoadAmortizationAsync();
-                    Frame.Navigate(typeof(AmortizationScheduleView), loan.Loan);
-
-                }
-
+                this.viewModel.SelectedLoan = loan;
+                await this.viewModel.LoadAmortizationAsync();
+                this.Frame.Navigate(typeof(AmortizationScheduleView), loan.Loan);
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-            }
-
         }
-        private void OnFilterAll(object sender, RoutedEventArgs e)
-            => _viewModel.StatusFilter = null;
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
 
-        private void OnFilterActive(object sender, RoutedEventArgs e)
-            => _viewModel.StatusFilter = LoanStatus.Active;
+    private void OnFilterAll(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.StatusFilter = null;
+    }
 
-        private void OnFilterClosed(object sender, RoutedEventArgs e)
-            => _viewModel.StatusFilter = LoanStatus.Passed;
+    private void OnFilterActive(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.StatusFilter = LoanStatus.Active;
+    }
 
-        private void OnTypeFilterAll(object sender, RoutedEventArgs e)
-            => _viewModel.TypeFilter = null;
+    private void OnFilterClosed(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.StatusFilter = LoanStatus.Passed;
+    }
 
-        private void OnTypeFilterPersonal(object sender, RoutedEventArgs e)
-            => _viewModel.TypeFilter = LoanType.Personal;
+    private void OnTypeFilterAll(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.TypeFilter = null;
+    }
 
-        private void OnTypeFilterMortgage(object sender, RoutedEventArgs e)
-            => _viewModel.TypeFilter = LoanType.Mortgage;
+    private void OnTypeFilterPersonal(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.TypeFilter = LoanType.Personal;
+    }
 
-        private void OnTypeFilterStudent(object sender, RoutedEventArgs e)
-            => _viewModel.TypeFilter = LoanType.Student;
+    private void OnTypeFilterMortgage(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.TypeFilter = LoanType.Mortgage;
+    }
 
-        private void OnTypeFilterAuto(object sender, RoutedEventArgs e)
-            => _viewModel.TypeFilter = LoanType.Auto;
+    private void OnTypeFilterStudent(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.TypeFilter = LoanType.Student;
+    }
+
+    private void OnTypeFilterAuto(object sender, RoutedEventArgs e)
+    {
+        this.viewModel.TypeFilter = LoanType.Auto;
     }
 }

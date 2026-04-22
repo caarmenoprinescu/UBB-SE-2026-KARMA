@@ -1,45 +1,87 @@
+// <copyright file="InvestmentHolding.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Models;
+
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace KarmaBanking.App.Models
+/// <summary>
+/// Represents an individual asset position within a portfolio.
+/// </summary>
+public class InvestmentHolding : INotifyPropertyChanged
 {
-    public class InvestmentHolding : INotifyPropertyChanged
+    private decimal currentPrice;
+    private decimal unrealizedGainLoss;
+
+    /// <summary>
+    /// Occurs when a property value changes.
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    /// <summary>
+    /// Gets or sets the holding identifier.
+    /// </summary>
+    public int IdentificationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the parent portfolio identifier.
+    /// </summary>
+    public int PortfolioIdentificationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the market ticker symbol.
+    /// </summary>
+    public string Ticker { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the asset class/type.
+    /// </summary>
+    public string AssetType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the held units or shares.
+    /// </summary>
+    public decimal Quantity { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average entry price.
+    /// </summary>
+    public decimal AveragePurchasePrice { get; set; }
+
+    /// <summary>
+    /// Gets or sets the latest market price.
+    /// </summary>
+    public decimal CurrentPrice
     {
-        private decimal _currentPrice;
-        private decimal _unrealizedGainLoss;
-
-        public int Id { get; set; }
-        public int PortfolioId { get; set; }
-        public string Ticker { get; set; } = string.Empty;
-        public string AssetType { get; set; } = string.Empty;
-        public decimal Quantity { get; set; }
-        public decimal AvgPurchasePrice { get; set; }
-
-        public decimal CurrentPrice
+        get => this.currentPrice;
+        set
         {
-            get => _currentPrice;
-            set
-            {
-                _currentPrice = value;
-                OnPropertyChanged();
-            }
+            this.currentPrice = value;
+            this.OnPropertyChanged();
         }
+    }
 
-        public decimal UnrealizedGainLoss
+    /// <summary>
+    /// Gets or sets the unrealized gain or loss amount.
+    /// </summary>
+    public decimal UnrealizedGainLoss
+    {
+        get => this.unrealizedGainLoss;
+        set
         {
-            get => _unrealizedGainLoss;
-            set
-            {
-                _unrealizedGainLoss = value;
-                OnPropertyChanged();
-            }
+            this.unrealizedGainLoss = value;
+            this.OnPropertyChanged();
         }
+    }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+    /// <summary>
+    /// Raises property changed notifications for bound UI.
+    /// </summary>
+    /// <param name="propertyName">The property that changed.</param>
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

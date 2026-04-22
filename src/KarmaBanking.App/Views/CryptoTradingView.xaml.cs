@@ -1,34 +1,40 @@
-﻿using KarmaBanking.App.Repositories;
+﻿// <copyright file="CryptoTradingView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Views;
+
+using KarmaBanking.App.Repositories;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace KarmaBanking.App.Views
+public sealed partial class CryptoTradingView : Page
 {
-    public sealed partial class CryptoTradingView : Page
+    public CryptoTradingView()
     {
-        public CryptoTradingViewModel ViewModel { get; }
+        this.InitializeComponent();
 
-        public CryptoTradingView()
+        var investmentRepository = new InvestmentRepository();
+        var investmentService = new InvestmentService(investmentRepository);
+
+        this.ViewModel = new CryptoTradingViewModel(investmentService);
+        this.DataContext = this.ViewModel;
+    }
+
+    public CryptoTradingViewModel ViewModel { get; }
+
+    private void OnActionTypeChecked(object sender, RoutedEventArgs e)
+    {
+        if (this.ViewModel == null)
         {
-            this.InitializeComponent();
-
-            var repository = new InvestmentRepository();
-            var service = new InvestmentService(repository);
-
-            ViewModel = new CryptoTradingViewModel(service);
-            DataContext = ViewModel;
+            return;
         }
 
-        private void OnActionTypeChecked(object sender, RoutedEventArgs e)
+        if (sender is RadioButton checkedRadioButton)
         {
-            if (ViewModel == null) return;
-
-            if (sender is RadioButton checkedRadioButton)
-            {
-                ViewModel.ActionType = checkedRadioButton.Content.ToString()?.ToUpper() ?? "BUY";
-            }
+            this.ViewModel.ActionType = checkedRadioButton.Content.ToString()?.ToUpper() ?? "BUY";
         }
     }
 }

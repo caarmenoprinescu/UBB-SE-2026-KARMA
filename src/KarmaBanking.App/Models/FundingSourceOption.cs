@@ -1,8 +1,21 @@
-namespace KarmaBanking.App.Models
+// <copyright file="FundingSourceOption.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Models;
+
+/// <summary>
+/// Represents a selectable funding source for savings operations.
+/// </summary>
+public class FundingSourceOption
 {
-    public class FundingSourceOption
-    {
-        public int Id { get; set; }
-        public string DisplayName { get; set; } = string.Empty;
-    }
+    /// <summary>
+    /// Gets or sets the option identifier.
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the display label shown to users.
+    /// </summary>
+    public string DisplayName { get; set; } = string.Empty;
 }

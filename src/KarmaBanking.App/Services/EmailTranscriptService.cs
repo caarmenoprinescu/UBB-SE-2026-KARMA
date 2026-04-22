@@ -1,60 +1,82 @@
-﻿using KarmaBanking.App.Models;
+﻿// <copyright file="EmailTranscriptService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services;
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using KarmaBanking.App.Models;
+using KarmaBanking.App.Repositories;
 
-namespace KarmaBanking.App.Services
+public class EmailTranscriptService
 {
-    public class EmailTranscriptService
+    private readonly ChatMessageRepository chatMessageRepository;
+
+    public EmailTranscriptService()
     {
-        private readonly ChatMessageRepository chatMessageRepository;
+        this.chatMessageRepository = new ChatMessageRepository();
+    }
 
-        public EmailTranscriptService()
+    public void SendSessionTranscript(int sessionIdentificationNumber, string recipientEmailAddress)
+    {
+        // Syncing with the refactored repository method name
+        var messages = this.chatMessageRepository.GetMessagesBySessionId(sessionIdentificationNumber);
+
+        var emailSubject = $"Karma Banking - Chat Transcript #{sessionIdentificationNumber}";
+        var emailBody = this.BuildTranscriptBody(sessionIdentificationNumber, messages);
+
+        this.SendEmail(recipientEmailAddress, emailSubject, emailBody);
+    }
+
+    private string BuildTranscriptBody(int sessionIdentificationNumber, List<ChatMessage> messages)
+    {
+        var transcriptBuilder = new StringBuilder();
+
+        transcriptBuilder.AppendLine($"Chat Transcript for Session #{sessionIdentificationNumber}");
+        transcriptBuilder.AppendLine($"Generated at: {DateTime.Now}");
+        transcriptBuilder.AppendLine(new string('-', 50));
+
+        foreach (var message in messages)
         {
-            chatMessageRepository = new ChatMessageRepository();
+            // Note: Ensure ChatMessage.IdentificationNumber/Content are updated in the model
+            transcriptBuilder.AppendLine(
+                $"[{message.SentAt:yyyy-MM-dd HH:mm:ss}] {message.SenderType}: {message.Content}");
         }
 
-        public void SendSessionTranscript(int sessionId, string recipientEmail)
+        return transcriptBuilder.ToString();
+    }
+
+    private void SendEmail(string recipientEmailAddress, string emailSubject, string emailBody)
+    {
+        // Note: In a production environment, these credentials would be moved to a secure configuration file
+        var mailMessage = new MailMessage
         {
-            List<ChatMessage> messages = chatMessageRepository.GetMessagesBySessionId(sessionId);
+            From = new MailAddress("noreply@karmabanking.com"),
+        };
 
-            string subject = $"Karma Banking - Chat Transcript #{sessionId}";
-            string body = BuildTranscriptBody(sessionId, messages);
+        mailMessage.To.Add(recipientEmailAddress);
+        mailMessage.Subject = emailSubject;
+        mailMessage.Body = emailBody;
 
-            SendEmail(recipientEmail, subject, body);
-        }
-
-        private string BuildTranscriptBody(int sessionId, List<ChatMessage> messages)
+        using (var smtpClient = new SmtpClient("smtp.gmail.com", 587))
         {
-            StringBuilder sb = new StringBuilder();
+            smtpClient.Credentials = new NetworkCredential("your_email_here", "your_password_here");
+            smtpClient.EnableSsl = true;
 
-            sb.AppendLine($"Chat Transcript for Session #{sessionId}");
-            sb.AppendLine($"Generated at: {DateTime.Now}");
-            sb.AppendLine(new string('-', 50));
-
-            foreach (ChatMessage message in messages)
+            try
             {
-                sb.AppendLine($"[{message.SentAt:yyyy-MM-dd HH:mm:ss}] {message.SenderType}: {message.Content}");
+                smtpClient.Send(mailMessage);
             }
-
-            return sb.ToString();
-        }
-
-        private void SendEmail(string recipientEmail, string subject, string body)
-        {
-            MailMessage mail = new MailMessage();
-            mail.From = new MailAddress("noreply@karmabanking.com");
-            mail.To.Add(recipientEmail);
-            mail.Subject = subject;
-            mail.Body = body;
-
-            SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587);
-            smtp.Credentials = new NetworkCredential("your_email_here", "your_password_here");
-            smtp.EnableSsl = true;
-
-            smtp.Send(mail);
+            catch (Exception exception)
+            {
+                // Logging the exception for diagnostic purposes
+                Debug.WriteLine($"Email delivery failed: {exception.Message}");
+            }
         }
     }
 }

@@ -1,111 +1,151 @@
-﻿using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories.Interfaces;
-using KarmaBanking.App.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace KarmaBanking.App.Services
+﻿namespace KarmaBanking.App.Services
 {
-    internal class InvestmentService : IInvestmentService
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories.Interfaces;
+    using KarmaBanking.App.Services.Interfaces;
+
+    public class InvestmentService : IInvestmentService
     {
-        private readonly IInvestmentRepository _investmentRepository;
+        private readonly IInvestmentRepository investmentRepository;
 
-        // Defined business rules for fees
-        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% fee
-        private const decimal MinimumTradeFee = 0.50m; // Minimum fee of $0.50
+        // Business rules for commissions
+        private const decimal CryptoTradeFeePercentage = 0.015m; // 1.5% commission
+        private const decimal MinimumTradeFee = 0.50m; // Minimum commission of $0.50
 
-        public InvestmentService(IInvestmentRepository investmentRepository)
+    public InvestmentService(IInvestmentRepository investmentRepository)
+    {
+        this.investmentRepository = investmentRepository;
+    }
+
+        public async Task<bool> ExecuteCryptoTradeAsync(
+            int portfolioIdentificationNumber,
+            string ticker,
+            string actionType,
+            decimal quantity,
+            decimal pricePerUnit)
         {
-            _investmentRepository = investmentRepository;
+            // 1. Basic Input Validation
+            this.ValidateTradeInputs(ticker, quantity, pricePerUnit, actionType);
+
+            const string ActionBuy = "BUY";
+
+            // 2. Calculate Commission
+            decimal tradeValueAmount = quantity * pricePerUnit;
+            decimal calculatedFee = Math.Round(tradeValueAmount * CryptoTradeFeePercentage, 2);
+
+        if (calculatedFee < MinimumTradeFee)
+        {
+            calculatedFee = MinimumTradeFee;
         }
 
-        public async Task<bool> ExecuteCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit)
-        {
-            // 1. Input Validation
-            if (string.IsNullOrWhiteSpace(ticker))
-                throw new ArgumentException("Ticker symbol cannot be empty.", nameof(ticker));
+            // 3. Fetch current state to perform business logic calculations
+            Portfolio portfolio = this.investmentRepository.GetPortfolio(portfolioIdentificationNumber);
+            InvestmentHolding? currentHolding = portfolio.Holdings.FirstOrDefault(holding =>
+                holding.Ticker.Equals(ticker, StringComparison.OrdinalIgnoreCase));
 
-            if (quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
+            decimal currentQuantity = currentHolding?.Quantity ?? 0;
+            decimal currentAveragePrice = currentHolding?.AveragePurchasePrice ?? 0;
 
-            if (pricePerUnit <= 0)
-                throw new ArgumentException("Price per unit must be greater than zero.", nameof(pricePerUnit));
+            decimal finalQuantity;
+            decimal finalAveragePrice;
 
-            if (!actionType.Equals("BUY", StringComparison.OrdinalIgnoreCase) &&
-                !actionType.Equals("SELL", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Action type must be either 'BUY' or 'SELL'.", nameof(actionType));
-
-            // 2. Fee Validation and Calculation Logic
-            decimal totalTradeValue = quantity * pricePerUnit;
-            decimal calculatedFee = Math.Round(totalTradeValue * CryptoTradeFeePercentage, 2);
-
-            if (calculatedFee < MinimumTradeFee)
+            // 4. Perform Logic based on Action Type
+            if (actionType.Equals(ActionBuy, StringComparison.OrdinalIgnoreCase))
             {
-                calculatedFee = MinimumTradeFee;
+                decimal totalCostIncludingFee = tradeValueAmount + calculatedFee;
+
+                if (portfolio.TotalValue < totalCostIncludingFee)
+                {
+                    throw new ArgumentException("Insufficient portfolio balance for this trade.");
+                }
+
+                // Weighted Average Price Logic
+                decimal totalInvestmentCost = (currentQuantity * currentAveragePrice) + tradeValueAmount;
+                finalQuantity = currentQuantity + quantity;
+                finalAveragePrice = totalInvestmentCost / finalQuantity;
+            }
+            else
+            {
+                // Sell Logic Validation
+                if (currentHolding == null || currentQuantity < quantity)
+                {
+                    throw new InvalidOperationException("Insufficient asset quantity to execute this sell order.");
+                }
+
+                finalQuantity = currentQuantity - quantity;
+                finalAveragePrice = currentAveragePrice; // Purchase price remains unchanged when selling
             }
 
-            // 3. Trade Execution
+            // 5. Execution - Pass pre-calculated final values to the Repository
             try
             {
-                await _investmentRepository.RecordCryptoTradeAsync(
-                    portfolioId,
+                await this.investmentRepository.RecordCryptoTradeAsync(
+                    portfolioIdentificationNumber,
                     ticker,
                     actionType,
                     quantity,
                     pricePerUnit,
-                    calculatedFee);
+                    calculatedFee,
+                    finalQuantity,
+                    finalAveragePrice);
 
                 return true;
             }
-            catch (InvalidOperationException)
+            catch (Exception exception)
             {
-                // Rethrow known business logic exceptions (e.g., insufficient balance from the repository)
-                throw;
-            }
-            catch (Exception ex)
-            {
-                // Capture unexpected database or execution errors
-                throw new Exception($"Trade execution failed: {ex.Message}", ex);
+                throw new Exception($"Trade execution failed: {exception.Message}", exception);
             }
         }
 
-        // Inside InvestmentService.cs, implement the new interface method:
-        public Portfolio GetPortfolio(int userId)
+        public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            // Pass the call down to the repository
-            return _investmentRepository.GetPortfolio(userId);
+            return this.investmentRepository.GetPortfolio(userIdentificationNumber);
         }
 
-        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
+        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
+            int portfolioIdentificationNumber,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? ticker = null)
         {
-            // 1. Business Logic Validation
-            if (portfolioId <= 0)
+            if (portfolioIdentificationNumber <= 0)
             {
-                throw new ArgumentException("Invalid portfolio ID.", nameof(portfolioId));
+                throw new ArgumentException("Invalid portfolio identification number.", nameof(portfolioIdentificationNumber));
             }
 
-            if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
+        if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
+        {
+            throw new ArgumentException("Start date cannot be after the end date.");
+        }
+
+            return await this.investmentRepository.GetInvestmentLogsAsync(portfolioIdentificationNumber, startDate, endDate, ticker);
+        }
+
+        private void ValidateTradeInputs(string ticker, decimal quantity, decimal price, string action)
+        {
+            if (string.IsNullOrWhiteSpace(ticker))
             {
-                throw new ArgumentException("Start date cannot be after the end date.");
+                throw new ArgumentException("Ticker symbol cannot be empty.", nameof(ticker));
             }
 
-            if (ticker != null && string.IsNullOrWhiteSpace(ticker))
+            if (quantity <= 0)
             {
-                throw new ArgumentException("Ticker symbol cannot be empty if provided.", nameof(ticker));
+                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
             }
 
-            // 2. Data Retrieval
-            try
+            if (price <= 0)
             {
-                return await _investmentRepository.GetInvestmentLogsAsync(portfolioId, startDate, endDate, ticker);
+                throw new ArgumentException("Price per unit must be greater than zero.", nameof(price));
             }
-            catch (Exception ex)
+
+            if (!action.Equals("BUY", StringComparison.OrdinalIgnoreCase) &&
+                !action.Equals("SELL", StringComparison.OrdinalIgnoreCase))
             {
-                // Wrap and propagate the error so the ViewModel can display an appropriate message
-                throw new Exception($"Failed to retrieve investment logs: {ex.Message}", ex);
+                throw new ArgumentException("Action type must be either 'BUY' or 'SELL'.", nameof(action));
             }
         }
     }

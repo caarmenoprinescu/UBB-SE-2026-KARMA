@@ -16,10 +16,10 @@ namespace KarmaBanking.App.Views
             DataContext = ViewModel;
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-            ViewModel.EnsureSession();
+            await ViewModel.LoadSessionsAsync();
             SessionsListView.SelectedItem = ViewModel.CurrentSession;
         }
 
@@ -32,11 +32,11 @@ namespace KarmaBanking.App.Views
             }
         }
 
-        private void SessionsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void SessionsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (SessionsListView.SelectedItem is ChatSession session)
             {
-                ViewModel.SelectSession(session);
+                await ViewModel.SelectSessionAsync(session);
             }
         }
 

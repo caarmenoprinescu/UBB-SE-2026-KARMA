@@ -23,41 +23,53 @@
                 BorderBrush="LightGray"
                 BorderThickness="1"
                 CornerRadius="12">
-            <StackPanel Spacing="12">
-                <TextBlock Text="Previous Sessions"
-                           FontSize="22"
-                           FontWeight="Bold"/>
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Margin="0,0,0,12" 
+                   Text="Previous Sessions" 
+                   FontSize="22" 
+                   FontWeight="Bold"/>
 
-                <TextBlock Text="Open an older chat or start a fresh one."
+                <TextBlock Grid.Row="1" Margin="0,0,0,12" 
+                   Text="Open an older chat or start a fresh one." 
+                   TextWrapping="Wrap"/>
+
+                <Button Grid.Row="2" Margin="0,0,0,12"
+                        Content="New Session"
+                        Command="{Binding StartNewSessionCommand}"
+                        HorizontalAlignment="Stretch"/>
+                <Border Grid.Row="3" BorderBrush="#FFE2E8F0" BorderThickness="1" CornerRadius="8">
+                    <ListView x:Name="SessionsListView"
+                        ItemsSource="{Binding Sessions}"
+                        SelectionChanged="SessionsListView_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ChatSession">
+                                <StackPanel Spacing="4" Margin="0,4">
+                                    <TextBlock Text="{Binding Title}"
+                           FontWeight="SemiBold"
                            TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding LastPreview}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="Gray"/>
+                                    <TextBlock Text="{Binding LastUpdatedDisplay}"
+                           FontSize="11"
+                           Foreground="DarkGray"/>
+                                    <TextBlock Text="{Binding SessionModeLabel}"
+                           FontSize="11"
+                           Foreground="DarkBlue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
 
-                <Button Content="New Session"
-                        Command="{Binding StartNewSessionCommand}"/>
-
-                <ListView x:Name="SessionsListView"
-                          ItemsSource="{Binding Sessions}"
-                          SelectionChanged="SessionsListView_SelectionChanged">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ChatSession">
-                            <StackPanel Spacing="4" Margin="0,4">
-                                <TextBlock Text="{Binding Title}"
-                                           FontWeight="SemiBold"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding LastPreview}"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Foreground="Gray"/>
-                                <TextBlock Text="{Binding LastUpdatedDisplay}"
-                                           FontSize="11"
-                                           Foreground="DarkGray"/>
-                                <TextBlock Text="{Binding SessionModeLabel}"
-                                           FontSize="11"
-                                           Foreground="DarkBlue"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </StackPanel>
+            </Grid>
         </Border>
 
         <ScrollViewer Grid.Column="1">

@@ -1,27 +1,22 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// <copyright file="LoanViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
 
-namespace KarmaBanking.App.ViewModels
+namespace KarmaBanking.App.ViewModels;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+
+public partial class LoanViewModel : ObservableObject
 {
-    public partial class LoanViewModel : ObservableObject
+    public LoanViewModel(Loan loan, double repaymentProgress)
     {
-        private readonly Loan _loan;
-
-        public Loan Loan => _loan;
-
-        public double RepaymentProgress =>
-           (double) AmortizationCalculator.ComputeRepaymentProgress(
-                _loan.Principal,
-                _loan.OutstandingBalance);
-
-        public LoanViewModel(Loan loan)
-        {
-            _loan = loan;
-        }
-
+        this.Loan = loan;
+        this.RepaymentProgress = repaymentProgress;
     }
+
+    public Loan Loan { get; }
+
+    public double RepaymentProgress { get; }
+
+    public int PaidInstallments => this.Loan.TermInMonths - this.Loan.RemainingMonths;
 }

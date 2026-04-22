@@ -1,27 +1,31 @@
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Models.DTOs;
-using KarmaBanking.App.Repositories;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
 namespace KarmaBanking.App.Services
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
+    using System.Text.Json;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Models.DTOs;
+    using KarmaBanking.App.Repositories;
+    using KarmaBanking.App.Repositories.Interfaces;
     public class ApiService
     {
         private readonly string baseUrl = "https://localhost:5001";
-        private readonly string authToken = "";
-        private readonly ILoanService _loanService;
+        private readonly string authToken = string.Empty;
+        private readonly ILoanService loanService;
+        private readonly IChatRepository chatRepository;
 
-        public ApiService() { }
-        public ApiService(ILoanService loanService)
+        public ApiService()
         {
-            _loanService = loanService;
+        }
+        public ApiService(ILoanService loanService, IChatRepository chatRepository)
+        {
+            this.loanService = loanService;
+            this.chatRepository = chatRepository;
         }
 
         protected static readonly Dictionary<string, string> DefaultChatbotResponses = new Dictionary<string, string>
@@ -38,7 +42,6 @@ namespace KarmaBanking.App.Services
                 "Please contact the team from this chat and include a short description of what happened. Screenshots or PDFs can help the team investigate faster."
         };
 
-
         public async Task<List<SavingsAccount>> GetSavingsAccountsAsync(int userId, bool includesClosed = false)
         {
             using var client = BuildClient();
@@ -49,7 +52,6 @@ namespace KarmaBanking.App.Services
             return JsonSerializer.Deserialize<List<SavingsAccount>>(json, JsonOptions)
                    ?? new List<SavingsAccount>();
         }
-
 
         public async Task<SavingsAccount> CreateSavingsAccountAsync(CreateSavingsAccountDto dto)
         {
@@ -62,7 +64,6 @@ namespace KarmaBanking.App.Services
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<SavingsAccount>(json, JsonOptions)!;
         }
-
 
         public async Task<DepositResponseDto> DepositAsync(int accountId, decimal amount, string source)
         {
@@ -77,8 +78,7 @@ namespace KarmaBanking.App.Services
             return JsonSerializer.Deserialize<DepositResponseDto>(json, JsonOptions)!;
         }
 
-        // POST /api/savings/{id}/close
-        public async Task<ClosureResult> CloseAccountAsync(int accountId, int destinationAccountId)
+        public async Task<ClosureResultDto> CloseAccountAsync(int accountId, int destinationAccountId)
         {
             using var client = BuildClient();
 
@@ -103,22 +103,28 @@ namespace KarmaBanking.App.Services
 
             var json = await response.Content.ReadAsStringAsync();
 
-            return JsonSerializer.Deserialize<ClosureResult>(json, JsonOptions)!;
+            return JsonSerializer.Deserialize<ClosureResultDto>(json, JsonOptions)!;
         }
 
         public async Task<AttachmentUploadResponse?> UploadAttachmentAsync(int messageId, string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
+            {
                 throw new ArgumentException("File path is required.");
+            }
 
             if (!File.Exists(filePath))
+            {
                 throw new FileNotFoundException("File not found.", filePath);
+            }
 
             using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
 
             using var form = new MultipartFormDataContent();
             form.Add(new StringContent(messageId.ToString()), "messageId");
@@ -143,22 +149,27 @@ namespace KarmaBanking.App.Services
 
         public async Task<int> CreateChatSessionAsync(int userId, string issueCategory)
         {
-            ChatSessionRepository repo = new ChatSessionRepository();
-            return await repo.CreateChatSessionAsync(userId, issueCategory);
+            return await chatRepository.CreateChatSessionAsync(userId, issueCategory);
+        }
+        public async Task SendMessageAsync(ChatMessage message)
+        {
+            await chatRepository.AddChatMessageAsync(message);
+        }
+        public async Task<List<ChatSession>> GetUserChatSessionsAsync()
+        {
+            return await chatRepository.GetChatSessionsAsync();
         }
 
         public void SubmitFeedback(int sessionId, int rating, string feedback)
         {
-            ChatSessionRepository repo = new ChatSessionRepository();
-            repo.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
+            chatRepository.SaveSessionRatingAndFeedback(sessionId, rating, feedback);
         }
 
-        public void EmailSessionTranscript(int sessionId, string recipientEmail)
-        {
-            EmailTranscriptService emailService = new EmailTranscriptService();
-            emailService.SendSessionTranscript(sessionId, recipientEmail);
-        }
-
+        // public void EmailSessionTranscript(int sessionId, string recipientEmail)
+        // {
+        //    EmailTranscriptService emailService = new EmailTranscriptService();
+        //    emailService.SendSessionTranscript(sessionId, recipientEmail);
+        // }
         public virtual Task<List<string>> GetChatbotPresetQuestionsAsync()
         {
             return Task.FromResult(new List<string>(DefaultChatbotResponses.Keys));
@@ -185,8 +196,10 @@ namespace KarmaBanking.App.Services
             using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
 
             HttpResponseMessage response = await client.GetAsync($"/chat/{sessionId}/history");
 
@@ -211,8 +224,10 @@ namespace KarmaBanking.App.Services
         {
             var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
             if (!string.IsNullOrWhiteSpace(authToken))
+            {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", authToken);
+            }
             return client;
         }
 
@@ -232,73 +247,50 @@ namespace KarmaBanking.App.Services
             };
         }
 
-
         public async Task<List<Loan>> GetAllLoansAsync()
         {
-            return await _loanService.GetAllLoansAsync();
+            return await loanService.GetAllLoansAsync();
         }
 
         public async Task<Loan> GetLoanByIdAsync(int id)
         {
-            return await _loanService.GetLoanByIdAsync(id);
+            return await loanService.GetLoanByIdAsync(id);
         }
 
         public async Task<List<Loan>> GetLoansByUserAsync(int userId)
         {
-            return await _loanService.GetLoansByUserAsync(userId);
+            return await loanService.GetLoansByUserAsync(userId);
         }
 
         public async Task<List<Loan>> GetLoansByStatusAsync(LoanStatus loanStatus)
         {
-            return await _loanService.GetLoansByStatusAsync(loanStatus);
+            return await loanService.GetLoansByStatusAsync(loanStatus);
         }
-
 
         public async Task<List<Loan>> GetLoansByTypeAsync(LoanType loanType)
         {
-            return await _loanService.GetLoansByTypeAsync(loanType);
+            return await loanService.GetLoansByTypeAsync(loanType);
         }
-
 
         public async Task<string?> ApplyForLoanAsync(LoanApplicationRequest request)
         {
-
-            var newApplication = await _loanService.ApplyForLoanAsync(request);
-
-            var (status, rejectionReason) = await _loanService.ProcessApplicationStatusAsync(newApplication);
-
-            if (status == LoanApplicationStatus.Approved)
-            {
-               int loanId = await _loanService.AddLoanAsync(newApplication);
-                await _loanService.GenerateAmortizationAsync(loanId);
-            }
-
+            var (_, rejectionReason) = await loanService.SubmitLoanApplicationAsync(request);
             return rejectionReason;
-
-
         }
 
         public LoanEstimate GetLoanEstimate(LoanApplicationRequest request)
         {
-            return _loanService.GetLoanEstimate(request);
+            return loanService.GetLoanEstimate(request);
         }
-
-
 
         public async Task PayInstallmentAsync(int loanId, decimal? amount = null)
         {
-            await _loanService.PayInstallmentAsync(loanId, amount);
+            await loanService.PayInstallmentAsync(loanId, amount);
         }
-
-
 
         public async Task<List<AmortizationRow>> GetAmortizationAsync(int loanId)
         {
-            return await _loanService.GetAmortizationAsync(loanId);
-
+            return await loanService.GetAmortizationAsync(loanId);
         }
-
-
-
     }
 }

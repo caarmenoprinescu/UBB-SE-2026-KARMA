@@ -1,13 +1,16 @@
 <Solution>
-  <Configurations>
-    <Platform Name="ARM64" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="KarmaBanking.App.csproj">
-    <Platform Solution="*|ARM64" Project="ARM64" />
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x86" />
-    <Deploy />
-  </Project>
+    <Configurations>
+        <Platform Name="ARM64" />
+        <Platform Name="x64" />
+        <Platform Name="x86" />
+    </Configurations>
+    <Project Path="../KarmaBanking.App.Tests/KarmaBanking.App.Tests.csproj" Id="7c17453b-ec6e-4a44-a25d-960f1207b0d9">
+        <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="KarmaBanking.App.csproj">
+        <Platform Solution="*|ARM64" Project="ARM64" />
+        <Platform Solution="*|x64" Project="x64" />
+        <Platform Solution="*|x86" Project="x86" />
+        <Deploy />
+    </Project>
 </Solution>

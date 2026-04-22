@@ -1,163 +1,174 @@
-﻿using KarmaBanking.App.Models;
-using KarmaBanking.App.Services.Interfaces;
-using KarmaBanking.App.Utils;
+﻿// <copyright file="InvestmentLogsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.ViewModels;
+
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Windows.Storage;
-using Windows.Storage.Pickers; // Added missing namespace
+using Windows.Storage.Pickers;
+using Windows.Storage.Provider;
+using KarmaBanking.App.Models;
+using KarmaBanking.App.Services.Interfaces;
+using KarmaBanking.App.Utils;
 using WinRT.Interop;
 
-namespace KarmaBanking.App.ViewModels
+public class InvestmentLogsViewModel : INotifyPropertyChanged
 {
-    public class InvestmentLogsViewModel : INotifyPropertyChanged
+    private readonly IInvestmentService investmentService;
+    private DateTimeOffset? endDate;
+    private bool isLoading;
+
+    private string? selectedTicker = "All";
+    private DateTimeOffset? startDate;
+    private string statusMessage = string.Empty;
+
+    public InvestmentLogsViewModel(IInvestmentService investmentService)
     {
-        private readonly IInvestmentService _investmentService;
+        this.investmentService = investmentService;
+        this.ApplyFiltersCommand = new RelayCommand(async () => await this.LoadLogsAsync());
+        this.ExportCsvCommand = new RelayCommand(async () => await this.ExportToCsvAsync());
+    }
 
-        private string? _selectedTicker = "All";
-        private DateTimeOffset? _startDate;
-        private DateTimeOffset? _endDate;
-        private string _statusMessage = string.Empty;
-        private bool _isLoading;
+    public ObservableCollection<InvestmentTransaction> Logs { get; } = new();
 
-        public ObservableCollection<InvestmentTransaction> Logs { get; } = new();
+    public RelayCommand ApplyFiltersCommand { get; }
 
-        public RelayCommand ApplyFiltersCommand { get; }
-        public RelayCommand ExportCsvCommand { get; } // New command
+    public RelayCommand ExportCsvCommand { get; }
 
-        public InvestmentLogsViewModel(IInvestmentService investmentService)
+    public string? SelectedTicker
+    {
+        get => this.selectedTicker;
+        set
         {
-            _investmentService = investmentService;
-            ApplyFiltersCommand = new RelayCommand(LoadLogsAsync);
-            ExportCsvCommand = new RelayCommand(ExportToCsvAsync); // Initialize it
+            this.selectedTicker = value;
+            this.OnPropertyChanged();
         }
+    }
 
-        private async Task ExportToCsvAsync()
+    public DateTimeOffset? StartDate
+    {
+        get => this.startDate;
+        set
         {
-            if (Logs.Count == 0)
+            this.startDate = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public DateTimeOffset? EndDate
+    {
+        get => this.endDate;
+        set
+        {
+            this.endDate = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public string StatusMessage
+    {
+        get => this.statusMessage;
+        set
+        {
+            this.statusMessage = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public bool IsLoading
+    {
+        get => this.isLoading;
+        set
+        {
+            this.isLoading = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public async Task LoadLogsAsync()
+    {
+        this.IsLoading = true;
+        this.StatusMessage = "Loading logs...";
+        this.Logs.Clear();
+
+        try
+        {
+            var startDateTime = this.StartDate?.DateTime;
+            var endDateTime = this.EndDate?.DateTime;
+            var tickerSymbol = this.SelectedTicker == "All" ? null : this.SelectedTicker;
+
+            // Portfolio identification number 1 is standard for current integration
+            var transactionResults = await this.investmentService.GetInvestmentLogsAsync(
+                1,
+                startDateTime,
+                endDateTime,
+                tickerSymbol);
+
+            foreach (var transactionLog in transactionResults)
             {
-                StatusMessage = "No data to export.";
-                return;
+                this.Logs.Add(transactionLog);
             }
 
-            try
+            this.StatusMessage = this.Logs.Count == 0 ? "No transactions found matching the criteria." : string.Empty;
+        }
+        catch (Exception exception)
+        {
+            this.StatusMessage = $"Error loading logs: {exception.Message}";
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    private async Task ExportToCsvAsync()
+    {
+        if (this.Logs.Count == 0)
+        {
+            this.StatusMessage = "No data to export.";
+            return;
+        }
+
+        try
+        {
+            var csvContent = CsvExportUtility.ExportTransactionsToCsv(this.Logs);
+            var savePicker = new FileSavePicker();
+
+            var windowHandle = WindowNative.GetWindowHandle(App.MainAppWindow);
+            InitializeWithWindow.Initialize(savePicker, windowHandle);
+
+            savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            savePicker.FileTypeChoices.Add("CSV File", new List<string> { ".csv" });
+            savePicker.SuggestedFileName = $"InvestmentLogs_{DateTime.Now:yyyyMMdd_HHmm}";
+
+            var destinationFile = await savePicker.PickSaveFileAsync();
+            if (destinationFile != null)
             {
-                // 1. Create the CSV string using the utility
-                string csvContent = CsvExportUtility.ExportTransactionsToCsv(Logs);
+                CachedFileManager.DeferUpdates(destinationFile);
+                await FileIO.WriteTextAsync(destinationFile, csvContent);
+                var status = await CachedFileManager.CompleteUpdatesAsync(destinationFile);
 
-                // 2. Setup the File Save Picker
-                var savePicker = new FileSavePicker();
-
-                // Get the Window Handle (HWND) for WinUI 3
-                IntPtr hwnd = WindowNative.GetWindowHandle(App.MainAppWindow);
-                InitializeWithWindow.Initialize(savePicker, hwnd);
-
-                savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                savePicker.FileTypeChoices.Add("CSV File", new System.Collections.Generic.List<string>() { ".csv" });
-                savePicker.SuggestedFileName = $"InvestmentLogs_{DateTime.Now:yyyyMMdd_HHmm}";
-
-                // 3. Prompt user to pick location
-                StorageFile file = await savePicker.PickSaveFileAsync();
-                if (file != null)
-                {
-                    // Prevent updates to the remote version of the file until we finish
-                    CachedFileManager.DeferUpdates(file);
-
-                    // Write the text to the file
-                    await FileIO.WriteTextAsync(file, csvContent);
-
-                    // Complete the save
-                    Windows.Storage.Provider.FileUpdateStatus status = await CachedFileManager.CompleteUpdatesAsync(file);
-
-                    if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                    {
-                        StatusMessage = $"Export saved successfully to {file.Name}";
-                    }
-                    else
-                    {
-                        StatusMessage = "File could not be saved.";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Export failed: {ex.Message}";
-            }
-        }
-
-        public string? SelectedTicker
-        {
-            get => _selectedTicker;
-            set { _selectedTicker = value; OnPropertyChanged(); }
-        }
-
-        public DateTimeOffset? StartDate
-        {
-            get => _startDate;
-            set { _startDate = value; OnPropertyChanged(); }
-        }
-
-        public DateTimeOffset? EndDate
-        {
-            get => _endDate;
-            set { _endDate = value; OnPropertyChanged(); }
-        }
-
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
-
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set { _isLoading = value; OnPropertyChanged(); }
-        }
-
-        // Removed the duplicate 'ApplyFiltersCommand' declaration that was here
-
-        public async Task LoadLogsAsync()
-        {
-            IsLoading = true;
-            StatusMessage = "Loading...";
-            Logs.Clear();
-
-            try
-            {
-                // Convert DateTimeOffset from the UI picker to standard DateTime
-                DateTime? start = StartDate?.DateTime;
-                DateTime? end = EndDate?.DateTime;
-
-                // Map "All" back to null for the repository query
-                string? ticker = SelectedTicker == "All" ? null : SelectedTicker;
-
-                // Hardcoded portfolioId 1 for standard project flow
-                var results = await _investmentService.GetInvestmentLogsAsync(1, start, end, ticker);
-
-                foreach (var log in results)
-                {
-                    Logs.Add(log);
-                }
-
-                StatusMessage = Logs.Count == 0 ? "No transactions found matching the criteria." : "";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Error loading logs: {ex.Message}";
-            }
-            finally
-            {
-                IsLoading = false;
+                this.StatusMessage = status == FileUpdateStatus.Complete
+                    ? $"Export saved successfully to {destinationFile.Name}"
+                    : "File could not be saved.";
             }
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        catch (Exception exception)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            this.StatusMessage = $"Export failed: {exception.Message}";
         }
+    }
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
