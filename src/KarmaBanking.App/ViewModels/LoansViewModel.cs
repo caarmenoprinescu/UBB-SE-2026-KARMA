@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,12 +20,9 @@ using KarmaBanking.App.Utils;
 
 public partial class LoansViewModel : ObservableObject
 {
-    private readonly ApiService apiService;
-    private readonly AmortizationCalculator calculator;
+    private readonly ILoanService loanService;
     private readonly LoanApplicationPresentationService loanApplicationPresentationService;
     private readonly LoanDialogStateService loanDialogStateService;
-
-    private readonly PaymentCalculationService paymentCalculationService = new();
     private readonly PdfExporter pdfExporter;
 
     [ObservableProperty]
@@ -39,14 +37,16 @@ public partial class LoansViewModel : ObservableObject
 
     [ObservableProperty]
     private LoanEstimate currentEstimate;
+
     [ObservableProperty]
     private double? customAmount;
+
     [ObservableProperty]
     private double desiredAmount;
+
     [ObservableProperty]
     private string dialogActionText = "Continue";
 
-    // --- Proprietăți noi pentru controlul UI-ului din Dialog ---
     [ObservableProperty]
     private string dialogTitle = "Apply for Loan";
 
@@ -56,27 +56,32 @@ public partial class LoansViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isEstimateVisible;
+
     [ObservableProperty]
     private bool isFormVisible = true;
+
     [ObservableProperty]
     private bool isLoading;
+
     [ObservableProperty]
     private bool isReviewVisible;
 
-    // --- Aici e fix-ul pentru lista care nu apărea la deschidere ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredLoans))]
     private ObservableCollection<LoanViewModel> loans = [];
 
-    // --- Payment preview properties ---
     [ObservableProperty]
     private decimal paymentPreviewBalance;
+
     [ObservableProperty]
     private int paymentPreviewRemainingMonths;
+
     [ObservableProperty]
     private int preferredTermMonths;
+
     [ObservableProperty]
     private string purpose = string.Empty;
+
     [ObservableProperty]
     private LoanViewModel selectedLoan;
 
@@ -93,8 +98,8 @@ public partial class LoansViewModel : ObservableObject
 
     public LoansViewModel()
     {
-        this.apiService = new ApiService(new LoanService(new LoanRepository()), new ChatRepository());
-        this.calculator = new AmortizationCalculator();
+        var loanRepository = new LoanRepository();
+        this.loanService = new LoanService(loanRepository);
         this.pdfExporter = new PdfExporter();
         this.loanDialogStateService = new LoanDialogStateService();
         this.loanApplicationPresentationService = new LoanApplicationPresentationService();
@@ -117,8 +122,9 @@ public partial class LoansViewModel : ObservableObject
         this.ErrorMessage = string.Empty;
         try
         {
-            var result = await this.apiService.GetLoansByUserAsync(CurrentUser.Id);
-            this.Loans = new ObservableCollection<LoanViewModel>(result.Select(l => new LoanViewModel(l)));
+            var result = await this.loanService.GetLoansByUserAsync(CurrentUser.Id);
+            this.Loans = new ObservableCollection<LoanViewModel>(
+                result.Select(loan => new LoanViewModel(loan, this.loanService.GetRepaymentProgress(loan))));
         }
         catch (Exception ex)
         {
@@ -146,7 +152,7 @@ public partial class LoansViewModel : ObservableObject
                 Purpose = this.Purpose,
             };
 
-            var rejectionReason = await this.apiService.ApplyForLoanAsync(request);
+            var (_, rejectionReason) = await this.loanService.SubmitLoanApplicationAsync(request);
 
             var applicationOutcome = this.loanApplicationPresentationService.BuildApplicationOutcome(rejectionReason);
             this.ApplicationResult = applicationOutcome.Message;
@@ -181,7 +187,7 @@ public partial class LoansViewModel : ObservableObject
                 PreferredTermMonths = this.PreferredTermMonths,
                 Purpose = this.Purpose,
             };
-            this.CurrentEstimate = this.apiService.GetLoanEstimate(request);
+            this.CurrentEstimate = this.loanService.GetLoanEstimate(request);
         }
         catch (Exception e)
         {
@@ -198,7 +204,7 @@ public partial class LoansViewModel : ObservableObject
             var amount = this.CustomAmount.HasValue
                 ? (decimal?)this.CustomAmount.Value
                 : null;
-            await this.apiService.PayInstallmentAsync(this.SelectedLoan.Loan.Id, amount);
+            await this.loanService.PayInstallmentAsync(this.SelectedLoan.Loan.Id, amount);
             await this.LoadLoansAsync();
 
             this.OnPropertyChanged(nameof(this.FilteredLoans));
@@ -214,9 +220,6 @@ public partial class LoansViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    ///     Updates the payment preview (balance and remaining term) based on selected payment method.
-    /// </summary>
     public void UpdatePaymentPreview(bool isStandardPayment, string customAmountText = "")
     {
         if (this.SelectedLoan == null)
@@ -226,29 +229,13 @@ public partial class LoansViewModel : ObservableObject
             return;
         }
 
-        var loan = this.SelectedLoan.Loan;
-        var customAmount = 0m;
-
-        if (!isStandardPayment && !string.IsNullOrWhiteSpace(customAmountText))
+        decimal? customAmount = null;
+        if (!isStandardPayment)
         {
-            var (success, amount) = this.paymentCalculationService.ParsePaymentAmount(customAmountText);
-            if (!success)
-            {
-                customAmount = 0m;
-            }
-            else
-            {
-                customAmount = amount;
-            }
+            customAmount = this.loanService.ParseCustomPaymentAmount(customAmountText);
         }
 
-        var (balance, months) = this.paymentCalculationService.CalculatePaymentPreview(
-            loan.MonthlyInstallment,
-            loan.OutstandingBalance,
-            loan.RemainingMonths,
-            isStandardPayment,
-            customAmount);
-
+        var (balance, months) = this.loanService.CalculatePaymentPreview(this.SelectedLoan.Loan, customAmount);
         this.PaymentPreviewBalance = balance;
         this.PaymentPreviewRemainingMonths = months;
     }
@@ -268,32 +255,21 @@ public partial class LoansViewModel : ObservableObject
             return string.Empty;
         }
 
-        if (!this.CustomAmount.HasValue)
-        {
-            var initialCustomAmount = this.paymentCalculationService.GetInitialCustomAmount(
-                this.SelectedLoan.Loan.MonthlyInstallment,
-                this.SelectedLoan.Loan.OutstandingBalance,
-                this.CustomAmount);
-            this.CustomAmount = (double)initialCustomAmount;
-        }
-        else
-        {
-            var normalizedCustomAmount = this.paymentCalculationService.GetInitialCustomAmount(
-                this.SelectedLoan.Loan.MonthlyInstallment,
-                this.SelectedLoan.Loan.OutstandingBalance,
-                this.CustomAmount);
-            this.CustomAmount = (double)normalizedCustomAmount;
-        }
+        var normalizedCustomAmount = this.loanService.NormalizeCustomPaymentAmount(
+            this.SelectedLoan.Loan,
+            this.CustomAmount.HasValue ? (decimal?)this.CustomAmount.Value : null);
 
-        var currentText = this.paymentCalculationService.FormatCustomAmount((decimal)(this.CustomAmount ?? 0d));
+        this.CustomAmount = (double)normalizedCustomAmount;
+
+        var currentText = normalizedCustomAmount.ToString("0.##", CultureInfo.CurrentCulture);
         this.UpdatePaymentPreview(false, currentText);
         return currentText;
     }
 
     public void UpdateCustomPayment(string customAmountText)
     {
-        var (success, amount) = this.paymentCalculationService.ParsePaymentAmount(customAmountText);
-        this.CustomAmount = success ? (double)amount : null;
+        var parsedAmount = this.loanService.ParseCustomPaymentAmount(customAmountText);
+        this.CustomAmount = parsedAmount.HasValue ? (double)parsedAmount.Value : null;
         this.UpdatePaymentPreview(false, customAmountText);
     }
 
@@ -308,7 +284,7 @@ public partial class LoansViewModel : ObservableObject
         this.ErrorMessage = string.Empty;
         try
         {
-            var rows = await this.apiService.GetAmortizationAsync(this.SelectedLoan.Loan.Id);
+            var rows = await this.loanService.GetAmortizationAsync(this.SelectedLoan.Loan.Id);
             this.AmortizationRows = new ObservableCollection<AmortizationRow>(rows);
         }
         catch (Exception e)
@@ -326,7 +302,7 @@ public partial class LoansViewModel : ObservableObject
     {
         try
         {
-            var rows = await this.apiService.GetAmortizationAsync(this.SelectedLoan.Loan.Id);
+            var rows = await this.loanService.GetAmortizationAsync(this.SelectedLoan.Loan.Id);
             var pdfBytes = this.pdfExporter.ExportAmortization(rows);
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             var fileName = $"amortization_schedule_{this.SelectedLoan.Loan.Id}.pdf";

@@ -4,6 +4,7 @@
 
 namespace KarmaBanking.App.Views;
 
+using KarmaBanking.App.Utils;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
@@ -38,7 +39,7 @@ public sealed partial class AmortizationScheduleView : Page
             this.loan = loan;
             this.PopulateStaticLabels(loan);
 
-            this.ViewModel.SelectedLoan = new LoanViewModel(loan);
+            this.ViewModel.SelectedLoan = new LoanViewModel(loan, this.GetRepaymentProgress(loan));
             await this.ViewModel.LoadAmortizationAsync();
         }
     }
@@ -48,10 +49,15 @@ public sealed partial class AmortizationScheduleView : Page
         this.LoanSubHeaderText.Text =
             $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
 
-        var loanViewModel = new LoanViewModel(loan);
+        var loanViewModel = new LoanViewModel(loan, this.GetRepaymentProgress(loan));
         this.TotalInstallmentsText.Text = loan.TermInMonths.ToString();
         this.PaidInstallmentsText.Text = loanViewModel.PaidInstallments.ToString();
         this.RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
+    }
+
+    private double GetRepaymentProgress(Loan loan)
+    {
+        return (double)AmortizationCalculator.ComputeRepaymentProgress(loan.Principal, loan.OutstandingBalance);
     }
 
     private void OnRowContainerContentChanging(

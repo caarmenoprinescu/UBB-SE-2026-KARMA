@@ -274,16 +274,7 @@ namespace KarmaBanking.App.Services
 
         public async Task<string?> ApplyForLoanAsync(LoanApplicationRequest request)
         {
-            var newApplication = await loanService.ApplyForLoanAsync(request);
-
-            var (status, rejectionReason) = await loanService.ProcessApplicationStatusAsync(newApplication);
-
-            if (status == LoanApplicationStatus.Approved)
-            {
-                int loanId = await loanService.AddLoanAsync(newApplication);
-                await loanService.GenerateAmortizationAsync(loanId);
-            }
-
+            var (_, rejectionReason) = await loanService.SubmitLoanApplicationAsync(request);
             return rejectionReason;
         }
 

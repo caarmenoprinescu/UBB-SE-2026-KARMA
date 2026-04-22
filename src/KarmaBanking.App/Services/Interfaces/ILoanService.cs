@@ -21,11 +21,21 @@ public interface ILoanService
 
     Task<LoanApplication> ApplyForLoanAsync(LoanApplicationRequest request);
 
+    Task<(LoanApplicationStatus Status, string? RejectionReason)> SubmitLoanApplicationAsync(LoanApplicationRequest request);
+
     LoanEstimate GetLoanEstimate(LoanApplicationRequest request);
 
     Task<int> AddLoanAsync(LoanApplication application);
 
     Task PayInstallmentAsync(int loanId, decimal? amount = null);
+
+    (decimal BalanceAfterPayment, int RemainingMonths) CalculatePaymentPreview(Loan loan, decimal? customAmount = null);
+
+    decimal? ParseCustomPaymentAmount(string input);
+
+    decimal NormalizeCustomPaymentAmount(Loan loan, decimal? currentCustomAmount);
+
+    double GetRepaymentProgress(Loan loan);
 
     Task<List<AmortizationRow>> GetAmortizationAsync(int loanId);
 

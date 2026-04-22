@@ -11,7 +11,7 @@ using KarmaBanking.App.Models;
 /// <summary>
 /// Provides utility methods for calculating loan amortization schedules and estimates.
 /// </summary>
-public class AmortizationCalculator
+public static class AmortizationCalculator
 {
     /// <summary>
     /// Computes a loan estimate based on the requested amount, annual rate, and term.
@@ -67,7 +67,7 @@ public class AmortizationCalculator
     /// </summary>
     /// <param name="loan">The loan details used to generate the schedule.</param>
     /// <returns>A list of <see cref="AmortizationRow"/> representing the amortization schedule.</returns>
-    public List<AmortizationRow> Generate(Loan loan)
+    public static List<AmortizationRow> Generate(Loan loan)
     {
         var rows = new List<AmortizationRow>();
 
@@ -136,15 +136,5 @@ public class AmortizationCalculator
         }
 
         return rows;
-    }
-
-    /// <summary>
-    /// Computes the penalty for early withdrawal or specific savings account actions.
-    /// </summary>
-    /// <param name="account">The savings account to compute the penalty for.</param>
-    /// <returns>The calculated penalty amount.</returns>
-    public decimal ComputePenalty(SavingsAccount account)
-    {
-        return 0;
     }
 }

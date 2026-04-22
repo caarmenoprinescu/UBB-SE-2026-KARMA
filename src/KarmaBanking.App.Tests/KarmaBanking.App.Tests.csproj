@@ -19,6 +19,8 @@
 	  <EnableDynamicLoading>true</EnableDynamicLoading>
 	  <EnableMsixTooling>false</EnableMsixTooling>
 	  <WindowsAppSdkRuntimeAutoInitialize>false</WindowsAppSdkRuntimeAutoInitialize>
+	  <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+	  <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
   </PropertyGroup>
 
   <ItemGroup>
