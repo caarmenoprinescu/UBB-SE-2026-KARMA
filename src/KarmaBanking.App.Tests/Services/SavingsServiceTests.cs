@@ -23,12 +23,18 @@ namespace KarmaBanking.App.Tests.Services
         private const decimal DECIMAL_EARLY_CLOSURE_PENALTY = 0.02m;
         private const decimal DECIMAL_EARLY_WITHDRAWAL_PENALTY = 0.02m;
 
+        private readonly ISavingsRepository repository;
+        private readonly SavingsService service;
+
+        public SavingsServiceTests()
+        {
+            repository = Substitute.For<ISavingsRepository>();
+            service = new SavingsService(repository);
+        }
+
         [Fact]
         public async Task CreateAccountAsync_StandardAccountIsCreated_ReturnsCreatedAccount()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var inputDto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -58,9 +64,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_GoalSavingsAccountIsCreated_ReturnsCreatedAccount()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var inputDto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -94,9 +97,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_FixedDepositAccountIsCreated_ReturnsCreatedAccount()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var inputDto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -126,9 +126,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_HighYieldAccountIsCreated_ReturnsCreatedAccount()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var inputDto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -158,8 +155,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_UserHasMaxActiveAccounts_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var userId = 1;
 
             var activeAccounts = new List<SavingsAccount>
@@ -182,8 +177,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithoutTargetDate_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -204,8 +197,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithPastTargetDate_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -227,8 +218,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithoutTargetAmount_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -249,8 +238,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CreateAccountAsync_GoalSavingsWithNegativeTargetAmount_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var dto = new CreateSavingsAccountDto
             {
                 UserIdentificationNumber = 1,
@@ -272,9 +259,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task GetAccountsAsync_NegativeUserId_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await service.GetAccountsAsync(-1));
             Assert.Equal("User ID must be a positive integer.", ex.Message);
             await repository.DidNotReceive().GetSavingsAccountsByUserIdAsync(Arg.Any<int>(), Arg.Any<bool>());
@@ -283,9 +267,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task GetAccountsAsync_ValidUserId_ReturnsAccounts()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accounts = new List<SavingsAccount>
             {
@@ -303,8 +284,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task DepositAsync_NegativeAmount_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
             var accountId = 1;
             var userId = 1;
 
@@ -316,9 +295,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task DepositAsync_InvalidAccountId_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var inexistentAccountId = 999;
 
@@ -333,9 +309,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task DepositAsync_AccountStatusClosed_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
 
@@ -350,9 +323,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task DepositAsync_DisplayStatusMatured_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
 
@@ -367,9 +337,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task DepositAsync_ValidDeposit_ReturnsDepositResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var amount = 100m;
@@ -390,9 +357,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_AccountIdNotFound_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var inexistentAccountId = 999;
@@ -410,9 +374,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_AccountAlreadyClosed_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -429,9 +390,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_DestinationAccountNotFound_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var inexistentDestinationAccountId = 999;
@@ -448,9 +406,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_DestinationAccountAlreadyClosed_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -474,9 +429,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseFixedDepositWithPenalty_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -522,9 +474,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseFixedDepositWithoutMaturityDate_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -569,9 +518,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseMaturedFixedDepositWithoutPenalty_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -617,9 +563,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseStandardAccountWithoutPenalty_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -664,9 +607,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseGoalSavingsAccountWithoutPenalty_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -711,9 +651,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task CloseAccountAsync_CloseHighYieldAccountWithoutPenalty_ReturnsCloseAccountResponse()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var userId = 1;
             var accountId = 1;
             var destinationAccountId = 2;
@@ -758,9 +695,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_NegativeAmount_ThrowsArgumentException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -773,9 +707,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_DestinationAccountNotFound_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
             var inexistentDestinationAccountId = 999;
@@ -800,9 +731,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_DestinationAccountClosed_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -826,9 +754,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_InsufficientBalance_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -853,9 +778,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_FixedDepositPenaltyAndInsufficientBalanceAfterPenalty_ThrowsInvalidOperationException()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -882,9 +804,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_FixedDepositWithoutMaturityDate_ReturnsWithdrawResponseDto()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -921,9 +840,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_MaturedFixedDeposit_ReturnsWithdrawResponseDto()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -961,9 +877,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_StandardSavingsAccount_ReturnsWithdrawResponseDto()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -1000,9 +913,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_GoalSavingsAccount_ReturnsWithdrawResponseDto()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -1039,9 +949,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task WithdrawAsync_HighYieldSavingsAccount_ReturnsWithdrawResponseDto()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
             var userId = 1;
 
@@ -1078,9 +985,6 @@ namespace KarmaBanking.App.Tests.Services
         [Fact]
         public async Task GetAutoDepositAsync_ValidCase_ReturnsAutoDeposit()
         {
-            var repository = Substitute.For<ISavingsRepository>();
-            var service = new SavingsService(repository);
-
             var accountId = 1;
 
             var expectedAutoDeposit = new AutoDeposit
