@@ -70,9 +70,13 @@ public class SavingsService : ISavingsService
         return await this.savingsRepository.CreateSavingsAccountAsync(dto, apy);
     }
 
-    // this method smells a bit...
     public Task<List<SavingsAccount>> GetAccountsAsync(int userId, bool includesClosed = false)
     {
+        if (userId < 0)
+        {
+            throw new ArgumentException("User ID must be a positive integer.");
+        }
+
         return this.savingsRepository.GetSavingsAccountsByUserIdAsync(userId, includesClosed);
     }
 
