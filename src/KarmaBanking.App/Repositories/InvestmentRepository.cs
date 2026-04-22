@@ -44,9 +44,10 @@
                     checkCommand.Parameters.AddWithValue("@Ticker", ticker);
 
                     var result = await checkCommand.ExecuteScalarAsync();
-                    if (result != null)
+                    if (result != null && result != DBNull.Value)
                     {
-                        holdingIdentificationNumber = (int)result;
+                        // Fixed CS8605 using Convert.ToInt32 to avoid unboxing a possibly null value
+                        holdingIdentificationNumber = Convert.ToInt32(result);
                     }
                 }
 
@@ -75,7 +76,9 @@
                     insertCommand.Parameters.AddWithValue("@Quantity", finalQuantity);
                     insertCommand.Parameters.AddWithValue("@AveragePrice", finalAveragePrice);
 
-                    holdingIdentificationNumber = (int)await insertCommand.ExecuteScalarAsync();
+                    // Fixed CS8605 using Convert.ToInt32
+                    var insertResult = await insertCommand.ExecuteScalarAsync();
+                    holdingIdentificationNumber = insertResult != null ? Convert.ToInt32(insertResult) : 0;
                 }
 
                 // 3. Log the transaction details
