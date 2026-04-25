@@ -1,23 +1,28 @@
-﻿using KarmaBanking.App.Models;
+﻿// <copyright file="IInvestmentService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services.Interfaces;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using KarmaBanking.App.Models;
 
-namespace KarmaBanking.App.Services.Interfaces
+public interface IInvestmentService
 {
-    public interface IInvestmentService
-    {
-        /// <summary>
-        /// Executes a crypto trade, calculates fees, and records it in the database.
-        /// </summary>
-        Task<bool> ExecuteCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit);
-        
-        // Add this to retrieve the balance for the UI sync
-        Portfolio GetPortfolio(int userId);
+    Task<bool> ExecuteCryptoTradeAsync(
+        int portfolioIdentificationNumber,
+        string ticker,
+        string actionType,
+        decimal quantity,
+        decimal pricePerUnit);
 
-        // New method for BA-61
-        Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null);
-    }
+    Portfolio GetPortfolio(int userIdentificationNumber);
+
+    Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
+        int portfolioIdentificationNumber,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        string? ticker = null);
 }

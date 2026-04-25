@@ -1,3 +1,6 @@
+﻿using System;
+using System.IO;
+using System.Threading.Tasks;
 using KarmaBanking.App.Services;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI;
@@ -5,9 +8,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Pickers;
@@ -193,7 +193,7 @@ namespace KarmaBanking.App.Views
                 {
                     ApiService api = new ApiService();
 
-                    int sessionId = viewModel.CurrentSession?.id ?? 1;
+                    int sessionId = viewModel.CurrentSession?.Id ?? 1;
                     string feedback = feedbackTextBox.Text;
 
                     api.SubmitFeedback(sessionId, selectedRating, feedback);

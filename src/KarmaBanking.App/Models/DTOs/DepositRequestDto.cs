@@ -1,9 +1,20 @@
-namespace KarmaBanking.App.Models.DTOs
+// <copyright file="DepositRequestDto.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Models.DTOs;
+
+/// <summary>
+/// Request payload for depositing funds into a savings account.
+/// </summary>
+public class DepositRequestDto
 {
-    public class DepositRequestDto
-    {
-        public int AccountId { get; set; }
-        public decimal Amount { get; set; }
-        public string Source { get; set; } = string.Empty;
-    }
+    /// <summary>Gets or sets the target account identifier.</summary>
+    public int AccountId { get; set; }
+
+    /// <summary>Gets or sets the deposit amount.</summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>Gets or sets the deposit source description.</summary>
+    public string Source { get; set; } = string.Empty;
 }

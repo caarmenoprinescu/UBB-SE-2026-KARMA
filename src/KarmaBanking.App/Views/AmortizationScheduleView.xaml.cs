@@ -1,81 +1,90 @@
+// <copyright file="AmortizationScheduleView.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Views;
+
+using KarmaBanking.App.Utils;
 using KarmaBanking.App.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
 
-namespace KarmaBanking.App.Views
+public sealed partial class AmortizationScheduleView : Page
 {
-    public sealed partial class AmortizationScheduleView : Page
+    private Loan? loan;
+
+    public AmortizationScheduleView()
     {
-        private LoansViewModel ViewModel { get; }
-        private Loan? _loan;
+        this.InitializeComponent();
 
-        public AmortizationScheduleView()
+        this.ViewModel = new LoansViewModel();
+
+        this.DataContext = this.ViewModel;
+
+        // Highlight the current installment row after containers are created.
+        this.AmortizationListView.ContainerContentChanging += this.OnRowContainerContentChanging;
+    }
+
+    private LoansViewModel ViewModel { get; }
+
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+        if (e.Parameter is Loan loan)
         {
-            InitializeComponent();
+            this.loan = loan;
+            this.PopulateStaticLabels(loan);
 
-            ViewModel = new LoansViewModel();
-
-            DataContext = ViewModel;
-
-            // Highlight the current installment row after containers are created.
-            AmortizationListView.ContainerContentChanging += OnRowContainerContentChanging;
+            this.ViewModel.SelectedLoan = new LoanViewModel(loan, this.GetRepaymentProgress(loan));
+            await this.ViewModel.LoadAmortizationAsync();
         }
+    }
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+    private void PopulateStaticLabels(Loan loan)
+    {
+        this.LoanSubHeaderText.Text =
+            $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
+
+        var loanViewModel = new LoanViewModel(loan, this.GetRepaymentProgress(loan));
+        this.TotalInstallmentsText.Text = loan.TermInMonths.ToString();
+        this.PaidInstallmentsText.Text = loanViewModel.PaidInstallments.ToString();
+        this.RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
+    }
+
+    private double GetRepaymentProgress(Loan loan)
+    {
+        return (double)AmortizationCalculator.ComputeRepaymentProgress(loan.Principal, loan.OutstandingBalance);
+    }
+
+    private void OnRowContainerContentChanging(
+        ListViewBase sender,
+        ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is AmortizationRow row && args.ItemContainer is ListViewItem container)
         {
-            base.OnNavigatedTo(e);
-
-            if (e.Parameter is Loan loan)
-            {
-                _loan = loan;
-                PopulateStaticLabels(loan);
-
-                ViewModel.SelectedLoan = new LoanViewModel(loan);
-                await ViewModel.LoadAmortizationAsync();
-            }
+            container.Background = row.IsCurrent
+                ? new SolidColorBrush(ColorHelper.FromArgb(40, 0, 120, 215))
+                : null;
         }
+    }
 
-        private void PopulateStaticLabels(Loan loan)
+    private void OnBackClicked(object sender, RoutedEventArgs e)
+    {
+        if (this.Frame.CanGoBack)
         {
-            LoanSubHeaderText.Text =
-                $"{loan.LoanType} · {loan.TermInMonths} months · {loan.InterestRate:0.##}%";
-
-            int paid = loan.TermInMonths - loan.RemainingMonths;
-            TotalInstallmentsText.Text = loan.TermInMonths.ToString();
-            PaidInstallmentsText.Text = paid.ToString();
-            RemainingInstallmentsText.Text = loan.RemainingMonths.ToString();
+            this.Frame.GoBack();
         }
+    }
 
-        private void OnRowContainerContentChanging(
-            ListViewBase sender,
-            ContainerContentChangingEventArgs args)
+    private async void OnDownloadPdfClicked(object sender, RoutedEventArgs e)
+    {
+        if (this.loan != null)
         {
-            if (args.Item is AmortizationRow row && args.ItemContainer is ListViewItem container)
-            {
-                container.Background = row.IsCurrent
-                    ? new SolidColorBrush(ColorHelper.FromArgb(40, 0, 120, 215))
-                    : null;
-            }
-        }
-
-        private void OnBackClicked(object sender, RoutedEventArgs e)
-        {
-            if (Frame.CanGoBack)
-            {
-                Frame.GoBack();
-            }
-        }
-
-        private async void OnDownloadPdfClicked(object sender, RoutedEventArgs e)
-        {
-            if (_loan != null)
-            {
-               await ViewModel.DownloadSchedulePdfAsync();
-            }
+            await this.ViewModel.DownloadSchedulePdfAsync();
         }
     }
 }

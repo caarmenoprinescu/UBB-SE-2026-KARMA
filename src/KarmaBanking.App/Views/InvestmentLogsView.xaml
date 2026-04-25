@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <Page
     x:Class="KarmaBanking.App.Views.InvestmentLogsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -15,65 +16,71 @@
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Transaction Logs" FontSize="28" FontWeight="Bold" Margin="0,0,0,24" />
 
-		<Border Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,24">
-			<StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
+        <Border Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8"
+                Padding="16" Margin="0,0,0,24">
+            <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
 
-				<StackPanel Spacing="4">
-					<TextBlock Text="Asset" FontWeight="SemiBold"/>
-					<ComboBox SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" Width="120">
-						<x:String>All</x:String>
-						<x:String>BTC</x:String>
-						<x:String>ETH</x:String>
-						<x:String>SOL</x:String>
-					</ComboBox>
-				</StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Asset" FontWeight="SemiBold" />
+                    <ComboBox SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" Width="120">
+                        <x:String>All</x:String>
+                        <x:String>BTC</x:String>
+                        <x:String>ETH</x:String>
+                        <x:String>SOL</x:String>
+                    </ComboBox>
+                </StackPanel>
 
-				<StackPanel Spacing="4">
-					<TextBlock Text="Start Date" FontWeight="SemiBold"/>
-					<CalendarDatePicker Date="{Binding StartDate, Mode=TwoWay}" PlaceholderText="Select date"/>
-				</StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Start Date" FontWeight="SemiBold" />
+                    <CalendarDatePicker Date="{Binding StartDate, Mode=TwoWay}" PlaceholderText="Select date" />
+                </StackPanel>
 
-				<StackPanel Spacing="4">
-					<TextBlock Text="End Date" FontWeight="SemiBold"/>
-					<CalendarDatePicker Date="{Binding EndDate, Mode=TwoWay}" PlaceholderText="Select date"/>
-				</StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="End Date" FontWeight="SemiBold" />
+                    <CalendarDatePicker Date="{Binding EndDate, Mode=TwoWay}" PlaceholderText="Select date" />
+                </StackPanel>
 
-				<Button Content="Apply Filters" Command="{Binding ApplyFiltersCommand}" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Bottom" Height="32"/>
+                <Button Content="Apply Filters" Command="{Binding ApplyFiltersCommand}"
+                        Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Bottom" Height="32" />
 
-				<Button Content="Export CSV" Command="{Binding ExportCsvCommand}" VerticalAlignment="Bottom" Height="32" Margin="16,0,0,0"/>
-			</StackPanel>
-		</Border>
+                <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" VerticalAlignment="Bottom"
+                        Height="32" Margin="16,0,0,0" />
+            </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding Logs.Count, Converter={StaticResource BoolToVisibility}, ConverterParameter=Inverse}">
-            <ProgressRing IsActive="{Binding IsLoading}" Width="32" Height="32" Margin="0,0,0,12"/>
-            <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" HorizontalAlignment="Center"/>
+        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Visibility="{Binding Logs.Count, Converter={StaticResource BoolToVisibility}, ConverterParameter=Inverse}">
+            <ProgressRing IsActive="{Binding IsLoading}" Width="32" Height="32" Margin="0,0,0,12" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" HorizontalAlignment="Center" />
         </StackPanel>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding Logs}" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8">
+        <ListView Grid.Row="2" ItemsSource="{Binding Logs}" BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8">
             <ListView.HeaderTemplate>
                 <DataTemplate>
                     <Grid Padding="12,8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.5*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1.5*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Date" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="1" Text="Asset" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2" Text="Action" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="3" Text="Quantity" FontWeight="Bold" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="4" Text="Price" FontWeight="Bold" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="5" Text="Fees" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="0" Text="Date" FontWeight="Bold" />
+                        <TextBlock Grid.Column="1" Text="Asset" FontWeight="Bold" />
+                        <TextBlock Grid.Column="2" Text="Action" FontWeight="Bold" />
+                        <TextBlock Grid.Column="3" Text="Quantity" FontWeight="Bold" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="Price" FontWeight="Bold" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="5" Text="Fees" FontWeight="Bold" HorizontalAlignment="Right" />
                     </Grid>
                 </DataTemplate>
             </ListView.HeaderTemplate>
@@ -82,19 +89,22 @@
                 <DataTemplate>
                     <Grid Padding="12,12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.5*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1.5*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding ExecutedAt}"/>
-                        <TextBlock Grid.Column="1" Text="{Binding Ticker}"/>
-                        <TextBlock Grid.Column="2" Text="{Binding ActionType}"/>
-                        <TextBlock Grid.Column="3" Text="{Binding Quantity}" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="4" Text="{Binding PricePerUnit, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right"/>
-                        <TextBlock Grid.Column="5" Text="{Binding Fees, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="0" Text="{Binding ExecutedAt}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Ticker}" />
+                        <TextBlock Grid.Column="2" Text="{Binding ActionType}" />
+                        <TextBlock Grid.Column="3" Text="{Binding Quantity}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4"
+                                   Text="{Binding PricePerUnit, Converter={StaticResource CurrencyConverter}}"
+                                   HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="5" Text="{Binding Fees, Converter={StaticResource CurrencyConverter}}"
+                                   HorizontalAlignment="Right" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

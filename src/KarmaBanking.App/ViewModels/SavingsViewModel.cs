@@ -1,496 +1,679 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Models.DTOs;
-using KarmaBanking.App.Models.Enums;
-using KarmaBanking.App.Services.Interfaces;
+// <copyright file="SavingsViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.ViewModels;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using KarmaBanking.App.Models;
+using KarmaBanking.App.Models.DTOs;
+using KarmaBanking.App.Services;
+using KarmaBanking.App.Services.Interfaces;
 
-namespace KarmaBanking.App.ViewModels
+public partial class SavingsViewModel : BaseViewModel
 {
-    public partial class SavingsViewModel : BaseViewModel
+    private const int CurrentUserId = 1;
+    private readonly SavingsPresentationService savingsPresentationService;
+    private readonly ISavingsService savingsService;
+    private readonly SavingsUiRulesService savingsUiRulesService;
+    private readonly SavingsWorkflowService savingsWorkflowService;
+
+    [ObservableProperty]
+    private string accountName = string.Empty;
+
+    [ObservableProperty]
+    private string autoDepositAmountText = string.Empty;
+    [ObservableProperty]
+    private string autoDepositFrequency = string.Empty;
+    [ObservableProperty]
+    private bool autoDepositIsActive = true;
+    [ObservableProperty]
+    private string autoDepositSaveMessage = string.Empty;
+    [ObservableProperty]
+    private DateTimeOffset? autoDepositStartDate = DateTimeOffset.Now.AddDays(1);
+    [ObservableProperty]
+    private string bestInterestRate = "0.00%";
+
+    // ── Close Account Panel ──────────────────────────────────────────────
+    [ObservableProperty]
+    private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
+
+    [ObservableProperty]
+    private string closeResultMessage = string.Empty;
+    [ObservableProperty]
+    private bool closeSuccess;
+
+    private bool closeUserConfirmed;
+
+    // ── Auto Deposit ─────────────────────────────────────────────────────
+    private AutoDeposit? currentAutoDeposit;
+
+    [ObservableProperty]
+    private int currentPage = 1;
+
+    // ── Deposit ──────────────────────────────────────────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LivePreview))]
+    private string depositAmountText = string.Empty;
+
+    private CancellationTokenSource? depositCancelationTokenSource;
+
+    [ObservableProperty]
+    private string depositSource = string.Empty;
+    [ObservableProperty]
+    private string depositSuccessMessage = string.Empty;
+    [ObservableProperty]
+    private ObservableCollection<FundingSourceOption> fundingSources = new();
+    [ObservableProperty]
+    private bool hasExistingAutoDeposit;
+    [ObservableProperty]
+    private string initialDepositText = string.Empty;
+    [ObservableProperty]
+    private string numberOfAccountsText = "across 0 accounts";
+
+    // ── My Accounts ──────────────────────────────────────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(ShowAccountsList))]
+    private ObservableCollection<SavingsAccount> savingsAccounts = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LivePreview))]
+    [NotifyPropertyChangedFor(nameof(WithdrawHasEarlyRisk))]
+    [NotifyPropertyChangedFor(nameof(WithdrawPenaltySummary))]
+    [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
+    [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
+    [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+    [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+    [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
+    [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
+    private SavingsAccount? selectedAccount;
+
+    private int selectedCloseDestinationId;
+
+    [ObservableProperty] private string selectedFilter = "All";
+
+    [ObservableProperty] private string selectedFrequency = string.Empty;
+    [ObservableProperty] private FundingSourceOption? selectedFundingSource;
+
+    // ── Create Account ───────────────────────────────────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGoalSavings))]
+    [NotifyPropertyChangedFor(nameof(IsFixedDeposit))]
+    private string selectedSavingsType = string.Empty;
+
+    [ObservableProperty]
+    private bool showCreateConfirmation;
+    [ObservableProperty]
+    private bool showDepositSuccess;
+    [ObservableProperty]
+    private decimal? targetAmount;
+    [ObservableProperty]
+    private DateTimeOffset? targetDate;
+
+    [ObservableProperty]
+    private int totalPages;
+
+    [ObservableProperty]
+    private string totalSavedAmount = "$0.00";
+
+    [ObservableProperty]
+    private ObservableCollection<SavingsTransaction> transactions = new();
+
+    // ── Withdraw Panel ───────────────────────────────────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
+    [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
+    [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
+    [NotifyPropertyChangedFor(nameof(WithdrawPenaltyBreakdownText))]
+    [NotifyPropertyChangedFor(nameof(WithdrawNetAmountText))]
+    private string withdrawAmountText = string.Empty;
+
+    [ObservableProperty]
+    private FundingSourceOption? withdrawDestination;
+    [ObservableProperty]
+    private string withdrawResultMessage = string.Empty;
+    [ObservableProperty]
+    private bool withdrawSuccess;
+
+    // ── Constructor ──────────────────────────────────────────────────────
+    public SavingsViewModel(ISavingsService savingsService)
     {
-        private readonly ISavingsService savingsService;
-        private const int CurrentUserId = 1;
+        this.savingsService = savingsService;
+        this.savingsUiRulesService = new SavingsUiRulesService();
+        this.savingsPresentationService = new SavingsPresentationService();
+        this.savingsWorkflowService = new SavingsWorkflowService();
+    }
 
-        // ── My Accounts ──────────────────────────────────────────────────────
+    public bool IsEmpty => this.SavingsAccounts.Count == 0;
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsEmpty))]
-        [NotifyPropertyChangedFor(nameof(ShowAccountsList))]
-        private ObservableCollection<SavingsAccount> savingsAccounts = new();
+    public bool ShowAccountsList => this.SavingsAccounts.Count > 0;
 
-        [ObservableProperty] private string totalSavedAmount = "$0.00";
-        [ObservableProperty] private string numberOfAccountsText = "across 0 accounts";
-        [ObservableProperty] private string bestInterestRate = "0.00%";
+    public bool IsGoalSavings => this.SelectedSavingsType == "GoalSavings";
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LivePreview))]
-        [NotifyPropertyChangedFor(nameof(WithdrawHasEarlyRisk))]
-        [NotifyPropertyChangedFor(nameof(WithdrawPenaltySummary))]
-        [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
-        [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
-        [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
-        [NotifyPropertyChangedFor(nameof(CloseHasPenalty))]
-        private SavingsAccount? selectedAccount;
+    public bool IsFixedDeposit => this.SelectedSavingsType == "FixedDeposit";
 
-        public bool IsEmpty => SavingsAccounts.Count == 0;
-        public bool ShowAccountsList => SavingsAccounts.Count > 0;
+    public Dictionary<string, string> FieldErrors { get; } = new();
 
-        // ── Create Account ───────────────────────────────────────────────────
+    public string LivePreview =>
+        this.savingsUiRulesService.BuildDepositPreview(this.DepositAmountText, this.SelectedAccount);
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsGoalSavings))]
-        private string selectedSavingsType = string.Empty;
+    public bool WithdrawHasEarlyRisk => this.savingsService.HasRiskEarlyWithdrawal(this.SelectedAccount);
 
-        [ObservableProperty] private string accountName = string.Empty;
-        [ObservableProperty] private string initialDepositText = string.Empty;
-        [ObservableProperty] private FundingSourceOption? selectedFundingSource;
-        [ObservableProperty] private decimal? targetAmount;
-        [ObservableProperty] private DateTimeOffset? targetDate;
-        [ObservableProperty] private bool showCreateConfirmation;
-        [ObservableProperty] private ObservableCollection<FundingSourceOption> fundingSources = new();
-        [ObservableProperty] private string selectedFrequency = string.Empty;
-
-        public bool IsGoalSavings => SelectedSavingsType == "GoalSavings";
-        public Dictionary<string, string> FieldErrors { get; } = new();
-
-        // ── Deposit ──────────────────────────────────────────────────────────
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LivePreview))]
-        private string depositAmountText = string.Empty;
-
-        [ObservableProperty] private string depositSource = string.Empty;
-        [ObservableProperty] private bool showDepositSuccess;
-        [ObservableProperty] private string depositSuccessMessage = string.Empty;
-
-        private CancellationTokenSource? depositCts;
-
-        public string LivePreview
+    public decimal WithdrawEstimatedPenalty
+    {
+        get
         {
-            get
+            if (!this.WithdrawHasEarlyRisk)
             {
-                if (decimal.TryParse(DepositAmountText, NumberStyles.Any,
-                        CultureInfo.InvariantCulture, out decimal amount)
-                    && amount > 0 && SelectedAccount != null)
-                    return $"New balance will be: ${(SelectedAccount.Balance + amount):N2}";
-                return string.Empty;
-            }
-        }
-
-        // ── Withdraw Panel ───────────────────────────────────────────────────
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(WithdrawEstimatedPenalty))]
-        [NotifyPropertyChangedFor(nameof(WithdrawNetAmount))]
-        [NotifyPropertyChangedFor(nameof(WithdrawHasPenalty))]
-        private string withdrawAmountText = string.Empty;
-
-        [ObservableProperty] private FundingSourceOption? withdrawDestination;
-        [ObservableProperty] private string withdrawResultMessage = string.Empty;
-        [ObservableProperty] private bool withdrawSuccess;
-
-        public bool WithdrawHasEarlyRisk =>
-            SelectedAccount?.SavingsType == "FixedDeposit" &&
-            SelectedAccount.MaturityDate.HasValue &&
-            SelectedAccount.MaturityDate.Value > DateTime.UtcNow;
-
-        public decimal WithdrawEstimatedPenalty
-        {
-            get
-            {
-                if (!WithdrawHasEarlyRisk) return 0;
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
-                return amt * 0.02m;
-            }
-        }
-        public decimal WithdrawNetAmount
-        {
-            get
-            {
-                if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0) return 0;
-                return amt - WithdrawEstimatedPenalty;
-            }
-        }
-        public bool WithdrawHasPenalty => WithdrawEstimatedPenalty > 0;
-        public string WithdrawPenaltySummary =>
-            WithdrawHasEarlyRisk ? $"Early withdrawal penalty: 2% of amount. Maturity date: {SelectedAccount?.MaturityDate:d}" : string.Empty;
-
-        public async Task<bool> ConfirmWithdrawAsync()
-        {
-            WithdrawResultMessage = string.Empty;
-            WithdrawSuccess = false;
-            if (!decimal.TryParse(WithdrawAmountText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
-            { WithdrawResultMessage = "Please enter a valid amount."; return false; }
-            if (WithdrawDestination == null)
-            { WithdrawResultMessage = "Please select a destination account."; return false; }
-            IsLoading = true;
-            try
-            {
-                var result = await savingsService.WithdrawAsync(SelectedAccount!.Id, amount, WithdrawDestination.DisplayName, CurrentUserId);
-                WithdrawSuccess = result.Success;
-                WithdrawResultMessage = result.Success
-                    ? $"Withdrawn: ${result.AmountWithdrawn:N2}" + (result.PenaltyApplied > 0 ? $" (penalty: ${result.PenaltyApplied:N2})" : "") + $". New balance: ${result.NewBalance:N2}"
-                    : result.Message;
-                if (result.Success)
-                {
-                    WithdrawAmountText = string.Empty;
-                    await LoadAccountsAsync();
-                }
-                return result.Success;
-            }
-            catch (Exception ex) { WithdrawResultMessage = ex.Message; return false; }
-            finally { IsLoading = false; }
-        }
-
-        // ── Auto Deposit ─────────────────────────────────────────────────────
-
-        private AutoDeposit? currentAutoDeposit;
-
-        [ObservableProperty] private string autoDepositAmountText = string.Empty;
-        [ObservableProperty] private string autoDepositFrequency = string.Empty;
-        [ObservableProperty] private DateTimeOffset? autoDepositStartDate = DateTimeOffset.Now.AddDays(1);
-        [ObservableProperty] private bool autoDepositIsActive = true;
-        [ObservableProperty] private bool hasExistingAutoDeposit;
-        public string ExistingLabel => HasExistingAutoDeposit ? "Modify" : "Set Up";
-        [ObservableProperty] private string autoDepositSaveMessage = string.Empty;
-
-        public async Task LoadAutoDepositAsync(int accountId)
-        {
-            AutoDepositSaveMessage = string.Empty;
-            currentAutoDeposit = await savingsService.GetAutoDepositAsync(accountId);
-            if (currentAutoDeposit != null)
-            {
-                HasExistingAutoDeposit = true;
-                AutoDepositAmountText = currentAutoDeposit.Amount.ToString(CultureInfo.InvariantCulture);
-                AutoDepositFrequency = currentAutoDeposit.Frequency.ToString();
-                AutoDepositStartDate = new DateTimeOffset(currentAutoDeposit.NextRunDate);
-                AutoDepositIsActive = currentAutoDeposit.IsActive;
-            }
-            else
-            {
-                HasExistingAutoDeposit = false;
-                AutoDepositAmountText = string.Empty;
-                AutoDepositFrequency = string.Empty;
-                AutoDepositStartDate = DateTimeOffset.Now.AddDays(1);
-                AutoDepositIsActive = true;
-            }
-        }
-
-        public async Task SaveAutoDepositAsync()
-        {
-            ErrorMessage = string.Empty;
-            AutoDepositSaveMessage = string.Empty;
-
-            if (!decimal.TryParse(AutoDepositAmountText, NumberStyles.Any,
-                    CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
-            { ErrorMessage = "Auto deposit amount must be positive."; return; }
-
-            if (string.IsNullOrWhiteSpace(AutoDepositFrequency))
-            { ErrorMessage = "Please select a frequency."; return; }
-
-            if (!Enum.TryParse<DepositFrequency>(AutoDepositFrequency, out var freq))
-            { ErrorMessage = "Invalid frequency."; return; }
-
-            var autoDeposit = new AutoDeposit
-            {
-                Id = currentAutoDeposit?.Id ?? 0,
-                SavingsAccountId = SelectedAccount!.Id,
-                Amount = amount,
-                Frequency = freq,
-                NextRunDate = AutoDepositStartDate?.DateTime ?? DateTime.Now.AddDays(1),
-                IsActive = AutoDepositIsActive
-            };
-
-            await savingsService.SaveAutoDepositAsync(autoDeposit);
-            AutoDepositSaveMessage = "Auto deposit saved successfully.";
-            await LoadAutoDepositAsync(SelectedAccount.Id);
-        }
-
-        // ── Constructor ──────────────────────────────────────────────────────
-
-        public SavingsViewModel(ISavingsService savingsService)
-        {
-            this.savingsService = savingsService;
-        }
-
-        // ── Commands: My Accounts ────────────────────────────────────────────
-
-        [RelayCommand]
-        public async Task LoadAccountsAsync()
-        {
-            IsLoading = true;
-            ErrorMessage = string.Empty;
-            try
-            {
-                var accounts = await savingsService.GetAccountsAsync(CurrentUserId);
-                SavingsAccounts.Clear();
-                foreach (var a in accounts) SavingsAccounts.Add(a);
-
-                OnPropertyChanged(nameof(IsEmpty));
-                OnPropertyChanged(nameof(ShowAccountsList));
-
-                TotalSavedAmount = $"${SavingsAccounts.Sum(a => a.Balance):F2}";
-                NumberOfAccountsText = $"across {SavingsAccounts.Count} account{(SavingsAccounts.Count == 1 ? "" : "s")}";
-                decimal best = SavingsAccounts.Any() ? SavingsAccounts.Max(a => a.Apy) : 0;
-                BestInterestRate = $"{best * 100:F2}%";
-            }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
-            finally { IsLoading = false; }
-        }
-
-        [RelayCommand]
-        public async Task CloseAccountAsync(SavingsAccount account)
-        {
-            IsLoading = true;
-            ErrorMessage = string.Empty;
-            try
-            {
-                var result = await savingsService.CloseAccountAsync(account.Id, CurrentUserId, 1);
-                bool ok = result.Success;
-                if (!ok) { ErrorMessage = "Failed to close account."; return; }
-                await LoadAccountsAsync();
-            }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
-            finally { IsLoading = false; }
-        }
-
-        // ── Close Account Panel ──────────────────────────────────────────────
-        [ObservableProperty] private ObservableCollection<SavingsAccount> closeDestinationAccounts = new();
-
-        private int selectedCloseDestinationId;
-        public int SelectedCloseDestinationId
-        {
-            get => selectedCloseDestinationId;
-            set { selectedCloseDestinationId = value; OnPropertyChanged(); }
-        }
-
-        private bool closeUserConfirmed;
-        public bool CloseUserConfirmed
-        {
-            get => closeUserConfirmed;
-            set { closeUserConfirmed = value; OnPropertyChanged(); }
-        }
-
-        [ObservableProperty] private string closeResultMessage = string.Empty;
-        [ObservableProperty] private bool closeSuccess;
-
-        public bool CloseHasPenalty =>
-            SelectedAccount?.SavingsType == "FixedDeposit" &&
-            SelectedAccount.MaturityDate.HasValue &&
-            SelectedAccount.MaturityDate.Value > DateTime.UtcNow;
-
-        public async Task LoadCloseDestinationAccountsAsync()
-        {
-            CloseUserConfirmed = false;
-            CloseResultMessage = string.Empty;
-            CloseSuccess = false;
-            var accounts = await savingsService.GetAccountsAsync(CurrentUserId);
-            CloseDestinationAccounts.Clear();
-            foreach (var acc in accounts.Where(a => a.Id != SelectedAccount?.Id && a.AccountStatus != "Closed"))
-                CloseDestinationAccounts.Add(acc);
-            if (CloseDestinationAccounts.Count > 0)
-                SelectedCloseDestinationId = CloseDestinationAccounts[0].Id;
-            OnPropertyChanged(nameof(CloseHasPenalty));
-        }
-
-        public async Task<bool> ConfirmCloseAsync()
-        {
-            if (!CloseUserConfirmed) { CloseResultMessage = "Please confirm account closure."; return false; }
-            if (SelectedCloseDestinationId == 0) { CloseResultMessage = "Please select a destination account."; return false; }
-            IsLoading = true;
-            try
-            {
-                var result = await savingsService.CloseAccountAsync(SelectedAccount!.Id, SelectedCloseDestinationId, CurrentUserId);
-                CloseSuccess = result.Success;
-                CloseResultMessage = result.Success ? "Account closed successfully." : result.Message;
-                if (result.Success) await LoadAccountsAsync();
-                return result.Success;
-            }
-            catch (Exception ex) { CloseResultMessage = ex.Message; return false; }
-            finally { IsLoading = false; }
-        }
-
-        // ── Commands: Create Account ─────────────────────────────────────────
-
-        public async Task LoadFundingSourcesAsync()
-        {
-            try
-            {
-                var sources = await savingsService.GetFundingSourcesAsync(CurrentUserId);
-                FundingSources.Clear();
-                foreach (var s in sources) FundingSources.Add(s);
-                if (FundingSources.Count > 0) SelectedFundingSource = FundingSources[0];
-            }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
-        }
-
-        [RelayCommand]
-        public async Task CreateAccountAsync()
-        {
-            FieldErrors.Clear();
-            ErrorMessage = string.Empty;
-            ShowCreateConfirmation = false;
-
-            if (string.IsNullOrWhiteSpace(SelectedSavingsType))
-                FieldErrors["SavingsType"] = "Please select an account type.";
-            if (string.IsNullOrWhiteSpace(AccountName))
-                FieldErrors["AccountName"] = "Account name is required.";
-            if (!decimal.TryParse(InitialDepositText, NumberStyles.Any,
-                    CultureInfo.InvariantCulture, out decimal deposit) || deposit <= 0)
-                FieldErrors["InitialDeposit"] = "Initial deposit must be a positive number.";
-            if (SelectedFundingSource == null)
-                FieldErrors["FundingSource"] = "Please select a funding source.";
-            if (string.IsNullOrWhiteSpace(SelectedFrequency))
-                FieldErrors["Frequency"] = "Please select a deposit frequency.";
-            if (IsGoalSavings)
-            {
-                if (!TargetAmount.HasValue || TargetAmount.Value <= 0)
-                    FieldErrors["TargetAmount"] = "Target amount is required.";
-                if (!TargetDate.HasValue)
-                    FieldErrors["TargetDate"] = "Target date is required.";
-                else if (TargetDate.Value.Date <= DateTime.Today)
-                    FieldErrors["TargetDate"] = "Target date must be in the future.";
+                return 0;
             }
 
-            OnPropertyChanged(nameof(FieldErrors));
-            if (FieldErrors.Count > 0) return;
-
-            IsLoading = true;
-            try
+            if (!this.savingsUiRulesService.TryParsePositiveAmount(this.WithdrawAmountText, out var withdrawAmount))
             {
-                var dto = new CreateSavingsAccountDto
-                {
-                    UserId = CurrentUserId,
-                    SavingsType = SelectedSavingsType,
-                    AccountName = AccountName.Trim(),
-                    InitialDeposit = deposit,
-                    FundingAccountId = SelectedFundingSource!.Id,
-                    TargetAmount = IsGoalSavings ? TargetAmount : null,
-                    TargetDate = IsGoalSavings ? TargetDate?.DateTime : null,
-                    MaturityDate = MaturityDate?.DateTime,
-                    DepositFrequency = Enum.TryParse<DepositFrequency>(SelectedFrequency, out var freq) ? freq : null
-                };
-                await savingsService.CreateAccountAsync(dto);
-                ShowCreateConfirmation = true;
-                ResetCreateForm();
-                await LoadAccountsAsync();
+                return 0;
             }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
-            finally { IsLoading = false; }
+
+            return this.savingsService.ComputeWithdrawalPenalty(withdrawAmount);
         }
+    }
 
-        private void ResetCreateForm()
+    public decimal WithdrawNetAmount
+    {
+        get
         {
-            AccountName = string.Empty;
-            InitialDepositText = string.Empty;
-            SelectedSavingsType = string.Empty;
-            TargetAmount = null;
-            TargetDate = null;
-            FieldErrors.Clear();
-        }
-
-        // ── Commands: Deposit ────────────────────────────────────────────────
-
-        [RelayCommand]
-        public async Task DepositAsync()
-        {
-            ErrorMessage = string.Empty;
-            ShowDepositSuccess = false;
-
-            if (SelectedAccount == null) { ErrorMessage = "No account selected."; return; }
-
-            if (!decimal.TryParse(DepositAmountText, NumberStyles.Any,
-                    CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+            if (!this.savingsUiRulesService.TryParsePositiveAmount(this.WithdrawAmountText, out var withdrawAmount))
             {
-                ErrorMessage = "Please enter a valid positive amount.";
+                return 0;
+            }
+
+            return this.savingsUiRulesService.CalculateWithdrawNetAmount(withdrawAmount, this.WithdrawEstimatedPenalty);
+        }
+    }
+
+    public bool WithdrawHasPenalty => this.WithdrawEstimatedPenalty > 0;
+
+    public string WithdrawPenaltyBreakdownText =>
+        $"Penalty ({this.savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P0}): -${this.WithdrawEstimatedPenalty:N2}";
+
+    public string WithdrawNetAmountText => $"Net amount received: ${this.WithdrawNetAmount:N2}";
+
+    public string WithdrawPenaltySummary => this.WithdrawHasEarlyRisk
+        ? $"Early withdrawal penalty: {this.savingsService.GetPenaltyDecimalFor("EarlyWithdrawal"):P2} of amount. Maturity date: {this.SelectedAccount?.MaturityDate:d}"
+        : string.Empty;
+
+    public string ExistingLabel => this.HasExistingAutoDeposit ? "Modify" : "Set Up";
+
+    public int SelectedCloseDestinationId
+    {
+        get => this.selectedCloseDestinationId;
+        set
+        {
+            this.selectedCloseDestinationId = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public bool CloseUserConfirmed
+    {
+        get => this.closeUserConfirmed;
+        set
+        {
+            this.closeUserConfirmed = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public bool CloseHasPenalty => this.savingsPresentationService.HasClosePenaltyRisk(this.SelectedAccount);
+
+    public DateTimeOffset? MaturityDate { get; set; }
+
+    public async Task<bool> ConfirmWithdrawAsync()
+    {
+        this.WithdrawResultMessage = string.Empty;
+        this.WithdrawSuccess = false;
+        this.savingsUiRulesService.TryParsePositiveAmount(this.WithdrawAmountText, out var amount);
+        var withdrawValidation = this.savingsWorkflowService.ValidateWithdrawRequest(amount, this.WithdrawDestination);
+        if (!withdrawValidation.IsValid)
+        {
+            this.WithdrawResultMessage = withdrawValidation.ErrorMessage;
+            return false;
+        }
+
+        this.IsLoading = true;
+        try
+        {
+            var withdrawResponseDto = await this.savingsService.WithdrawAsync(
+                this.SelectedAccount!.IdentificationNumber,
+                amount,
+                this.WithdrawDestination.DisplayName,
+                CurrentUserId);
+            this.WithdrawSuccess = withdrawResponseDto.Success;
+            this.WithdrawResultMessage = this.savingsWorkflowService.BuildWithdrawResultMessage(withdrawResponseDto);
+            if (withdrawResponseDto.Success)
+            {
+                this.WithdrawAmountText = string.Empty;
+                await this.LoadAccountsAsync();
+            }
+
+            return withdrawResponseDto.Success;
+        }
+        catch (Exception exception)
+        {
+            this.WithdrawResultMessage = exception.Message;
+            return false;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    public async Task LoadAutoDepositAsync(int accountId)
+    {
+        this.AutoDepositSaveMessage = string.Empty;
+        this.currentAutoDeposit = await this.savingsService.GetAutoDepositAsync(accountId);
+        if (this.currentAutoDeposit != null)
+        {
+            this.HasExistingAutoDeposit = true;
+            this.AutoDepositAmountText = this.currentAutoDeposit.Amount.ToString(CultureInfo.InvariantCulture);
+            this.AutoDepositFrequency = this.currentAutoDeposit.Frequency.ToString();
+            this.AutoDepositStartDate = new DateTimeOffset(this.currentAutoDeposit.NextRunDate);
+            this.AutoDepositIsActive = this.currentAutoDeposit.IsActive;
+        }
+        else
+        {
+            this.HasExistingAutoDeposit = false;
+            this.AutoDepositAmountText = string.Empty;
+            this.AutoDepositFrequency = string.Empty;
+            this.AutoDepositStartDate = DateTimeOffset.Now.AddDays(1);
+            this.AutoDepositIsActive = true;
+        }
+    }
+
+    public async Task SaveAutoDepositAsync()
+    {
+        this.ErrorMessage = string.Empty;
+        this.AutoDepositSaveMessage = string.Empty;
+
+        if (!this.savingsUiRulesService.TryParsePositiveAmount(this.AutoDepositAmountText, out var amount))
+        {
+            this.ErrorMessage = "Auto deposit amount must be positive.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.AutoDepositFrequency))
+        {
+            this.ErrorMessage = "Please select a frequency.";
+            return;
+        }
+
+        if (!this.savingsUiRulesService.TryParseDepositFrequency(this.AutoDepositFrequency, out var freq))
+        {
+            this.ErrorMessage = "Invalid frequency.";
+            return;
+        }
+
+        var autoDeposit = new AutoDeposit
+        {
+            Id = this.currentAutoDeposit?.Id ?? 0,
+            SavingsAccountId = this.SelectedAccount!.IdentificationNumber,
+            Amount = amount,
+            Frequency = freq,
+            NextRunDate = this.AutoDepositStartDate?.DateTime ?? DateTime.Now.AddDays(1),
+            IsActive = this.AutoDepositIsActive,
+        };
+
+        await this.savingsService.SaveAutoDepositAsync(autoDeposit);
+        this.AutoDepositSaveMessage = "Auto deposit saved successfully.";
+        await this.LoadAutoDepositAsync(this.SelectedAccount.IdentificationNumber);
+    }
+
+    // ── Commands: My Accounts ────────────────────────────────────────────
+    [RelayCommand]
+    public async Task LoadAccountsAsync()
+    {
+        this.IsLoading = true;
+        this.ErrorMessage = string.Empty;
+        try
+        {
+            var accountsList = await this.savingsService.GetAccountsAsync(CurrentUserId);
+            this.SavingsAccounts.Clear();
+            foreach (var account in accountsList)
+            {
+                this.SavingsAccounts.Add(account);
+            }
+
+            this.OnPropertyChanged(nameof(this.IsEmpty));
+            this.OnPropertyChanged(nameof(this.ShowAccountsList));
+
+            this.TotalSavedAmount = this.savingsPresentationService.BuildTotalSavedAmount(this.SavingsAccounts);
+            this.NumberOfAccountsText =
+                this.savingsPresentationService.BuildNumberOfAccountsText(this.SavingsAccounts.Count);
+            this.BestInterestRate = this.savingsPresentationService.BuildBestInterestRate(this.SavingsAccounts);
+        }
+        catch (Exception exception)
+        {
+            this.ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task CloseAccountAsync(SavingsAccount account)
+    {
+        this.IsLoading = true;
+        this.ErrorMessage = string.Empty;
+        try
+        {
+            var closureResultDto = await this.savingsService.CloseAccountAsync(account.IdentificationNumber, CurrentUserId, 1);
+            var ok = closureResultDto.Success;
+            if (!ok)
+            {
+                this.ErrorMessage = "Failed to close account.";
                 return;
             }
 
-            depositCts?.Cancel();
-            depositCts = new CancellationTokenSource();
+            await this.LoadAccountsAsync();
+        }
+        catch (Exception exception)
+        {
+            this.ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
 
-            IsLoading = true;
-            try
+    public async Task LoadCloseDestinationAccountsAsync()
+    {
+        this.CloseUserConfirmed = false;
+        this.CloseResultMessage = string.Empty;
+        this.CloseSuccess = false;
+        var openAccountsList = await this.savingsService.GetValidTransferDestinationsAsync(this.SelectedAccount!.IdentificationNumber);
+        this.CloseDestinationAccounts.Clear();
+        foreach (var account in openAccountsList)
+        {
+            this.CloseDestinationAccounts.Add(account);
+        }
+
+        this.SelectedCloseDestinationId =
+            this.savingsWorkflowService.GetDefaultCloseDestinationId(this.CloseDestinationAccounts);
+        this.OnPropertyChanged(nameof(this.CloseHasPenalty));
+    }
+
+    public async Task<bool> ConfirmCloseAsync()
+    {
+        var closeValidation = this.savingsWorkflowService.ValidateCloseConfirmation(
+            this.CloseUserConfirmed,
+            this.SelectedCloseDestinationId);
+        if (!closeValidation.IsValid)
+        {
+            this.CloseResultMessage = closeValidation.ErrorMessage;
+            return false;
+        }
+
+        this.IsLoading = true;
+        try
+        {
+            var result = await this.savingsService.CloseAccountAsync(
+                this.SelectedAccount!.IdentificationNumber,
+                this.SelectedCloseDestinationId,
+                CurrentUserId);
+            this.CloseSuccess = result.Success;
+            this.CloseResultMessage = result.Success ? "Account closed successfully." : result.Message;
+            if (result.Success)
             {
-                var response = await savingsService.DepositAsync(
-                    SelectedAccount.Id, amount, DepositSource, CurrentUserId);
-
-                DepositSuccessMessage = $"Deposit successful! New balance: ${response.NewBalance:N2}";
-                ShowDepositSuccess = true;
-                DepositAmountText = string.Empty;
-                await LoadAccountsAsync();
+                await this.LoadAccountsAsync();
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { ErrorMessage = ex.Message; }
-            finally { IsLoading = false; }
+
+            return result.Success;
         }
-
-        public void CancelDeposit() => depositCts?.Cancel();
-
-        [ObservableProperty]
-        private ObservableCollection<SavingsTransaction> transactions = new();
-
-        [ObservableProperty]
-        private int currentPage = 1;
-
-        [ObservableProperty]
-        private int totalPages;
-
-        [ObservableProperty]
-        private string selectedFilter = "All";
-
-        public async Task LoadTransactionsAsync(int accountId)
+        catch (Exception exception)
         {
-            try
+            this.CloseResultMessage = exception.Message;
+            return false;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    // ── Commands: Create Account ─────────────────────────────────────────
+    public async Task LoadFundingSourcesAsync()
+    {
+        try
+        {
+            var fundingSourcesList = await this.savingsService.GetFundingSourcesAsync(CurrentUserId);
+            this.FundingSources.Clear();
+            foreach (var fundingSource in fundingSourcesList)
             {
-                var result = await savingsService.GetTransactionsAsync(
-                    accountId,
-                    selectedFilter,
-                    currentPage,
-                    10);
-
-                transactions.Clear();
-
-                foreach (var tx in result.Items)
-                    transactions.Add(tx);
-
-                totalPages = (int)Math.Ceiling((double)result.TotalCount / 10);
+                this.FundingSources.Add(fundingSource);
             }
-            catch (Exception ex)
+
+            this.SelectedFundingSource = this.savingsWorkflowService.GetDefaultFundingSource(this.FundingSources);
+        }
+        catch (Exception exception)
+        {
+            this.ErrorMessage = exception.Message;
+        }
+    }
+
+    public void PrepareCreateAccountSubmission(
+        string accountName,
+        string initialDepositText,
+        FundingSourceOption? fundingSource,
+        string targetAmountText,
+        DateTimeOffset? targetDate,
+        DateTimeOffset? maturityDate)
+    {
+        this.AccountName = accountName;
+        this.InitialDepositText = initialDepositText;
+        this.SelectedFundingSource = fundingSource;
+        this.TargetAmount = null;
+
+        if (this.IsGoalSavings &&
+            this.savingsUiRulesService.TryParsePositiveAmount(targetAmountText, out var parsedTargetAmount))
+        {
+            this.TargetAmount = parsedTargetAmount;
+        }
+
+        this.TargetDate = this.IsGoalSavings ? targetDate : null;
+        this.MaturityDate = this.SelectedSavingsType == "FixedDeposit" ? maturityDate : null;
+    }
+
+    [RelayCommand]
+    public async Task CreateAccountAsync()
+    {
+        this.FieldErrors.Clear();
+        this.ErrorMessage = string.Empty;
+        this.ShowCreateConfirmation = false;
+
+        var errors = this.savingsUiRulesService.ValidateCreateAccount(
+            this.SelectedSavingsType,
+            this.AccountName,
+            this.InitialDepositText,
+            this.SelectedFundingSource != null,
+            this.SelectedFrequency,
+            this.TargetAmount,
+            this.TargetDate,
+            this.IsGoalSavings);
+
+        foreach (var error in errors)
+        {
+            this.FieldErrors[error.Key] = error.Value;
+        }
+
+        this.OnPropertyChanged(nameof(this.FieldErrors));
+        if (this.FieldErrors.Count > 0)
+        {
+            return;
+        }
+
+        this.savingsUiRulesService.TryParsePositiveAmount(this.InitialDepositText, out var deposit);
+
+        this.IsLoading = true;
+        try
+        {
+            var createSavingsAccountDto = new CreateSavingsAccountDto
             {
-                ErrorMessage = ex.Message;
+                UserIdentificationNumber = CurrentUserId,
+                SavingsType = this.SelectedSavingsType,
+                AccountName = this.AccountName.Trim(),
+                InitialDeposit = deposit,
+                FundingAccountId = this.SelectedFundingSource!.Id,
+                TargetAmount = this.IsGoalSavings ? this.TargetAmount : null,
+                TargetDate = this.IsGoalSavings ? this.TargetDate?.DateTime : null,
+                MaturityDate = this.MaturityDate?.DateTime,
+                DepositFrequency =
+                    this.savingsUiRulesService.TryParseDepositFrequency(
+                        this.SelectedFrequency,
+                        out var selectedFrequency)
+                        ? selectedFrequency
+                        : null,
+            };
+            await this.savingsService.CreateAccountAsync(createSavingsAccountDto);
+            this.ShowCreateConfirmation = true;
+            this.ResetCreateForm();
+            await this.LoadAccountsAsync();
+        }
+        catch (Exception exception)
+        {
+            this.ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    private void ResetCreateForm()
+    {
+        this.AccountName = string.Empty;
+        this.InitialDepositText = string.Empty;
+        this.SelectedSavingsType = string.Empty;
+        this.TargetAmount = null;
+        this.TargetDate = null;
+        this.FieldErrors.Clear();
+    }
+
+    // ── Commands: Deposit ────────────────────────────────────────────────
+    [RelayCommand]
+    public async Task DepositAsync()
+    {
+        this.ErrorMessage = string.Empty;
+        this.ShowDepositSuccess = false;
+
+        if (this.SelectedAccount == null)
+        {
+            this.ErrorMessage = "No account selected.";
+            return;
+        }
+
+        if (!this.savingsUiRulesService.TryParsePositiveAmount(this.DepositAmountText, out var amount))
+        {
+            this.ErrorMessage = "Please enter a valid positive amount.";
+            return;
+        }
+
+        this.depositCancelationTokenSource?.Cancel();
+        this.depositCancelationTokenSource = new CancellationTokenSource();
+
+        this.IsLoading = true;
+        try
+        {
+            var depositResponseDto = await this.savingsService.DepositAsync(
+                this.SelectedAccount.IdentificationNumber,
+                amount,
+                this.DepositSource,
+                CurrentUserId);
+
+            this.DepositSuccessMessage = $"Deposit successful! New balance: ${depositResponseDto.NewBalance:N2}";
+            this.ShowDepositSuccess = true;
+            this.DepositAmountText = string.Empty;
+            await this.LoadAccountsAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            this.ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            this.IsLoading = false;
+        }
+    }
+
+    public void CancelDeposit()
+    {
+        this.depositCancelationTokenSource?.Cancel();
+    }
+
+    public async Task LoadTransactionsAsync(int accountId)
+    {
+        try
+        {
+            var result = await this.savingsService.GetTransactionsAsync(
+                accountId,
+                this.selectedFilter,
+                this.currentPage,
+                10);
+
+            this.transactions.Clear();
+
+            foreach (var tx in result.Items)
+            {
+                this.transactions.Add(tx);
             }
+
+            this.totalPages = this.savingsUiRulesService.CalculateTotalPages(result.TotalCount, 10);
         }
-        public async Task NextPage(int accountId)
+        catch (Exception ex)
         {
-            if (currentPage >= totalPages) return;
-
-            currentPage++;
-            await LoadTransactionsAsync(accountId);
+            this.ErrorMessage = ex.Message;
         }
+    }
 
-        public async Task PreviousPage(int accountId)
+    public async Task NextPage(int accountId)
+    {
+        if (!this.savingsWorkflowService.CanMoveToNextPage(this.currentPage, this.totalPages))
         {
-            if (currentPage <= 1) return;
-
-            currentPage--;
-            await LoadTransactionsAsync(accountId);
+            return;
         }
-        public async Task ChangeFilter(int accountId, string filter)
+
+        this.currentPage++;
+        await this.LoadTransactionsAsync(accountId);
+    }
+
+    public async Task PreviousPage(int accountId)
+    {
+        if (!this.savingsWorkflowService.CanMoveToPreviousPage(this.currentPage))
         {
-            selectedFilter = filter;
-            currentPage = 1;
-            await LoadTransactionsAsync(accountId);
+            return;
         }
 
-        public DateTimeOffset? MaturityDate { get; set; }
+        this.currentPage--;
+        await this.LoadTransactionsAsync(accountId);
+    }
+
+    public async Task ChangeFilter(int accountId, string filter)
+    {
+        this.selectedFilter = filter;
+        this.currentPage = 1;
+        await this.LoadTransactionsAsync(accountId);
     }
 }

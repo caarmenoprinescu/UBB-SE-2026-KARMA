@@ -1,264 +1,229 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Threading.Tasks;
-using KarmaBanking.App.Models;
-using KarmaBanking.App.Repositories.Interfaces;
-using Microsoft.Data.SqlClient;
-
-namespace KarmaBanking.App.Repositories
+﻿namespace KarmaBanking.App.Repositories
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+    using System.Threading.Tasks;
+    using KarmaBanking.App.Data;
+    using KarmaBanking.App.Models;
+    using KarmaBanking.App.Repositories.Interfaces;
+    using Microsoft.Data.SqlClient;
+
     public class InvestmentRepository : IInvestmentRepository
     {
-        public async Task RecordCryptoTradeAsync(int portfolioId, string ticker, string actionType, decimal quantity, decimal pricePerUnit, decimal fees) 
-        {
-            // Establish a connection to the database using the shared configuration
-            using SqlConnection connection = DatabaseConfig.GetDatabaseConnection();
-            await connection.OpenAsync();
+        private const string AssetTypeCrypto = "Crypto";
+        private const string OrderTypeMarket = "Market";
 
-            using SqlTransaction transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        /// <summary>
+        /// Records a crypto trade and updates the holding with final values calculated by the Service.
+        /// </summary>
+        public async Task RecordCryptoTradeAsync(
+            int portfolioIdentificationNumber,
+            string ticker,
+            string actionType,
+            decimal quantity,
+            decimal pricePerUnit,
+            decimal fees,
+            decimal finalQuantity,
+            decimal finalAveragePrice)
+        {
+            using var sqlConnection = DatabaseConfig.GetDatabaseConnection();
+            await sqlConnection.OpenAsync();
+
+            using var sqlTransaction = (SqlTransaction)await sqlConnection.BeginTransactionAsync();
 
             try
             {
-                int? holdingId = null;
-                decimal currentQuantity = 0;
-                decimal currentAvgPrice = 0;
+                int? holdingIdentificationNumber = null;
 
-                // 1. Check if the user already has an existing holding for this specific crypto asset in their portfolio
-                string checkHoldingQuery = "SELECT id, quantity, avgPurchasePrice FROM InvestmentHolding WHERE portfolioId = @PortfolioId AND ticker = @Ticker";
-                using (SqlCommand checkCmd = new SqlCommand(checkHoldingQuery, connection, transaction))
+                // 1. Check if the holding already exists
+                var checkHoldingSqlQuery = "SELECT id FROM InvestmentHolding WHERE portfolioId = @PortfolioId AND ticker = @Ticker";
+                using (var checkCommand = new SqlCommand(checkHoldingSqlQuery, sqlConnection, sqlTransaction))
                 {
-                    checkCmd.Parameters.AddWithValue("@PortfolioId", portfolioId);
-                    checkCmd.Parameters.AddWithValue("@Ticker", ticker);
+                    checkCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
+                    checkCommand.Parameters.AddWithValue("@Ticker", ticker);
 
-                    using SqlDataReader reader = await checkCmd.ExecuteReaderAsync();
-                    if (await reader.ReadAsync())
-            {
-                        // Store the current holding details if found
-                        holdingId = reader.GetInt32(0);
-                        currentQuantity = reader.GetDecimal(1);
-                        currentAvgPrice = reader.GetDecimal(2);
+                    var result = await checkCommand.ExecuteScalarAsync();
+                    if (result != null && result != DBNull.Value)
+                    {
+                        holdingIdentificationNumber = (int)result!;
                     }
                 }
 
-                // 2. Process the trade based on the specified action type (BUY or SELL)
-                if (actionType.Equals("BUY", StringComparison.OrdinalIgnoreCase))
+                // 2. Update existing holding or Insert new holding using FINAL values provided by the Service
+                if (holdingIdentificationNumber.HasValue)
                 {
-                    if (holdingId.HasValue)
-                    {
-                        // 2a. The user already owns this asset. Calculate the new weighted average price and total quantity.
-                        decimal totalCost = (currentQuantity * currentAvgPrice) + (quantity * pricePerUnit);
-                        decimal newQuantity = currentQuantity + quantity;
-                        decimal newAvgPrice = totalCost / newQuantity;
+                    var updateHoldingSqlQuery = "UPDATE InvestmentHolding SET quantity = @FinalQuantity, avgPurchasePrice = @FinalAveragePrice WHERE id = @HoldingId";
+                    using var updateCommand = new SqlCommand(updateHoldingSqlQuery, sqlConnection, sqlTransaction);
+                    updateCommand.Parameters.AddWithValue("@FinalQuantity", finalQuantity);
+                    updateCommand.Parameters.AddWithValue("@FinalAveragePrice", finalAveragePrice);
+                    updateCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber.Value);
 
-                        // Update the existing holding record
-                        string updateHoldingQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity, avgPurchasePrice = @NewAvgPrice WHERE id = @HoldingId";
-                        using SqlCommand updateCmd = new SqlCommand(updateHoldingQuery, connection, transaction);
-                        updateCmd.Parameters.AddWithValue("@NewQuantity", newQuantity);
-                        updateCmd.Parameters.AddWithValue("@NewAvgPrice", newAvgPrice);
-                        updateCmd.Parameters.AddWithValue("@HoldingId", holdingId.Value);
-
-                        await updateCmd.ExecuteNonQueryAsync();
+                    await updateCommand.ExecuteNonQueryAsync();
                 }
                 else
                 {
-                        // 2b. The user does not own this asset yet. Insert a new holding record.
-                        string insertHoldingQuery = @"
+                    var insertHoldingSqlQuery = @"
                             INSERT INTO InvestmentHolding (portfolioId, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss)
                             OUTPUT INSERTED.id
-                            VALUES (@PortfolioId, @Ticker, 'Crypto', @Quantity, @AvgPrice, @AvgPrice, 0)";
+                            VALUES (@PortfolioId, @Ticker, @AssetType, @Quantity, @AveragePrice, @AveragePrice, 0)";
 
-                        using SqlCommand insertCmd = new SqlCommand(insertHoldingQuery, connection, transaction);
-                        insertCmd.Parameters.AddWithValue("@PortfolioId", portfolioId);
-                        insertCmd.Parameters.AddWithValue("@Ticker", ticker);
-                        insertCmd.Parameters.AddWithValue("@Quantity", quantity);
-                        insertCmd.Parameters.AddWithValue("@AvgPrice", pricePerUnit);
+                    using var insertCommand = new SqlCommand(insertHoldingSqlQuery, sqlConnection, sqlTransaction);
+                    insertCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
+                    insertCommand.Parameters.AddWithValue("@Ticker", ticker);
+                    insertCommand.Parameters.AddWithValue("@AssetType", AssetTypeCrypto);
+                    insertCommand.Parameters.AddWithValue("@Quantity", finalQuantity);
+                    insertCommand.Parameters.AddWithValue("@AveragePrice", finalAveragePrice);
 
-                        // Execute the insert and retrieve the newly generated holding ID
-                        holdingId = (int)await insertCmd.ExecuteScalarAsync();
-                    }
+                    holdingIdentificationNumber = (int)(await insertCommand.ExecuteScalarAsync())!;
                 }
-                else if (actionType.Equals("SELL", StringComparison.OrdinalIgnoreCase))
-                {
-                    // 2c. Validate that the user actually owns enough of the asset to sell
-                    if (!holdingId.HasValue || currentQuantity < quantity)
-                    {
-                        throw new InvalidOperationException("Insufficient wallet balance to execute this sell order.");
+
+                // 3. Log the transaction details
+                var insertTransactionSqlQuery = @"
+                        INSERT INTO InvestmentTransaction (holdingId, ticker, actionType, quantity, pricePerUnit, fees, orderType, executedAt)
+                        VALUES (@HoldingId, @Ticker, @ActionType, @Quantity, @PricePerUnit, @Fees, @OrderType, @ExecutedAt)";
+
+                using var transactionLogCommand = new SqlCommand(insertTransactionSqlQuery, sqlConnection, sqlTransaction);
+                transactionLogCommand.Parameters.AddWithValue("@HoldingId", holdingIdentificationNumber);
+                transactionLogCommand.Parameters.AddWithValue("@Ticker", ticker);
+                transactionLogCommand.Parameters.AddWithValue("@ActionType", actionType.ToUpper());
+                transactionLogCommand.Parameters.AddWithValue("@Quantity", quantity);
+                transactionLogCommand.Parameters.AddWithValue("@PricePerUnit", pricePerUnit);
+                transactionLogCommand.Parameters.AddWithValue("@Fees", fees);
+                transactionLogCommand.Parameters.AddWithValue("@OrderType", OrderTypeMarket);
+                transactionLogCommand.Parameters.AddWithValue("@ExecutedAt", DateTime.Now);
+
+                await transactionLogCommand.ExecuteNonQueryAsync();
+
+                await sqlTransaction.CommitAsync();
             }
-
-                    // Deduct the sold quantity from the current holding
-                    decimal newQuantity = currentQuantity - quantity;
-                    string updateHoldingQuery = "UPDATE InvestmentHolding SET quantity = @NewQuantity WHERE id = @HoldingId";
-
-                    using SqlCommand updateCmd = new SqlCommand(updateHoldingQuery, connection, transaction);
-                    updateCmd.Parameters.AddWithValue("@NewQuantity", newQuantity);
-                    updateCmd.Parameters.AddWithValue("@HoldingId", holdingId.Value);
-
-                    await updateCmd.ExecuteNonQueryAsync();
-                }
-                else
+            catch (Exception)
             {
-                    // Reject unsupported action types to prevent data corruption
-                    throw new ArgumentException("ActionType must be either 'BUY' or 'SELL'.");
-                }
-
-                // 3. Record the transaction details in the history table
-                string insertTxQuery = @"
-                    INSERT INTO InvestmentTransaction (holdingId, ticker, actionType, quantity, pricePerUnit, fees, orderType, executedAt)
-                    VALUES (@HoldingId, @Ticker, @ActionType, @Quantity, @PricePerUnit, @Fees, 'Market', @ExecutedAt)";
-
-                using (SqlCommand txCmd = new SqlCommand(insertTxQuery, connection, transaction))
-                {
-                    txCmd.Parameters.AddWithValue("@HoldingId", holdingId.Value);
-                    txCmd.Parameters.AddWithValue("@Ticker", ticker);
-                    txCmd.Parameters.AddWithValue("@ActionType", actionType.ToUpper());
-                    txCmd.Parameters.AddWithValue("@Quantity", quantity);
-                    txCmd.Parameters.AddWithValue("@PricePerUnit", pricePerUnit);
-                    txCmd.Parameters.AddWithValue("@Fees", fees);
-                    txCmd.Parameters.AddWithValue("@ExecutedAt", DateTime.Now);
-
-                    await txCmd.ExecuteNonQueryAsync();
-            }
-
-                // 4. Commit the transaction if all operations (holding update + transaction log) succeed
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                // Revert all database changes if any exception occurs during the process
-                await transaction.RollbackAsync();
+                await sqlTransaction.RollbackAsync();
                 throw;
             }
         }
 
-        public Portfolio GetPortfolio(int userId)
+        /// <summary>
+        /// Retrieves a user's portfolio and associated holdings.
+        /// </summary>
+        public Portfolio GetPortfolio(int userIdentificationNumber)
         {
-            const string selectPortfolioQuery = @"
-                SELECT id, userId, totalValue, totalGainLoss, gainLossPercent
-                FROM Portfolio
-                WHERE userId = @UserId";
+            const string selectPortfolioSqlQuery = "SELECT id, userId, totalValue, totalGainLoss, gainLossPercent FROM Portfolio WHERE userId = @UserId";
+            const string selectHoldingsSqlQuery = "SELECT id, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss FROM InvestmentHolding WHERE portfolioId = @PortfolioId ORDER BY id";
 
-            const string selectHoldingsQuery = @"
-                SELECT id, ticker, assetType, quantity, avgPurchasePrice, currentPrice, unrealizedGainLoss
-                FROM InvestmentHolding
-                WHERE portfolioId = @PortfolioId
-                ORDER BY id";
+            var userPortfolio = new Portfolio { UserIdentificationNumber = userIdentificationNumber };
 
-            Portfolio portfolio = new Portfolio
+            using var sqlConnection = new SqlConnection(DatabaseConfig.DatabaseConnectionString);
+            sqlConnection.Open();
+
+            using (var selectPortfolioCommand = new SqlCommand(selectPortfolioSqlQuery, sqlConnection))
             {
-                UserId = userId
-            };
-
-            using SqlConnection openDatabaseConnection = new SqlConnection(DatabaseConfig.ConnectionString);
-            openDatabaseConnection.Open();
-
-            using (SqlCommand selectPortfolioCommand = new SqlCommand(selectPortfolioQuery, openDatabaseConnection))
-            {
-                selectPortfolioCommand.Parameters.Add("@UserId", System.Data.SqlDbType.Int).Value = userId;
-
-                using SqlDataReader portfolioReader = selectPortfolioCommand.ExecuteReader();
-                if (portfolioReader.Read())
+                selectPortfolioCommand.Parameters.Add("@UserId", SqlDbType.Int).Value = userIdentificationNumber;
+                using var portfolioDataReader = selectPortfolioCommand.ExecuteReader();
+                if (portfolioDataReader.Read())
                 {
-                    portfolio.Id = portfolioReader.GetInt32(0);
-                    portfolio.UserId = portfolioReader.GetInt32(1);
-                    portfolio.TotalValue = portfolioReader.GetDecimal(2);
-                    portfolio.TotalGainLoss = portfolioReader.GetDecimal(3);
-                    portfolio.GainLossPercent = portfolioReader.GetDecimal(4);
+                    userPortfolio.IdentificationNumber = portfolioDataReader.GetInt32(0);
+                    userPortfolio.TotalValue = portfolioDataReader.GetDecimal(2);
+                    userPortfolio.TotalGainLoss = portfolioDataReader.GetDecimal(3);
+                    userPortfolio.GainLossPercent = portfolioDataReader.GetDecimal(4);
                 }
                 else
                 {
-                    return portfolio;
+                    return userPortfolio;
                 }
             }
 
-            using SqlCommand selectHoldingsCommand = new SqlCommand(selectHoldingsQuery, openDatabaseConnection);
-            selectHoldingsCommand.Parameters.Add("@PortfolioId", System.Data.SqlDbType.Int).Value = portfolio.Id;
-
-            using SqlDataReader holdingsReader = selectHoldingsCommand.ExecuteReader();
-            while (holdingsReader.Read())
+            using (var selectHoldingsCommand = new SqlCommand(selectHoldingsSqlQuery, sqlConnection))
             {
-                portfolio.Holdings.Add(new InvestmentHolding
+                selectHoldingsCommand.Parameters.Add("@PortfolioId", SqlDbType.Int).Value = userPortfolio.IdentificationNumber;
+                using var holdingsDataReader = selectHoldingsCommand.ExecuteReader();
+                while (holdingsDataReader.Read())
                 {
-                    Id = holdingsReader.GetInt32(0),
-                    Ticker = holdingsReader.IsDBNull(1) ? string.Empty : holdingsReader.GetString(1),
-                    AssetType = holdingsReader.IsDBNull(2) ? string.Empty : holdingsReader.GetString(2),
-                    Quantity = holdingsReader.GetDecimal(3),
-                    AvgPurchasePrice = holdingsReader.GetDecimal(4),
-                    CurrentPrice = holdingsReader.GetDecimal(5),
-                    UnrealizedGainLoss = holdingsReader.GetDecimal(6)
-                });
+                    userPortfolio.Holdings.Add(new InvestmentHolding
+                    {
+                        IdentificationNumber = holdingsDataReader.GetInt32(0),
+                        Ticker = holdingsDataReader.IsDBNull(1) ? string.Empty : holdingsDataReader.GetString(1),
+                        AssetType = holdingsDataReader.IsDBNull(2) ? string.Empty : holdingsDataReader.GetString(2),
+                        Quantity = holdingsDataReader.GetDecimal(3),
+                        AveragePurchasePrice = holdingsDataReader.GetDecimal(4),
+                        CurrentPrice = holdingsDataReader.GetDecimal(5),
+                        UnrealizedGainLoss = holdingsDataReader.GetDecimal(6)
+                    });
+                }
             }
 
-            return portfolio;
+            return userPortfolio;
         }
 
-        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(int portfolioId, DateTime? startDate = null, DateTime? endDate = null, string? ticker = null)
+        /// <summary>
+        /// Retrieves transaction logs with optional filtering.
+        /// </summary>
+        public async Task<List<InvestmentTransaction>> GetInvestmentLogsAsync(
+            int portfolioIdentificationNumber,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? ticker = null)
         {
-            var logs = new List<InvestmentTransaction>();
+            var investmentLogs = new List<InvestmentTransaction>();
 
-            using SqlConnection connection = DatabaseConfig.GetDatabaseConnection();
-            await connection.OpenAsync();
+            using var sqlConnection = DatabaseConfig.GetDatabaseConnection();
+            await sqlConnection.OpenAsync();
 
-            // Base query with INNER JOIN to filter by the user's portfolio
-            string query = @"
-                SELECT t.id, t.holdingId, t.ticker, t.actionType, t.quantity, 
-                       t.pricePerUnit, t.fees, t.orderType, t.executedAt 
-                FROM InvestmentTransaction t
-                INNER JOIN InvestmentHolding h ON t.holdingId = h.id
-                WHERE h.portfolioId = @PortfolioId";
+            var filterLogsSqlQuery = @"
+                    SELECT t.id, t.holdingId, t.ticker, t.actionType, t.quantity, t.pricePerUnit, t.fees, t.orderType, t.executedAt 
+                    FROM InvestmentTransaction t
+                    INNER JOIN InvestmentHolding h ON t.holdingId = h.id
+                    WHERE h.portfolioId = @PortfolioId";
 
-            // Dynamically append filters
             if (startDate.HasValue)
             {
-                query += " AND t.executedAt >= @StartDate";
+                filterLogsSqlQuery += " AND t.executedAt >= @StartDate";
             }
             if (endDate.HasValue)
             {
-                query += " AND t.executedAt <= @EndDate";
+                filterLogsSqlQuery += " AND t.executedAt <= @EndDate";
             }
             if (!string.IsNullOrWhiteSpace(ticker))
             {
-                query += " AND t.ticker = @Ticker";
+                filterLogsSqlQuery += " AND t.ticker = @Ticker";
             }
 
-            // Order by most recent transactions first
-            query += " ORDER BY t.executedAt DESC";
+            filterLogsSqlQuery += " ORDER BY t.executedAt DESC";
 
-            using SqlCommand cmd = new SqlCommand(query, connection);
-            cmd.Parameters.AddWithValue("@PortfolioId", portfolioId);
-
-            // Add parameters conditionally to match the dynamic query string
+            using var filterCommand = new SqlCommand(filterLogsSqlQuery, sqlConnection);
+            filterCommand.Parameters.AddWithValue("@PortfolioId", portfolioIdentificationNumber);
             if (startDate.HasValue)
             {
-                cmd.Parameters.AddWithValue("@StartDate", startDate.Value);
+                filterCommand.Parameters.AddWithValue("@StartDate", startDate.Value);
             }
             if (endDate.HasValue)
             {
-                cmd.Parameters.AddWithValue("@EndDate", endDate.Value);
+                filterCommand.Parameters.AddWithValue("@EndDate", endDate.Value);
             }
             if (!string.IsNullOrWhiteSpace(ticker))
             {
-                cmd.Parameters.AddWithValue("@Ticker", ticker);
+                filterCommand.Parameters.AddWithValue("@Ticker", ticker);
             }
 
-            using SqlDataReader reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            using var transactionLogDataReader = await filterCommand.ExecuteReaderAsync();
+            while (await transactionLogDataReader.ReadAsync())
             {
-                logs.Add(new InvestmentTransaction
+                investmentLogs.Add(new InvestmentTransaction
                 {
-                    Id = reader.GetInt32(0),
-                    HoldingId = reader.GetInt32(1),
-                    Ticker = reader.GetString(2),
-                    ActionType = reader.GetString(3),
-                    Quantity = reader.GetDecimal(4),
-                    PricePerUnit = reader.GetDecimal(5),
-                    Fees = reader.GetDecimal(6),
-                    OrderType = reader.GetString(7),
-                    ExecutedAt = reader.GetDateTime(8)
+                    IdentificationNumber = transactionLogDataReader.GetInt32(0),
+                    HoldingIdentificationNumber = transactionLogDataReader.GetInt32(1),
+                    Ticker = transactionLogDataReader.GetString(2),
+                    ActionType = transactionLogDataReader.GetString(3),
+                    Quantity = transactionLogDataReader.GetDecimal(4),
+                    PricePerUnit = transactionLogDataReader.GetDecimal(5),
+                    Fees = transactionLogDataReader.GetDecimal(6),
+                    OrderType = transactionLogDataReader.GetString(7),
+                    ExecutedAt = transactionLogDataReader.GetDateTime(8)
                 });
             }
 
-            return logs;
+            return investmentLogs;
         }
     }
 }

@@ -1,17 +1,66 @@
+// <copyright file="Loan.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System;
 
+/// <summary>
+/// Represents an active loan associated with a user account.
+/// </summary>
 public class Loan
 {
-    public int Id { get; set; }
-    public int UserId { get; set; }
-    public LoanType LoanType { get; set; }
-    public decimal Principal { get; set; }
-    public decimal OutstandingBalance { get; set; }
-    public decimal InterestRate { get; set; }
-    public decimal MonthlyInstallment { get; set; }
-    public int RemainingMonths { get; set; }
-    public LoanStatus LoanStatus { get; set; }
-    public int TermInMonths { get; set; }
-    public DateTime StartDate { get; set; }
+    /// <summary>
+    /// Gets or sets the unique loan identifier.
+    /// </summary>
+    public int IdentificationNumber { get; set; }
 
+    /// <summary>
+    /// Gets or sets the owning user identifier.
+    /// </summary>
+    public int UserIdentificationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the loan product type.
+    /// </summary>
+    public LoanType LoanType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the original principal amount.
+    /// </summary>
+    public decimal Principal { get; set; }
+
+    /// <summary>
+    /// Gets or sets the remaining unpaid balance.
+    /// </summary>
+    public decimal OutstandingBalance { get; set; }
+
+    /// <summary>
+    /// Gets or sets the annual interest rate.
+    /// </summary>
+    public decimal InterestRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the required monthly installment amount.
+    /// </summary>
+    public decimal MonthlyInstallment { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of unpaid months remaining.
+    /// </summary>
+    public int RemainingMonths { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current lifecycle status of the loan.
+    /// </summary>
+    public LoanStatus LoanStatus { get; set; }
+
+    /// <summary>
+    /// Gets or sets the original duration in months.
+    /// </summary>
+    public int TermInMonths { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date when the loan became active.
+    /// </summary>
+    public DateTime StartDate { get; set; }
 }

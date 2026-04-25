@@ -1,25 +1,25 @@
+// <copyright file="MainWindow.xaml.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App;
+
 using KarmaBanking.App.Views;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
-namespace KarmaBanking.App
+public sealed partial class MainWindow : Window
 {
-    public sealed partial class MainWindow : Window
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-            Activated += OnFirstActivated;
-        }
+        this.InitializeComponent();
+        this.Activated += this.OnFirstActivated;
+    }
 
-        private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
-        {
-            Activated -= OnFirstActivated;
+    private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
+    {
+        this.Activated -= this.OnFirstActivated;
 
-            MainFrame.Navigate(typeof(LoansView));
-
-           // MainFrame.Navigate(typeof(SavingsView));
-
-        }
+        // this.MainFrame.Navigate(typeof(LoansView));
+        this.MainFrame.Navigate(typeof(ChatView));
     }
 }

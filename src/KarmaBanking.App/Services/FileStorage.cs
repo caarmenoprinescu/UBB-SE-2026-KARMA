@@ -1,92 +1,101 @@
-﻿using System;
+﻿// <copyright file="FileStorage.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.Services;
+
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace KarmaBanking.App.Services
+public class FileStorage
 {
-    public class FileStorage
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+
+    private static readonly string[] AllowedExtensions =
     {
-        private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".pdf"
+    };
 
-        private static readonly string[] AllowedExtensions =
+    private readonly string attachmentsFolderPath;
+
+    public FileStorage()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        this.attachmentsFolderPath = Path.Combine(localAppData, "KarmaBanking", "Attachments");
+
+        if (!Directory.Exists(this.attachmentsFolderPath))
         {
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".pdf"
-        };
+            Directory.CreateDirectory(this.attachmentsFolderPath);
+        }
+    }
 
-        private readonly string attachmentsFolderPath;
+    public async Task<string> UploadFileAsync(string sourceFilePath)
+    {
+        this.ValidateFile(sourceFilePath);
 
-        public FileStorage()
+        var extension = Path.GetExtension(sourceFilePath);
+        var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+        var destinationPath = Path.Combine(this.attachmentsFolderPath, uniqueFileName);
+
+        await using var sourceStream = new FileStream(sourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var destinationStream = new FileStream(
+            destinationPath,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None);
+
+        await sourceStream.CopyToAsync(destinationStream);
+
+        return destinationPath;
+    }
+
+    public void DeleteUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
         {
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            attachmentsFolderPath = Path.Combine(localAppData, "KarmaBanking", "Attachments");
-
-            if (!Directory.Exists(attachmentsFolderPath))
-            {
-                Directory.CreateDirectory(attachmentsFolderPath);
-            }
+            return;
         }
 
-        public async Task<string> UploadFileAsync(string sourceFilePath)
+        if (File.Exists(url))
         {
-            ValidateFile(sourceFilePath);
+            File.Delete(url);
+        }
+    }
 
-            string extension = Path.GetExtension(sourceFilePath);
-            string uniqueFileName = $"{Guid.NewGuid()}{extension}";
-            string destinationPath = Path.Combine(attachmentsFolderPath, uniqueFileName);
+    public string GetSignedDownloadUrl(string url)
+    {
+        return url;
+    }
 
-            await using FileStream sourceStream = new FileStream(sourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            await using FileStream destinationStream = new FileStream(destinationPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-
-            await sourceStream.CopyToAsync(destinationStream);
-
-            return destinationPath;
+    private void ValidateFile(string sourceFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFilePath))
+        {
+            throw new ArgumentException("File path is required.");
         }
 
-        public void DeleteUrl(string url)
+        if (!File.Exists(sourceFilePath))
         {
-            if (string.IsNullOrWhiteSpace(url))
-                return;
-
-            if (File.Exists(url))
-            {
-                File.Delete(url);
-            }
+            throw new FileNotFoundException("The selected file does not exist.");
         }
 
-        public string GetSignedDownloadUrl(string url)
+        var extension = Path.GetExtension(sourceFilePath).ToLowerInvariant();
+
+        if (!AllowedExtensions.Contains(extension))
         {
-            return url;
+            throw new InvalidOperationException("Only PDF, PNG, JPG, and JPEG files are allowed.");
         }
 
-        private void ValidateFile(string sourceFilePath)
+        var fileInfo = new FileInfo(sourceFilePath);
+
+        if (fileInfo.Length > MaxFileSizeBytes)
         {
-            if (string.IsNullOrWhiteSpace(sourceFilePath))
-            {
-                throw new ArgumentException("File path is required.");
-            }
-
-            if (!File.Exists(sourceFilePath))
-            {
-                throw new FileNotFoundException("The selected file does not exist.");
-            }
-
-            string extension = Path.GetExtension(sourceFilePath).ToLowerInvariant();
-
-            if (!AllowedExtensions.Contains(extension))
-            {
-                throw new InvalidOperationException("Only PDF, PNG, JPG, and JPEG files are allowed.");
-            }
-
-            FileInfo fileInfo = new FileInfo(sourceFilePath);
-
-            if (fileInfo.Length > MaxFileSizeBytes)
-            {
-                throw new InvalidOperationException("File size must be 10 MB or less.");
-            }
+            throw new InvalidOperationException("File size must be 10 MB or less.");
         }
     }
 }

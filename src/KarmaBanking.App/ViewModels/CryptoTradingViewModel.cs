@@ -1,201 +1,210 @@
-﻿using System;
+﻿// <copyright file="CryptoTradingViewModel.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
+namespace KarmaBanking.App.ViewModels;
+
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using KarmaBanking.App.Models;
+using KarmaBanking.App.Services;
 using KarmaBanking.App.Services.Interfaces;
 using KarmaBanking.App.Utils;
 
-namespace KarmaBanking.App.ViewModels
+public class CryptoTradingViewModel : INotifyPropertyChanged
 {
-    public class CryptoTradingViewModel : INotifyPropertyChanged
+    private readonly IInvestmentService investmentService;
+    private readonly CryptoTradeCalculationService tradeCalculationService;
+
+    private decimal currentWalletBalance;
+    private decimal estimatedTransactionFee;
+    private bool isSubmitting;
+    private string quantityText = string.Empty;
+    private string selectedActionType = "BUY";
+
+    private string selectedTicker = "BTC";
+    private string statusMessage = string.Empty;
+    private decimal totalTransactionAmount;
+
+    public CryptoTradingViewModel(IInvestmentService investmentService)
     {
-        private readonly IInvestmentService _investmentService;
+        this.investmentService = investmentService;
+        this.tradeCalculationService = new CryptoTradeCalculationService();
+        this.SubmitTradeCommand = new RelayCommand(async () => await this.ExecuteTradeAsync(), this.CanExecuteTrade);
+        this.LoadWalletBalance();
+    }
 
-        private string _selectedTicker = "BTC";
-        private string _actionType = "BUY";
-        private string _quantityText = string.Empty;
-        private string _statusMessage = string.Empty;
-        private bool _isSubmitting;
+    public RelayCommand SubmitTradeCommand { get; }
 
-        // New properties for UI Synchronization (BA-58)
-        private decimal _currentBalance;
-        private decimal _estimatedFee;
-        private decimal _totalAmount;
-
-        public CryptoTradingViewModel(IInvestmentService investmentService)
+    public string SelectedTicker
+    {
+        get => this.selectedTicker;
+        set
         {
-            _investmentService = investmentService;
-            SubmitTradeCommand = new RelayCommand(ExecuteTradeAsync, CanExecuteTrade);
-
-            // Load the initial wallet balance when the ViewModel is created
-            LoadWalletBalance();
+            this.selectedTicker = value;
+            this.OnPropertyChanged();
+            this.UpdateCalculations();
+            this.SubmitTradeCommand.RaiseCanExecuteChanged();
         }
+    }
 
-        public string SelectedTicker
+    public string ActionType
+    {
+        get => this.selectedActionType;
+        set
         {
-            get => _selectedTicker;
-            set
+            this.selectedActionType = value;
+            this.OnPropertyChanged();
+            this.UpdateCalculations();
+        }
+    }
+
+    public string QuantityText
+    {
+        get => this.quantityText;
+        set
+        {
+            this.quantityText = value;
+            this.OnPropertyChanged();
+            this.UpdateCalculations();
+            this.SubmitTradeCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    public string StatusMessage
+    {
+        get => this.statusMessage;
+        set
+        {
+            this.statusMessage = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public bool IsSubmitting
+    {
+        get => this.isSubmitting;
+        set
+        {
+            this.isSubmitting = value;
+            this.OnPropertyChanged();
+            this.SubmitTradeCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    public decimal CurrentBalance
+    {
+        get => this.currentWalletBalance;
+        set
+        {
+            this.currentWalletBalance = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public decimal EstimatedFee
+    {
+        get => this.estimatedTransactionFee;
+        set
+        {
+            this.estimatedTransactionFee = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public decimal TotalAmount
+    {
+        get => this.totalTransactionAmount;
+        set
+        {
+            this.totalTransactionAmount = value;
+            this.OnPropertyChanged();
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void LoadWalletBalance()
+    {
+        try
+        {
+            // Folosim identificatorul hardcodat 1 pentru flow-ul actual al proiectului
+            var userPortfolio = this.investmentService.GetPortfolio(1);
+            if (userPortfolio != null)
             {
-                _selectedTicker = value;
-                OnPropertyChanged();
-                // Recalculate when the asset changes (since price changes)
-                UpdateCalculations();
-                SubmitTradeCommand.RaiseCanExecuteChanged();
+                this.CurrentBalance = userPortfolio.TotalValue;
             }
         }
-
-        public string ActionType
+        catch (Exception exception)
         {
-            get => _actionType;
-            set
-            {
-                _actionType = value;
-                OnPropertyChanged();
-                // Recalculate fees and totals when switching between Buy/Sell
-                UpdateCalculations();
-            }
+            this.StatusMessage = $"Failed to sync wallet balance: {exception.Message}";
+        }
+    }
+
+    private void UpdateCalculations()
+    {
+        if (!this.tradeCalculationService.TryParsePositiveQuantity(this.QuantityText, out var quantity))
+        {
+            this.EstimatedFee = 0;
+            this.TotalAmount = 0;
+            return;
         }
 
-        public string QuantityText
+        var (estimatedFee, totalAmount) =
+            this.tradeCalculationService.CalculateTradePreview(this.SelectedTicker, this.ActionType, quantity);
+        this.EstimatedFee = estimatedFee;
+        this.TotalAmount = totalAmount;
+    }
+
+    private bool CanExecuteTrade()
+    {
+        return this.tradeCalculationService.CanExecuteTrade(
+            this.IsSubmitting,
+            this.QuantityText,
+            this.ActionType,
+            this.TotalAmount,
+            this.CurrentBalance);
+    }
+
+    private async Task ExecuteTradeAsync()
+    {
+        if (!this.tradeCalculationService.TryParsePositiveQuantity(this.QuantityText, out var quantity))
         {
-            get => _quantityText;
-            set
-            {
-                _quantityText = value;
-                OnPropertyChanged();
-                // Live sync: Recalculate whenever the user types a new quantity
-                UpdateCalculations();
-                SubmitTradeCommand.RaiseCanExecuteChanged();
-            }
+            return;
         }
 
-        public string StatusMessage
+        this.IsSubmitting = true;
+        this.StatusMessage = "Executing trade...";
+
+        try
         {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
+            var mockPrice = this.tradeCalculationService.GetMockMarketPrice(this.SelectedTicker);
 
-        public bool IsSubmitting
+            await this.investmentService.ExecuteCryptoTradeAsync(
+                1,
+                this.SelectedTicker,
+                this.ActionType,
+                quantity,
+                mockPrice);
+
+            this.StatusMessage = $"Successfully executed {this.ActionType} for {quantity} {this.SelectedTicker}.";
+            this.QuantityText = string.Empty;
+
+            this.LoadWalletBalance();
+        }
+        catch (Exception exception)
         {
-            get => _isSubmitting;
-            set { _isSubmitting = value; OnPropertyChanged(); SubmitTradeCommand.RaiseCanExecuteChanged(); }
+            this.StatusMessage = $"Error: {exception.Message}";
         }
-
-        // --- Synchronized Properties ---
-
-        public decimal CurrentBalance
+        finally
         {
-            get => _currentBalance;
-            set { _currentBalance = value; OnPropertyChanged(); }
+            this.IsSubmitting = false;
         }
+    }
 
-        public decimal EstimatedFee
-        {
-            get => _estimatedFee;
-            set { _estimatedFee = value; OnPropertyChanged(); }
-        }
-
-        public decimal TotalAmount
-        {
-            get => _totalAmount;
-            set { _totalAmount = value; OnPropertyChanged(); }
-        }
-
-        public RelayCommand SubmitTradeCommand { get; }
-
-        private void LoadWalletBalance()
-        {
-            try
-            {
-                // Hardcoded userId 1 for standard project flow. 
-                // Fetches the portfolio to display the available funds.
-                Portfolio portfolio = _investmentService.GetPortfolio(1);
-                if (portfolio != null)
-                {
-                    CurrentBalance = portfolio.TotalValue;
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = "Failed to sync wallet balance.";
-            }
-        }
-
-        private void UpdateCalculations()
-        {
-            // Reset values if input is empty or invalid
-            if (string.IsNullOrWhiteSpace(QuantityText) || !decimal.TryParse(QuantityText, out decimal quantity) || quantity <= 0)
-            {
-                EstimatedFee = 0;
-                TotalAmount = 0;
-                return;
-            }
-
-            // Mock price selection (in a real scenario, this fetches a live quote)
-            decimal currentPrice = SelectedTicker == "BTC" ? 65000m : 3000m;
-            decimal tradeValue = quantity * currentPrice;
-
-            // Apply the fee logic defined in BA-56 (1.5% fee, minimum $0.50)
-            decimal calculatedFee = Math.Round(tradeValue * 0.015m, 2);
-            EstimatedFee = calculatedFee < 0.50m ? 0.50m : calculatedFee;
-
-            // Sync total cost: BUY means cost + fee. SELL means revenue - fee.
-            if (ActionType == "BUY")
-            {
-                TotalAmount = tradeValue + EstimatedFee;
-            }
-            else // SELL
-            {
-                TotalAmount = tradeValue - EstimatedFee;
-            }
-        }
-
-        private bool CanExecuteTrade()
-        {
-            if (_isSubmitting || string.IsNullOrWhiteSpace(QuantityText) || !decimal.TryParse(QuantityText, out decimal qty) || qty <= 0)
-                return false;
-
-            // Optional: Prevent BUY if TotalAmount exceeds CurrentBalance
-            if (ActionType == "BUY" && TotalAmount > CurrentBalance)
-                return false;
-
-            return true;
-        }
-
-        private async Task ExecuteTradeAsync()
-        {
-            if (!decimal.TryParse(QuantityText, out decimal quantity)) return;
-
-            IsSubmitting = true;
-            StatusMessage = "Executing trade...";
-
-            try
-            {
-                decimal mockPrice = SelectedTicker == "BTC" ? 65000m : 3000m;
-
-                await _investmentService.ExecuteCryptoTradeAsync(1, SelectedTicker, ActionType, quantity, mockPrice);
-
-                StatusMessage = $"Successfully executed {ActionType} for {quantity} {SelectedTicker}.";
-                QuantityText = string.Empty;
-
-                // Re-sync the wallet balance after a successful trade
-                LoadWalletBalance();
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Error: {ex.Message}";
-            }
-            finally
-            {
-                IsSubmitting = false;
-            }
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

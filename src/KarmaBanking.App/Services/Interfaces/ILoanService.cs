@@ -1,5 +1,10 @@
+// <copyright file="ILoanService.cs" company="Dev Core">
+// Copyright (c) Dev Core. All rights reserved.
+// </copyright>
+
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
 public interface ILoanService
 {
     Task<List<Loan>> GetAllLoansAsync();
@@ -16,11 +21,21 @@ public interface ILoanService
 
     Task<LoanApplication> ApplyForLoanAsync(LoanApplicationRequest request);
 
+    Task<(LoanApplicationStatus Status, string? RejectionReason)> SubmitLoanApplicationAsync(LoanApplicationRequest request);
+
     LoanEstimate GetLoanEstimate(LoanApplicationRequest request);
 
     Task<int> AddLoanAsync(LoanApplication application);
 
     Task PayInstallmentAsync(int loanId, decimal? amount = null);
+
+    (decimal BalanceAfterPayment, int RemainingMonths) CalculatePaymentPreview(Loan loan, decimal? customAmount = null);
+
+    decimal? ParseCustomPaymentAmount(string input);
+
+    decimal NormalizeCustomPaymentAmount(Loan loan, decimal? currentCustomAmount);
+
+    double GetRepaymentProgress(Loan loan);
 
     Task<List<AmortizationRow>> GetAmortizationAsync(int loanId);
 
