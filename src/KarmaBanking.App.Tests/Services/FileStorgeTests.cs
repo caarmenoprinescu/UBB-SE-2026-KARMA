@@ -54,7 +54,7 @@
             }
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this.fileStorage.UploadFileAsync(largeFilePath));
-            Assert.Equal("File size exceeds the 10 MB limit.", ex.Message);
+            Assert.Equal("File size must be 10 MB or less.", ex.Message);
         }
 
         [Fact]
